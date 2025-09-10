@@ -1,0 +1,81 @@
+export interface Order {
+  id: string;
+  userId: string;
+  vendorId: string;
+  productId: string;
+  quantity: number;
+  totalAmount: number;
+  depositAmount: number;
+  deliveryFee: number;
+  status: OrderStatus;
+  schedule: OrderSchedule;
+  deliveryTime?: Date;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  deliveryAddress: OrderAddress;
+  deliveryAgentId?: string;
+  specialInstructions?: string;
+  trackingInfo?: TrackingInfo;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface OrderAddress {
+  street: string;
+  city: string;
+  state: string;
+  pincode: string;
+  landmark?: string;
+  latitude: number;
+  longitude: number;
+  contactPhone: string;
+}
+
+export interface TrackingInfo {
+  orderId: string;
+  currentStatus: OrderStatus;
+  statusHistory: StatusHistory[];
+  estimatedDeliveryTime?: Date;
+  deliveryAgentLocation?: {
+    latitude: number;
+    longitude: number;
+    updatedAt: Date;
+  };
+}
+
+export interface StatusHistory {
+  status: OrderStatus;
+  timestamp: Date;
+  notes?: string;
+  updatedBy: string;
+}
+
+export enum OrderStatus {
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  ASSIGNED = 'assigned',
+  PICKED_UP = 'picked_up',
+  IN_TRANSIT = 'in_transit',
+  DELIVERED = 'delivered',
+  CANCELLED = 'cancelled',
+  REFUNDED = 'refunded'
+}
+
+export enum OrderSchedule {
+  INSTANT = 'instant',
+  SCHEDULED = 'scheduled'
+}
+
+export enum PaymentMethod {
+  WALLET = 'wallet',
+  UPI = 'upi',
+  COD = 'cod',
+  CARD = 'card'
+}
+
+export enum PaymentStatus {
+  PENDING = 'pending',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  REFUNDED = 'refunded'
+}

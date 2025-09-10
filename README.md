@@ -1,98 +1,151 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Water Jar Delivery API 💧
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A comprehensive backend API for water jar delivery platform built with NestJS, TypeScript, and MongoDB. This API provides complete functionality for on-demand and subscription-based water jar delivery services.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🚀 Features
 
-## Description
+### Core Functionality
+- **JWT Authentication** with OTP-based login
+- **Role-based Access Control** (Customer, Vendor, Delivery Agent)
+- **Order Management** with real-time tracking
+- **Subscription System** for recurring deliveries
+- **Digital Wallet** with transaction history
+- **Complaint Management** with priority assignment
+- **Location-based Services** with geospatial queries
+- **Comprehensive Logging** with file rotation
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### Security & Performance
+- **Rate Limiting** and DDoS protection
+- **Input Validation** with custom validators
+- **Security Headers** (HSTS, CSP, XSS protection)
+- **Request Tracing** for debugging
+- **Performance Monitoring** with slow query detection
 
-## Project setup
+## 🛠️ Technology Stack
 
+- **Framework**: NestJS 10.x
+- **Language**: TypeScript 5.x
+- **Database**: MongoDB with Mongoose ODM
+- **Authentication**: JWT with phone-based OTP
+- **Validation**: class-validator & class-transformer
+- **Testing**: Jest with Supertest
+- **Logging**: Winston with daily rotation
+- **Security**: Helmet, CORS, Throttler
+
+## 📋 Prerequisites
+
+- Node.js (v18 or higher)
+- MongoDB (v5.0 or higher)
+- npm or yarn package manager
+
+## 🚀 Quick Start
+
+### 1. Install Dependencies
 ```bash
-$ npm install
+npm install
 ```
 
-## Compile and run the project
+### 2. Environment Configuration
+Create a `.env` file in the root directory:
+```env
+# Database
+MONGODB_URI=mongodb://localhost:27017/water-jar-delivery
 
-```bash
-# development
-$ npm run start
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key
+JWT_EXPIRES_IN=7d
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+# Application
+PORT=3000
+NODE_ENV=development
 ```
 
-## Run tests
-
+### 3. Run the Application
 ```bash
-# unit tests
-$ npm run test
+# Development mode
+npm run start:dev
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+# Production mode
+npm run build
+npm run start:prod
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## 🧪 Testing
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+# Unit tests
+npm run test
+
+# E2E tests
+npm run test:e2e
+
+# Test coverage
+npm run test:cov
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## 📚 API Documentation
 
-## Resources
+### Authentication Endpoints
+```
+POST /api/auth/login      # Send OTP to phone number
+POST /api/auth/verify     # Verify OTP and get JWT token
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+### User Management
+```
+GET  /api/user/me         # Get current user profile
+PUT  /api/user/me         # Update user profile
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### Order Management
+```
+POST   /api/orders        # Create new order
+GET    /api/orders        # Get user orders
+GET    /api/orders/:id    # Get order details
+DELETE /api/orders/:id    # Cancel order
+```
 
-## Support
+### Wallet Management
+```
+GET  /api/wallet              # Get wallet balance
+POST /api/wallet/topup        # Add money to wallet
+GET  /api/wallet/transactions # Get transaction history
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### Complaints & Feedback
+```
+POST /api/complaints     # Create complaint
+GET  /api/complaints     # Get user complaints
+GET  /api/complaints/:id # Get complaint details
+```
 
-## Stay in touch
+## 🔒 Security Features
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+- **JWT Authentication** with secure token generation
+- **Rate Limiting** (100 requests per minute per IP)
+- **Input Validation** with comprehensive DTOs
+- **Security Headers** (HSTS, CSP, XSS protection)
+- **CORS Configuration** for cross-origin requests
 
-## License
+## 📊 Monitoring & Logging
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+### Log Files
+- `logs/application-YYYY-MM-DD.log` - General application logs
+- `logs/error-YYYY-MM-DD.log` - Error logs only
+- `logs/http-YYYY-MM-DD.log` - HTTP request logs
+
+## 🚀 Deployment
+
+### Production Build
+```bash
+npm run build
+npm run start:prod
+```
+
+## 📝 License
+
+This project is licensed under the MIT License.
+
+---
+
+**Built with ❤️ using NestJS and TypeScript**
