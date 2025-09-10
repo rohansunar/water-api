@@ -1,7 +1,23 @@
-import { Injectable, NotFoundException, BadRequestException, Logger, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
-import { Wallet, WalletTransaction, TransactionType, TransactionStatus, ReferenceType } from '../common/interfaces/wallet.interface';
-import { TopupWalletDto, WalletResponseDto, WalletTransactionDto } from '../common/dto/wallet.dto';
+import {
+  Wallet,
+  WalletTransaction,
+  TransactionType,
+  TransactionStatus,
+  ReferenceType,
+} from '../common/interfaces/wallet.interface';
+import {
+  TopupWalletDto,
+  WalletResponseDto,
+  WalletTransactionDto,
+} from '../common/dto/wallet.dto';
 import { UserService } from '../user/user.service';
 
 @Injectable()
@@ -17,7 +33,7 @@ export class WalletService implements OnModuleDestroy {
 
   onModuleDestroy() {
     // Clean up all pending timeouts to prevent memory leaks
-    this.pendingTimeouts.forEach(timeout => {
+    this.pendingTimeouts.forEach((timeout) => {
       clearTimeout(timeout);
     });
     this.pendingTimeouts.clear();
@@ -26,7 +42,7 @@ export class WalletService implements OnModuleDestroy {
 
   async getWallet(userId: string): Promise<WalletResponseDto> {
     let wallet = await this.findByUserId(userId);
-    
+
     if (!wallet) {
       // Create wallet if it doesn't exist
       wallet = await this.createWallet(userId);
@@ -34,7 +50,7 @@ export class WalletService implements OnModuleDestroy {
 
     const transactionIds = this.walletTransactionIndex.get(wallet.id) || [];
     const transactions = transactionIds
-      .map(id => this.transactions.get(id))
+      .map((id) => this.transactions.get(id))
       .filter(Boolean) as WalletTransaction[];
 
     // Sort transactions by creation date (newest first)
@@ -46,7 +62,7 @@ export class WalletService implements OnModuleDestroy {
       balance: wallet.balance,
       currency: wallet.currency,
       isActive: wallet.isActive,
-      transactions: transactions.slice(0, 20).map(transaction => ({
+      transactions: transactions.slice(0, 20).map((transaction) => ({
         id: transaction.id,
         type: transaction.type,
         amount: transaction.amount,
@@ -60,21 +76,28 @@ export class WalletService implements OnModuleDestroy {
     };
   }
 
-  async topupWallet(userId: string, topupDto: TopupWalletDto): Promise<{ message: string; transactionId: string; paymentUrl?: string }> {
+  async topupWallet(
+    userId: string,
+    topupDto: TopupWalletDto,
+  ): Promise<{ message: string; transactionId: string; paymentUrl?: string }> {
     try {
       let wallet = await this.findByUserId(userId);
-      
+
       if (!wallet) {
         wallet = await this.createWallet(userId);
       }
 
       if (!wallet.isActive) {
-        throw new BadRequestException('Your wallet is currently inactive. Please contact support to reactivate your wallet.');
+        throw new BadRequestException(
+          'Your wallet is currently inactive. Please contact support to reactivate your wallet.',
+        );
       }
 
       // Validate topup amount
       if (topupDto.amount < 1 || topupDto.amount > 10000) {
-        throw new BadRequestException('Topup amount must be between ₹1 and ₹10,000. Please enter a valid amount within this range.');
+        throw new BadRequestException(
+          'Topup amount must be between ₹1 and ₹10,000. Please enter a valid amount within this range.',
+        );
       }
 
       // Create completed transaction (simplified without payment gateway simulation)
@@ -104,11 +127,14 @@ export class WalletService implements OnModuleDestroy {
       this.transactions.set(transaction.id, transaction);
 
       // Update wallet transaction index
-      const walletTransactions = this.walletTransactionIndex.get(wallet.id) || [];
+      const walletTransactions =
+        this.walletTransactionIndex.get(wallet.id) || [];
       walletTransactions.push(transaction.id);
       this.walletTransactionIndex.set(wallet.id, walletTransactions);
 
-      this.logger.log(`Completed topup transaction ${transaction.id} for user ${userId}: ₹${topupDto.amount}`);
+      this.logger.log(
+        `Completed topup transaction ${transaction.id} for user ${userId}: ₹${topupDto.amount}`,
+      );
 
       return {
         message: 'Topup completed successfully',
@@ -120,9 +146,15 @@ export class WalletService implements OnModuleDestroy {
     }
   }
 
-  async addMoney(userId: string, amount: number, description: string, referenceId?: string, referenceType?: ReferenceType): Promise<WalletTransaction> {
+  async addMoney(
+    userId: string,
+    amount: number,
+    description: string,
+    referenceId?: string,
+    referenceType?: ReferenceType,
+  ): Promise<WalletTransaction> {
     let wallet = await this.findByUserId(userId);
-    
+
     if (!wallet) {
       wallet = await this.createWallet(userId);
     }
@@ -152,25 +184,35 @@ export class WalletService implements OnModuleDestroy {
 
     // Store transaction
     this.transactions.set(transaction.id, transaction);
-    
+
     // Update wallet transaction index
     const walletTransactions = this.walletTransactionIndex.get(wallet.id) || [];
     walletTransactions.push(transaction.id);
     this.walletTransactionIndex.set(wallet.id, walletTransactions);
 
-    this.logger.log(`Added ₹${amount} to wallet for user ${userId}. New balance: ₹${wallet.balance}`);
+    this.logger.log(
+      `Added ₹${amount} to wallet for user ${userId}. New balance: ₹${wallet.balance}`,
+    );
     return transaction;
   }
 
-  async deductMoney(userId: string, amount: number, description: string, referenceId?: string, referenceType?: ReferenceType): Promise<WalletTransaction> {
+  async deductMoney(
+    userId: string,
+    amount: number,
+    description: string,
+    referenceId?: string,
+    referenceType?: ReferenceType,
+  ): Promise<WalletTransaction> {
     let wallet = await this.findByUserId(userId);
-    
+
     if (!wallet) {
       throw new NotFoundException('Wallet not found');
     }
 
     if (wallet.balance < amount) {
-      throw new BadRequestException(`Insufficient wallet balance. Your current balance is ₹${wallet.balance}, but ₹${amount} is required. Please add money to your wallet.`);
+      throw new BadRequestException(
+        `Insufficient wallet balance. Your current balance is ₹${wallet.balance}, but ₹${amount} is required. Please add money to your wallet.`,
+      );
     }
 
     const transaction: WalletTransaction = {
@@ -198,13 +240,15 @@ export class WalletService implements OnModuleDestroy {
 
     // Store transaction
     this.transactions.set(transaction.id, transaction);
-    
+
     // Update wallet transaction index
     const walletTransactions = this.walletTransactionIndex.get(wallet.id) || [];
     walletTransactions.push(transaction.id);
     this.walletTransactionIndex.set(wallet.id, walletTransactions);
 
-    this.logger.log(`Deducted ₹${amount} from wallet for user ${userId}. New balance: ₹${wallet.balance}`);
+    this.logger.log(
+      `Deducted ₹${amount} from wallet for user ${userId}. New balance: ₹${wallet.balance}`,
+    );
     return transaction;
   }
 
@@ -227,10 +271,8 @@ export class WalletService implements OnModuleDestroy {
 
     this.wallets.set(wallet.id, wallet);
     this.userWalletIndex.set(userId, wallet.id);
-    
+
     this.logger.log(`Created wallet ${wallet.id} for user ${userId}`);
     return wallet;
   }
-
-
 }

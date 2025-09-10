@@ -60,11 +60,10 @@ describe('AdminService', () => {
 
   describe('getDashboardStats', () => {
     it('should return dashboard statistics', async () => {
-      const mockPendingDues = [
-        { pendingAmount: 100 },
-        { pendingAmount: 200 },
-      ];
-      mockMonthlyLedgerService.getPendingDues.mockResolvedValue(mockPendingDues);
+      const mockPendingDues = [{ pendingAmount: 100 }, { pendingAmount: 200 }];
+      mockMonthlyLedgerService.getPendingDues.mockResolvedValue(
+        mockPendingDues,
+      );
 
       const result = await service.getDashboardStats();
 
@@ -79,9 +78,13 @@ describe('AdminService', () => {
     });
 
     it('should handle errors when retrieving dashboard stats', async () => {
-      mockMonthlyLedgerService.getPendingDues.mockRejectedValue(new Error('Database error'));
+      mockMonthlyLedgerService.getPendingDues.mockRejectedValue(
+        new Error('Database error'),
+      );
 
-      await expect(service.getDashboardStats()).rejects.toThrow(BadRequestException);
+      await expect(service.getDashboardStats()).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -100,7 +103,7 @@ describe('AdminService', () => {
       const result = await service.getAllUsers(UserRole.CUSTOMER);
 
       expect(result).toBeInstanceOf(Array);
-      result.forEach(user => {
+      result.forEach((user) => {
         expect(user.role).toBe(UserRole.CUSTOMER);
       });
     });
@@ -109,7 +112,7 @@ describe('AdminService', () => {
       const result = await service.getAllUsers(undefined, 'active');
 
       expect(result).toBeInstanceOf(Array);
-      result.forEach(user => {
+      result.forEach((user) => {
         expect(user.isActive).toBe(true);
       });
     });
@@ -118,7 +121,7 @@ describe('AdminService', () => {
       const result = await service.getAllUsers(UserRole.VENDOR, 'active');
 
       expect(result).toBeInstanceOf(Array);
-      result.forEach(user => {
+      result.forEach((user) => {
         expect(user.role).toBe(UserRole.VENDOR);
         expect(user.isActive).toBe(true);
       });
@@ -135,11 +138,14 @@ describe('AdminService', () => {
       const result = await service.updateUserStatus(userId, isActive);
 
       expect(mockUserService.update).toHaveBeenCalledWith(userId, { isActive });
-      expect(mockLogger.logBusinessEvent).toHaveBeenCalledWith('user_status_updated', {
-        userId,
-        isActive,
-        updatedBy: 'admin',
-      });
+      expect(mockLogger.logBusinessEvent).toHaveBeenCalledWith(
+        'user_status_updated',
+        {
+          userId,
+          isActive,
+          updatedBy: 'admin',
+        },
+      );
       expect(result.message).toContain('deactivated');
     });
 
@@ -160,7 +166,9 @@ describe('AdminService', () => {
 
       mockUserService.update.mockRejectedValue(new Error('User not found'));
 
-      await expect(service.updateUserStatus(userId, isActive)).rejects.toThrow(BadRequestException);
+      await expect(service.updateUserStatus(userId, isActive)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -183,11 +191,14 @@ describe('AdminService', () => {
 
       const result = await service.approveVendor(vendorId);
 
-      expect(mockLogger.logBusinessEvent).toHaveBeenCalledWith('vendor_approved', {
-        vendorId,
-        approvedBy: 'admin',
-        approvedAt: expect.any(Date),
-      });
+      expect(mockLogger.logBusinessEvent).toHaveBeenCalledWith(
+        'vendor_approved',
+        {
+          vendorId,
+          approvedBy: 'admin',
+          approvedAt: expect.any(Date),
+        },
+      );
       expect(result.message).toBe('Vendor approved successfully');
     });
   });
@@ -199,12 +210,15 @@ describe('AdminService', () => {
 
       const result = await service.rejectVendor(vendorId, reason);
 
-      expect(mockLogger.logBusinessEvent).toHaveBeenCalledWith('vendor_rejected', {
-        vendorId,
-        reason,
-        rejectedBy: 'admin',
-        rejectedAt: expect.any(Date),
-      });
+      expect(mockLogger.logBusinessEvent).toHaveBeenCalledWith(
+        'vendor_rejected',
+        {
+          vendorId,
+          reason,
+          rejectedBy: 'admin',
+          rejectedAt: expect.any(Date),
+        },
+      );
       expect(result.message).toBe('Vendor rejected successfully');
     });
   });
@@ -215,11 +229,16 @@ describe('AdminService', () => {
         { userId: 'user-1', vendorId: 'vendor-1', pendingAmount: 100 },
         { userId: 'user-2', vendorId: 'vendor-1', pendingAmount: 200 },
       ];
-      mockMonthlyLedgerService.getPendingDues.mockResolvedValue(mockPendingDues);
+      mockMonthlyLedgerService.getPendingDues.mockResolvedValue(
+        mockPendingDues,
+      );
 
       const result = await service.getMonthlyPaymentMonitoring(1, 2024);
 
-      expect(mockMonthlyLedgerService.getPendingDues).toHaveBeenCalledWith(1, 2024);
+      expect(mockMonthlyLedgerService.getPendingDues).toHaveBeenCalledWith(
+        1,
+        2024,
+      );
       expect(result).toBe(mockPendingDues);
     });
 
@@ -232,7 +251,10 @@ describe('AdminService', () => {
 
       await service.getMonthlyPaymentMonitoring();
 
-      expect(mockMonthlyLedgerService.getPendingDues).toHaveBeenCalledWith(currentMonth, currentYear);
+      expect(mockMonthlyLedgerService.getPendingDues).toHaveBeenCalledWith(
+        currentMonth,
+        currentYear,
+      );
     });
   });
 
@@ -243,12 +265,15 @@ describe('AdminService', () => {
 
       const result = await service.exportPendingDuesReport(month, year);
 
-      expect(mockLogger.logBusinessEvent).toHaveBeenCalledWith('report_generated', {
-        reportType: 'pending_dues',
-        month,
-        year,
-        generatedBy: 'admin',
-      });
+      expect(mockLogger.logBusinessEvent).toHaveBeenCalledWith(
+        'report_generated',
+        {
+          reportType: 'pending_dues',
+          month,
+          year,
+          generatedBy: 'admin',
+        },
+      );
       expect(result.message).toBe('Pending dues report generated successfully');
       expect(result.reportUrl).toContain(`pending-dues-${month}-${year}.csv`);
     });

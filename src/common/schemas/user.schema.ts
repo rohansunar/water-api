@@ -25,7 +25,11 @@ export class User {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ required: true, enum: Object.values(UserRole), default: UserRole.CUSTOMER })
+  @Prop({
+    required: true,
+    enum: Object.values(UserRole),
+    default: UserRole.CUSTOMER,
+  })
   role: UserRole;
 
   @Prop({ default: 0 })
@@ -37,16 +41,18 @@ export class User {
   @Prop({ default: false })
   monthlyPaymentMode: boolean;
 
-  @Prop([{
-    street: { type: String, required: true },
-    city: { type: String, required: true },
-    state: { type: String, required: true },
-    pincode: { type: String, required: true },
-    latitude: { type: Number, required: true },
-    longitude: { type: Number, required: true },
-    contactPhone: { type: String, required: true },
-    isDefault: { type: Boolean, default: false },
-  }])
+  @Prop([
+    {
+      street: { type: String, required: true },
+      city: { type: String, required: true },
+      state: { type: String, required: true },
+      pincode: { type: String, required: true },
+      latitude: { type: Number, required: true },
+      longitude: { type: Number, required: true },
+      contactPhone: { type: String, required: true },
+      isDefault: { type: Boolean, default: false },
+    },
+  ])
   addresses: Array<{
     street: string;
     city: string;

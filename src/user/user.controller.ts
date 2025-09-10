@@ -21,13 +21,18 @@ export class UserController {
   @Put('monthly-payment-mode')
   async updateMonthlyPaymentMode(
     @CurrentUser() user: User,
-    @Body() updateDto: { monthlyPaymentMode: boolean }
+    @Body() updateDto: { monthlyPaymentMode: boolean },
   ): Promise<{ message: string; monthlyPaymentMode: boolean }> {
-    this.logger.log(`Updating monthly payment mode for user: ${user.id} to ${updateDto.monthlyPaymentMode}`);
-    await this.userService.updateMonthlyPaymentMode(user.id, updateDto.monthlyPaymentMode);
+    this.logger.log(
+      `Updating monthly payment mode for user: ${user.id} to ${updateDto.monthlyPaymentMode}`,
+    );
+    await this.userService.updateMonthlyPaymentMode(
+      user.id,
+      updateDto.monthlyPaymentMode,
+    );
     return {
       message: 'Monthly payment mode updated successfully',
-      monthlyPaymentMode: updateDto.monthlyPaymentMode
+      monthlyPaymentMode: updateDto.monthlyPaymentMode,
     };
   }
 }

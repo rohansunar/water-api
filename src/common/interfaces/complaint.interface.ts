@@ -33,7 +33,7 @@ export enum ComplaintType {
   PAYMENT_ISSUE = 'payment_issue',
   SERVICE_ISSUE = 'service_issue',
   BILLING_ISSUE = 'billing_issue',
-  OTHER = 'other'
+  OTHER = 'other',
 }
 
 export enum ComplaintStatus {
@@ -41,19 +41,19 @@ export enum ComplaintStatus {
   IN_PROGRESS = 'in_progress',
   RESOLVED = 'resolved',
   CLOSED = 'closed',
-  ESCALATED = 'escalated'
+  ESCALATED = 'escalated',
 }
 
 export enum ComplaintPriority {
   LOW = 'low',
   MEDIUM = 'medium',
   HIGH = 'high',
-  URGENT = 'urgent'
+  URGENT = 'urgent',
 }
 
 export enum ResponderType {
   CUSTOMER_SUPPORT = 'customer_support',
   VENDOR = 'vendor',
   DELIVERY_AGENT = 'delivery_agent',
-  ADMIN = 'admin'
+  ADMIN = 'admin',
 }

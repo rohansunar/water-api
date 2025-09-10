@@ -1,4 +1,11 @@
-import { IsString, IsNumber, IsOptional, IsArray, IsBoolean, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsArray,
+  IsBoolean,
+  IsEnum,
+} from 'class-validator';
 import { ProductCategory, ProductSize } from '../interfaces/product.interface';
 
 export class ProductResponseDto {

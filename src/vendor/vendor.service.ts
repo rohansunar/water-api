@@ -1,8 +1,23 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
-import { Vendor, DeliveryZone, DayOfWeek } from '../common/interfaces/vendor.interface';
-import { CreateProductDto, ProductResponseDto } from '../common/dto/product.dto';
-import { OrderResponseDto, UpdateOrderStatusDto } from '../common/dto/order.dto';
+import {
+  Vendor,
+  DeliveryZone,
+  DayOfWeek,
+} from '../common/interfaces/vendor.interface';
+import {
+  CreateProductDto,
+  ProductResponseDto,
+} from '../common/dto/product.dto';
+import {
+  OrderResponseDto,
+  UpdateOrderStatusDto,
+} from '../common/dto/order.dto';
 
 @Injectable()
 export class VendorService {
@@ -22,21 +37,21 @@ export class VendorService {
 
   async findByLocation(lat: number, lng: number): Promise<Vendor[]> {
     const vendors: Vendor[] = [];
-    
+
     for (const vendor of this.vendors.values()) {
       if (!vendor.isActive) continue;
-      
+
       // Check if location is within any delivery zone
-      const isInDeliveryZone = vendor.deliveryZones.some(zone => {
+      const isInDeliveryZone = vendor.deliveryZones.some((zone) => {
         if (!zone.isActive) return false;
         return this.isPointInDeliveryZone(lat, lng, zone);
       });
-      
+
       if (isInDeliveryZone) {
         vendors.push(vendor);
       }
     }
-    
+
     // Sort by rating and total orders
     vendors.sort((a, b) => {
       if (a.rating !== b.rating) {
@@ -44,12 +59,14 @@ export class VendorService {
       }
       return b.totalOrders - a.totalOrders;
     });
-    
+
     return vendors;
   }
 
   async getAllVendors(): Promise<Vendor[]> {
-    return Array.from(this.vendors.values()).filter(vendor => vendor.isActive);
+    return Array.from(this.vendors.values()).filter(
+      (vendor) => vendor.isActive,
+    );
   }
 
   async create(userId: string, businessName: string): Promise<Vendor> {
@@ -70,12 +87,17 @@ export class VendorService {
 
     this.vendors.set(vendor.id, vendor);
     this.userVendorIndex.set(userId, vendor.id);
-    
+
     this.logger.log(`Created vendor: ${vendor.id} for user: ${userId}`);
     return vendor;
   }
 
-  async addDeliveryZone(vendorId: string, zoneName: string, coordinates: { latitude: number; longitude: number }[], deliveryFee: number): Promise<DeliveryZone> {
+  async addDeliveryZone(
+    vendorId: string,
+    zoneName: string,
+    coordinates: { latitude: number; longitude: number }[],
+    deliveryFee: number,
+  ): Promise<DeliveryZone> {
     const vendor = this.vendors.get(vendorId);
     if (!vendor) {
       throw new NotFoundException('Vendor not found');
@@ -96,32 +118,47 @@ export class VendorService {
 
     vendor.deliveryZones.push(zone);
     vendor.updatedAt = new Date();
-    
+
     this.vendors.set(vendorId, vendor);
     this.logger.log(`Added delivery zone ${zone.id} to vendor ${vendorId}`);
     return zone;
   }
 
-  private isPointInDeliveryZone(lat: number, lng: number, zone: DeliveryZone): boolean {
+  private isPointInDeliveryZone(
+    lat: number,
+    lng: number,
+    zone: DeliveryZone,
+  ): boolean {
     // Simple distance-based check (within 5km radius)
     // In production, you'd use proper polygon containment or more sophisticated geo queries
     if (zone.coordinates.length === 0) return false;
-    
-    const centerLat = zone.coordinates.reduce((sum, coord) => sum + coord.latitude, 0) / zone.coordinates.length;
-    const centerLng = zone.coordinates.reduce((sum, coord) => sum + coord.longitude, 0) / zone.coordinates.length;
-    
+
+    const centerLat =
+      zone.coordinates.reduce((sum, coord) => sum + coord.latitude, 0) /
+      zone.coordinates.length;
+    const centerLng =
+      zone.coordinates.reduce((sum, coord) => sum + coord.longitude, 0) /
+      zone.coordinates.length;
+
     const distance = this.calculateDistance(lat, lng, centerLat, centerLng);
     return distance <= 5; // 5km radius
   }
 
-  private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  private calculateDistance(
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number,
+  ): number {
     const R = 6371; // Earth's radius in kilometers
     const dLat = this.toRadians(lat2 - lat1);
     const dLng = this.toRadians(lng2 - lng1);
-    const a = 
+    const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRadians(lat1)) * Math.cos(this.toRadians(lat2)) *
-      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      Math.cos(this.toRadians(lat1)) *
+        Math.cos(this.toRadians(lat2)) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
@@ -137,9 +174,9 @@ export class VendorService {
         userId: '48effa26-8a5e-4a8b-92f6-4943b7f4ffd6', // Test vendor user (8888888888)
         businessName: 'AquaPure Water Solutions',
         zones: [
-          { name: 'Central Delhi', lat: 28.6139, lng: 77.2090 },
-          { name: 'South Delhi', lat: 28.5355, lng: 77.3910 },
-        ]
+          { name: 'Central Delhi', lat: 28.6139, lng: 77.209 },
+          { name: 'South Delhi', lat: 28.5355, lng: 77.391 },
+        ],
       },
       {
         userId: 'vendor-2',
@@ -147,35 +184,43 @@ export class VendorService {
         zones: [
           { name: 'Gurgaon Sector 1-20', lat: 28.4595, lng: 77.0266 },
           { name: 'Gurgaon Sector 21-40', lat: 28.4089, lng: 77.0424 },
-        ]
+        ],
       },
       {
         userId: 'vendor-3',
         businessName: 'Fresh Drop Delivery',
         zones: [
-          { name: 'Noida Sector 1-30', lat: 28.5355, lng: 77.3910 },
-          { name: 'Greater Noida', lat: 28.4744, lng: 77.5040 },
-        ]
+          { name: 'Noida Sector 1-30', lat: 28.5355, lng: 77.391 },
+          { name: 'Greater Noida', lat: 28.4744, lng: 77.504 },
+        ],
       },
     ];
 
     for (const vendorData of testVendors) {
       const existingVendor = await this.findByUserId(vendorData.userId);
       if (!existingVendor) {
-        const vendor = await this.create(vendorData.userId, vendorData.businessName);
-        
+        const vendor = await this.create(
+          vendorData.userId,
+          vendorData.businessName,
+        );
+
         // Add delivery zones
         for (const zone of vendorData.zones) {
-          await this.addDeliveryZone(vendor.id, zone.name, [
-            { latitude: zone.lat - 0.01, longitude: zone.lng - 0.01 },
-            { latitude: zone.lat + 0.01, longitude: zone.lng - 0.01 },
-            { latitude: zone.lat + 0.01, longitude: zone.lng + 0.01 },
-            { latitude: zone.lat - 0.01, longitude: zone.lng + 0.01 },
-          ], 15);
+          await this.addDeliveryZone(
+            vendor.id,
+            zone.name,
+            [
+              { latitude: zone.lat - 0.01, longitude: zone.lng - 0.01 },
+              { latitude: zone.lat + 0.01, longitude: zone.lng - 0.01 },
+              { latitude: zone.lat + 0.01, longitude: zone.lng + 0.01 },
+              { latitude: zone.lat - 0.01, longitude: zone.lng + 0.01 },
+            ],
+            15,
+          );
         }
       }
     }
-    
+
     this.logger.log('Vendor test data seeded successfully');
   }
 
@@ -206,7 +251,7 @@ export class VendorService {
           state: 'Delhi',
           pincode: '110001',
           latitude: 28.6139,
-          longitude: 77.2090,
+          longitude: 77.209,
           contactPhone: '9876543210',
         },
         createdAt: new Date(),
@@ -217,7 +262,11 @@ export class VendorService {
     return mockOrders;
   }
 
-  async updateOrderStatus(orderId: string, userId: string, updateOrderStatusDto: UpdateOrderStatusDto): Promise<OrderResponseDto> {
+  async updateOrderStatus(
+    orderId: string,
+    userId: string,
+    updateOrderStatusDto: UpdateOrderStatusDto,
+  ): Promise<OrderResponseDto> {
     const vendor = await this.findByUserId(userId);
     if (!vendor) {
       throw new NotFoundException('Vendor profile not found');
@@ -242,14 +291,16 @@ export class VendorService {
         state: 'Delhi',
         pincode: '110001',
         latitude: 28.6139,
-        longitude: 77.2090,
+        longitude: 77.209,
         contactPhone: '9876543210',
       },
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    this.logger.log(`Updated order ${orderId} status to ${updateOrderStatusDto.status}`);
+    this.logger.log(
+      `Updated order ${orderId} status to ${updateOrderStatusDto.status}`,
+    );
     return updatedOrder;
   }
 
@@ -285,7 +336,7 @@ export class VendorService {
           businessName: vendor.businessName,
           rating: vendor.rating,
           totalOrders: vendor.totalOrders,
-          deliveryZones: vendor.deliveryZones.map(zone => ({
+          deliveryZones: vendor.deliveryZones.map((zone) => ({
             id: zone.id,
             name: zone.name,
             deliveryFee: zone.deliveryFee,
@@ -302,7 +353,10 @@ export class VendorService {
     return mockProducts;
   }
 
-  async createProduct(userId: string, createProductDto: CreateProductDto): Promise<ProductResponseDto> {
+  async createProduct(
+    userId: string,
+    createProductDto: CreateProductDto,
+  ): Promise<ProductResponseDto> {
     const vendor = await this.findByUserId(userId);
     if (!vendor) {
       throw new NotFoundException('Vendor profile not found');
@@ -333,7 +387,7 @@ export class VendorService {
         businessName: vendor.businessName,
         rating: vendor.rating,
         totalOrders: vendor.totalOrders,
-        deliveryZones: vendor.deliveryZones.map(zone => ({
+        deliveryZones: vendor.deliveryZones.map((zone) => ({
           id: zone.id,
           name: zone.name,
           deliveryFee: zone.deliveryFee,
@@ -350,7 +404,11 @@ export class VendorService {
     return newProduct;
   }
 
-  async updateProductStock(productId: string, userId: string, quantity: number): Promise<ProductResponseDto> {
+  async updateProductStock(
+    productId: string,
+    userId: string,
+    quantity: number,
+  ): Promise<ProductResponseDto> {
     const vendor = await this.findByUserId(userId);
     if (!vendor) {
       throw new NotFoundException('Vendor profile not found');
@@ -381,7 +439,7 @@ export class VendorService {
         businessName: vendor.businessName,
         rating: vendor.rating,
         totalOrders: vendor.totalOrders,
-        deliveryZones: vendor.deliveryZones.map(zone => ({
+        deliveryZones: vendor.deliveryZones.map((zone) => ({
           id: zone.id,
           name: zone.name,
           deliveryFee: zone.deliveryFee,
@@ -400,11 +458,16 @@ export class VendorService {
 
   private getSizeCapacity(size: string): number {
     switch (size) {
-      case '10L': return 10;
-      case '20L': return 20;
-      case '25L': return 25;
-      case '30L': return 30;
-      default: return 20;
+      case '10L':
+        return 10;
+      case '20L':
+        return 20;
+      case '25L':
+        return 25;
+      case '30L':
+        return 30;
+      default:
+        return 20;
     }
   }
 }

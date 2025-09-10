@@ -41,7 +41,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message = 'Internal server error';
       error = 'Internal Server Error';
-      
+
       // Log the actual error for debugging
       this.logger.error(
         `Unhandled error: ${exception.message}`,
@@ -52,7 +52,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message = 'Internal server error';
       error = 'Internal Server Error';
-      
+
       this.logger.error(
         `Unknown exception: ${JSON.stringify(exception)}`,
         undefined,
@@ -72,13 +72,18 @@ export class HttpExceptionFilter implements ExceptionFilter {
         status,
         exception,
         userId,
-        requestId
+        requestId,
       );
 
       // Also log validation errors specifically
       if (status === HttpStatus.BAD_REQUEST && Array.isArray(message)) {
-        message.forEach(msg => {
-          this.customLogger.logValidationError('request', msg, 'validation_failed', userId);
+        message.forEach((msg) => {
+          this.customLogger.logValidationError(
+            'request',
+            msg,
+            'validation_failed',
+            userId,
+          );
         });
       }
     }
@@ -102,7 +107,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
     response.status(status).json(errorResponse);
   }
 
-  private formatErrorMessage(message: string | string[], status: number): string | string[] {
+  private formatErrorMessage(
+    message: string | string[],
+    status: number,
+  ): string | string[] {
     // For validation errors, return the detailed messages
     if (status === HttpStatus.BAD_REQUEST && Array.isArray(message)) {
       return message;
@@ -113,11 +121,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
       const userFriendlyMessages = {
         [HttpStatus.BAD_REQUEST]: 'Invalid request. Please check your input.',
         [HttpStatus.UNAUTHORIZED]: 'Authentication required. Please log in.',
-        [HttpStatus.FORBIDDEN]: 'Access denied. You do not have permission to perform this action.',
+        [HttpStatus.FORBIDDEN]:
+          'Access denied. You do not have permission to perform this action.',
         [HttpStatus.NOT_FOUND]: 'The requested resource was not found.',
-        [HttpStatus.CONFLICT]: 'The request conflicts with the current state of the resource.',
-        [HttpStatus.UNPROCESSABLE_ENTITY]: 'The request was well-formed but contains invalid data.',
-        [HttpStatus.TOO_MANY_REQUESTS]: 'Too many requests. Please try again later.',
+        [HttpStatus.CONFLICT]:
+          'The request conflicts with the current state of the resource.',
+        [HttpStatus.UNPROCESSABLE_ENTITY]:
+          'The request was well-formed but contains invalid data.',
+        [HttpStatus.TOO_MANY_REQUESTS]:
+          'Too many requests. Please try again later.',
       };
 
       return userFriendlyMessages[status] || message;

@@ -1,7 +1,26 @@
-import { IsString, IsNumber, IsEnum, IsOptional, IsDateString, IsUUID, Min, IsObject, ValidateNested, IsNotEmpty, IsPhoneNumber } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  IsDateString,
+  IsUUID,
+  Min,
+  IsObject,
+  ValidateNested,
+  IsNotEmpty,
+  IsPhoneNumber,
+} from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { OrderSchedule, PaymentMethod } from '../interfaces/order.interface';
-import { IsValidUUID, IsValidQuantity, IsValidAmount, IsValidPincode, IsValidLatitude, IsValidLongitude } from '../decorators/validation.decorators';
+import {
+  IsValidUUID,
+  IsValidQuantity,
+  IsValidAmount,
+  IsValidPincode,
+  IsValidLatitude,
+  IsValidLongitude,
+} from '../decorators/validation.decorators';
 
 export class DeliveryAddressDto {
   @IsString({ message: 'Street address must be a string' })
@@ -40,7 +59,9 @@ export class DeliveryAddressDto {
 
   @IsString({ message: 'Contact phone must be a string' })
   @IsNotEmpty({ message: 'Contact phone is required' })
-  @IsPhoneNumber('IN', { message: 'Please provide a valid Indian phone number' })
+  @IsPhoneNumber('IN', {
+    message: 'Please provide a valid Indian phone number',
+  })
   @Transform(({ value }) => value?.toString().trim())
   contactPhone: string;
 }

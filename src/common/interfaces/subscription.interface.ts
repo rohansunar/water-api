@@ -43,26 +43,26 @@ export interface SubscriptionDelivery {
 export enum SubscriptionFrequency {
   DAILY = 'daily',
   WEEKLY = 'weekly',
-  CUSTOM = 'custom'
+  CUSTOM = 'custom',
 }
 
 export enum SubscriptionStatus {
   ACTIVE = 'active',
   PAUSED = 'paused',
   CANCELLED = 'cancelled',
-  EXPIRED = 'expired'
+  EXPIRED = 'expired',
 }
 
 export enum DeliveryStatus {
   SCHEDULED = 'scheduled',
   DELIVERED = 'delivered',
   MISSED = 'missed',
-  CANCELLED = 'cancelled'
+  CANCELLED = 'cancelled',
 }
 
 export enum PaymentMethod {
   WALLET = 'wallet',
   UPI = 'upi',
   CARD = 'card',
-  AUTO_DEBIT = 'auto_debit'
+  AUTO_DEBIT = 'auto_debit',
 }

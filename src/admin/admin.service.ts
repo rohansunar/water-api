@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { VendorService } from '../vendor/vendor.service';
 import { MonthlyLedgerService } from '../monthly-ledger/monthly-ledger.service';
@@ -58,9 +63,15 @@ export class AdminService {
       // For now, we'll simulate the data
       const currentMonth = new Date().getMonth() + 1;
       const currentYear = new Date().getFullYear();
-      
-      const pendingDues = await this.monthlyLedgerService.getPendingDues(currentMonth, currentYear);
-      const totalPendingDues = pendingDues.reduce((sum, due) => sum + due.pendingAmount, 0);
+
+      const pendingDues = await this.monthlyLedgerService.getPendingDues(
+        currentMonth,
+        currentYear,
+      );
+      const totalPendingDues = pendingDues.reduce(
+        (sum, due) => sum + due.pendingAmount,
+        0,
+      );
 
       const stats: AdminDashboardStats = {
         totalUsers: 150, // Simulated data
@@ -80,7 +91,10 @@ export class AdminService {
     }
   }
 
-  async getAllUsers(role?: UserRole, status?: 'active' | 'inactive'): Promise<UserManagementDto[]> {
+  async getAllUsers(
+    role?: UserRole,
+    status?: 'active' | 'inactive',
+  ): Promise<UserManagementDto[]> {
     try {
       // In a real implementation, this would query the database with filters
       // For now, we'll return simulated data
@@ -121,18 +135,20 @@ export class AdminService {
       ];
 
       let filteredUsers = users;
-      
+
       if (role) {
-        filteredUsers = filteredUsers.filter(user => user.role === role);
+        filteredUsers = filteredUsers.filter((user) => user.role === role);
       }
-      
+
       if (status) {
-        filteredUsers = filteredUsers.filter(user => 
-          status === 'active' ? user.isActive : !user.isActive
+        filteredUsers = filteredUsers.filter((user) =>
+          status === 'active' ? user.isActive : !user.isActive,
         );
       }
 
-      this.logger.log(`Retrieved ${filteredUsers.length} users with filters: role=${role}, status=${status}`);
+      this.logger.log(
+        `Retrieved ${filteredUsers.length} users with filters: role=${role}, status=${status}`,
+      );
       return filteredUsers;
     } catch (error) {
       this.logger.error('Failed to retrieve users:', error);
@@ -140,11 +156,16 @@ export class AdminService {
     }
   }
 
-  async updateUserStatus(userId: string, isActive: boolean): Promise<{ message: string }> {
+  async updateUserStatus(
+    userId: string,
+    isActive: boolean,
+  ): Promise<{ message: string }> {
     try {
       await this.userService.update(userId, { isActive });
-      
-      this.logger.log(`Updated user ${userId} status to ${isActive ? 'active' : 'inactive'}`);
+
+      this.logger.log(
+        `Updated user ${userId} status to ${isActive ? 'active' : 'inactive'}`,
+      );
       this.customLogger.logBusinessEvent('user_status_updated', {
         userId,
         isActive,
@@ -152,7 +173,7 @@ export class AdminService {
       });
 
       return {
-        message: `User ${isActive ? 'activated' : 'deactivated'} successfully`
+        message: `User ${isActive ? 'activated' : 'deactivated'} successfully`,
       };
     } catch (error) {
       this.logger.error(`Failed to update user ${userId} status:`, error);
@@ -190,11 +211,15 @@ export class AdminService {
         },
       ];
 
-      this.logger.log(`Retrieved ${pendingApprovals.length} pending vendor approvals`);
+      this.logger.log(
+        `Retrieved ${pendingApprovals.length} pending vendor approvals`,
+      );
       return pendingApprovals;
     } catch (error) {
       this.logger.error('Failed to retrieve pending vendor approvals:', error);
-      throw new BadRequestException('Failed to retrieve pending vendor approvals');
+      throw new BadRequestException(
+        'Failed to retrieve pending vendor approvals',
+      );
     }
   }
 
@@ -209,7 +234,7 @@ export class AdminService {
       });
 
       return {
-        message: 'Vendor approved successfully'
+        message: 'Vendor approved successfully',
       };
     } catch (error) {
       this.logger.error(`Failed to approve vendor ${vendorId}:`, error);
@@ -217,7 +242,10 @@ export class AdminService {
     }
   }
 
-  async rejectVendor(vendorId: string, reason: string): Promise<{ message: string }> {
+  async rejectVendor(
+    vendorId: string,
+    reason: string,
+  ): Promise<{ message: string }> {
     try {
       // In a real implementation, this would update the vendor status in database
       this.logger.log(`Rejected vendor ${vendorId} with reason: ${reason}`);
@@ -229,7 +257,7 @@ export class AdminService {
       });
 
       return {
-        message: 'Vendor rejected successfully'
+        message: 'Vendor rejected successfully',
       };
     } catch (error) {
       this.logger.error(`Failed to reject vendor ${vendorId}:`, error);
@@ -237,27 +265,43 @@ export class AdminService {
     }
   }
 
-  async getMonthlyPaymentMonitoring(month?: number, year?: number): Promise<MonthlyBillingSummaryDto[]> {
+  async getMonthlyPaymentMonitoring(
+    month?: number,
+    year?: number,
+  ): Promise<MonthlyBillingSummaryDto[]> {
     try {
       const currentDate = new Date();
       const targetMonth = month || currentDate.getMonth() + 1;
       const targetYear = year || currentDate.getFullYear();
 
-      const pendingDues = await this.monthlyLedgerService.getPendingDues(targetMonth, targetYear);
-      
-      this.logger.log(`Retrieved monthly payment monitoring for ${targetMonth}/${targetYear}: ${pendingDues.length} entries`);
+      const pendingDues = await this.monthlyLedgerService.getPendingDues(
+        targetMonth,
+        targetYear,
+      );
+
+      this.logger.log(
+        `Retrieved monthly payment monitoring for ${targetMonth}/${targetYear}: ${pendingDues.length} entries`,
+      );
       return pendingDues;
     } catch (error) {
-      this.logger.error('Failed to retrieve monthly payment monitoring:', error);
-      throw new BadRequestException('Failed to retrieve monthly payment monitoring data');
+      this.logger.error(
+        'Failed to retrieve monthly payment monitoring:',
+        error,
+      );
+      throw new BadRequestException(
+        'Failed to retrieve monthly payment monitoring data',
+      );
     }
   }
 
-  async exportPendingDuesReport(month: number, year: number): Promise<{ message: string; reportUrl: string }> {
+  async exportPendingDuesReport(
+    month: number,
+    year: number,
+  ): Promise<{ message: string; reportUrl: string }> {
     try {
       // In a real implementation, this would generate a CSV/Excel file
       const reportUrl = `https://api.example.com/reports/pending-dues-${month}-${year}.csv`;
-      
+
       this.logger.log(`Generated pending dues report for ${month}/${year}`);
       this.customLogger.logBusinessEvent('report_generated', {
         reportType: 'pending_dues',
@@ -268,7 +312,7 @@ export class AdminService {
 
       return {
         message: 'Pending dues report generated successfully',
-        reportUrl
+        reportUrl,
       };
     } catch (error) {
       this.logger.error('Failed to generate pending dues report:', error);

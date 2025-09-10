@@ -58,24 +58,24 @@ export enum OrderStatus {
   IN_TRANSIT = 'in_transit',
   DELIVERED = 'delivered',
   CANCELLED = 'cancelled',
-  REFUNDED = 'refunded'
+  REFUNDED = 'refunded',
 }
 
 export enum OrderSchedule {
   INSTANT = 'instant',
-  SCHEDULED = 'scheduled'
+  SCHEDULED = 'scheduled',
 }
 
 export enum PaymentMethod {
   WALLET = 'wallet',
   UPI = 'upi',
   COD = 'cod',
-  CARD = 'card'
+  CARD = 'card',
 }
 
 export enum PaymentStatus {
   PENDING = 'pending',
   COMPLETED = 'completed',
   FAILED = 'failed',
-  REFUNDED = 'refunded'
+  REFUNDED = 'refunded',
 }

@@ -1,11 +1,27 @@
-import { Controller, Get, Put, Post, Body, Param, UseGuards, Logger } from '@nestjs/common';
-import { AgentService, DeliveryAgent, LocationUpdateDto } from './agent.service';
+import {
+  Controller,
+  Get,
+  Put,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Logger,
+} from '@nestjs/common';
+import {
+  AgentService,
+  DeliveryAgent,
+  LocationUpdateDto,
+} from './agent.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User, UserRole } from '../common/interfaces/user.interface';
-import { OrderResponseDto, UpdateOrderStatusDto } from '../common/dto/order.dto';
+import {
+  OrderResponseDto,
+  UpdateOrderStatusDto,
+} from '../common/dto/order.dto';
 
 @Controller('api/agent')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -27,8 +43,14 @@ export class AgentController {
     @CurrentUser() user: User,
     @Body() updateOrderStatusDto: UpdateOrderStatusDto,
   ): Promise<OrderResponseDto> {
-    this.logger.log(`Updating order ${orderId} status for delivery agent user: ${user.id}`);
-    return this.agentService.updateOrderStatus(orderId, user.id, updateOrderStatusDto);
+    this.logger.log(
+      `Updating order ${orderId} status for delivery agent user: ${user.id}`,
+    );
+    return this.agentService.updateOrderStatus(
+      orderId,
+      user.id,
+      updateOrderStatusDto,
+    );
   }
 
   @Post('location')
@@ -51,7 +73,12 @@ export class AgentController {
     @CurrentUser() user: User,
     @Body() availabilityDto: { isAvailable: boolean },
   ): Promise<DeliveryAgent> {
-    this.logger.log(`Updating availability for delivery agent user: ${user.id}`);
-    return this.agentService.updateAvailability(user.id, availabilityDto.isAvailable);
+    this.logger.log(
+      `Updating availability for delivery agent user: ${user.id}`,
+    );
+    return this.agentService.updateAvailability(
+      user.id,
+      availabilityDto.isAvailable,
+    );
   }
 }

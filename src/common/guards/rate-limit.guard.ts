@@ -17,7 +17,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
 
   protected async shouldSkip(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
-    
+
     // Skip rate limiting for health checks
     if (request.url === '/health' || request.url === '/') {
       return true;

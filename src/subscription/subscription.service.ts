@@ -1,7 +1,22 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
-import { Subscription, SubscriptionStatus, SubscriptionFrequency, DeliveryStatus, PaymentMethod } from '../common/interfaces/subscription.interface';
-import { CreateSubscriptionDto, UpdateSubscriptionDto, SubscriptionResponseDto } from '../common/dto/subscription.dto';
+import {
+  Subscription,
+  SubscriptionStatus,
+  SubscriptionFrequency,
+  DeliveryStatus,
+  PaymentMethod,
+} from '../common/interfaces/subscription.interface';
+import {
+  CreateSubscriptionDto,
+  UpdateSubscriptionDto,
+  SubscriptionResponseDto,
+} from '../common/dto/subscription.dto';
 import { ProductService } from '../product/product.service';
 import { UserService } from '../user/user.service';
 import { OrderService } from '../order/order.service';
@@ -19,16 +34,23 @@ export class SubscriptionService {
     private readonly orderService: OrderService,
   ) {}
 
-  async create(userId: string, createSubscriptionDto: CreateSubscriptionDto): Promise<SubscriptionResponseDto> {
+  async create(
+    userId: string,
+    createSubscriptionDto: CreateSubscriptionDto,
+  ): Promise<SubscriptionResponseDto> {
     try {
       // Validate product exists and is available
-      const product = await this.productService.findById(createSubscriptionDto.product_id);
+      const product = await this.productService.findById(
+        createSubscriptionDto.product_id,
+      );
       if (!product) {
         throw new NotFoundException('Product not found');
       }
 
       if (!product.isActive) {
-        throw new BadRequestException('Product is not available for subscription');
+        throw new BadRequestException(
+          'Product is not available for subscription',
+        );
       }
 
       // Get user details
@@ -39,13 +61,17 @@ export class SubscriptionService {
 
       // Calculate pricing
       const itemTotal = product.price * createSubscriptionDto.quantity;
-      const depositAmount = product.hasDeposit ? product.depositAmount * createSubscriptionDto.quantity : 0;
+      const depositAmount = product.hasDeposit
+        ? product.depositAmount * createSubscriptionDto.quantity
+        : 0;
       const deliveryFee = 15; // Default delivery fee
       const totalAmount = itemTotal + depositAmount + deliveryFee;
 
       // Parse dates
       const startDate = new Date(createSubscriptionDto.start_date);
-      const endDate = createSubscriptionDto.end_date ? new Date(createSubscriptionDto.end_date) : undefined;
+      const endDate = createSubscriptionDto.end_date
+        ? new Date(createSubscriptionDto.end_date)
+        : undefined;
 
       // Validate dates
       if (startDate < new Date()) {
@@ -60,7 +86,7 @@ export class SubscriptionService {
       const nextDeliveryDate = this.calculateNextDeliveryDate(
         startDate,
         createSubscriptionDto.frequency,
-        createSubscriptionDto.days
+        createSubscriptionDto.days,
       );
 
       // Create subscription
@@ -71,11 +97,15 @@ export class SubscriptionService {
         vendorId: product.vendorId,
         frequency: createSubscriptionDto.frequency,
         quantity: createSubscriptionDto.quantity,
-        deliveryDays: createSubscriptionDto.days || this.getDefaultDeliveryDays(createSubscriptionDto.frequency),
+        deliveryDays:
+          createSubscriptionDto.days ||
+          this.getDefaultDeliveryDays(createSubscriptionDto.frequency),
         startDate,
         endDate,
         status: SubscriptionStatus.ACTIVE,
-        deliveryAddress: createSubscriptionDto.delivery_address || this.getDefaultAddress(user),
+        deliveryAddress:
+          createSubscriptionDto.delivery_address ||
+          this.getDefaultAddress(user),
         paymentMethod: PaymentMethod.WALLET, // Default to wallet
         totalAmount,
         nextDeliveryDate,
@@ -87,62 +117,84 @@ export class SubscriptionService {
 
       // Store subscription
       this.subscriptions.set(subscription.id, subscription);
-      
+
       // Update indexes
       const userSubscriptions = this.userSubscriptionIndex.get(userId) || [];
       userSubscriptions.push(subscription.id);
       this.userSubscriptionIndex.set(userId, userSubscriptions);
 
-      const vendorSubscriptions = this.vendorSubscriptionIndex.get(product.vendorId) || [];
+      const vendorSubscriptions =
+        this.vendorSubscriptionIndex.get(product.vendorId) || [];
       vendorSubscriptions.push(subscription.id);
       this.vendorSubscriptionIndex.set(product.vendorId, vendorSubscriptions);
 
-      this.logger.log(`Created subscription ${subscription.id} for user ${userId}`);
+      this.logger.log(
+        `Created subscription ${subscription.id} for user ${userId}`,
+      );
 
       return this.mapToResponseDto(subscription);
     } catch (error) {
-      this.logger.error(`Failed to create subscription for user ${userId}:`, error);
+      this.logger.error(
+        `Failed to create subscription for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
 
   async findByUser(userId: string): Promise<SubscriptionResponseDto[]> {
     const subscriptionIds = this.userSubscriptionIndex.get(userId) || [];
-    const subscriptions = subscriptionIds.map(id => this.subscriptions.get(id)).filter(Boolean) as Subscription[];
-    
+    const subscriptions = subscriptionIds
+      .map((id) => this.subscriptions.get(id))
+      .filter(Boolean) as Subscription[];
+
     // Sort by creation date (newest first)
     subscriptions.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    
-    return subscriptions.map(subscription => this.mapToResponseDto(subscription));
+
+    return subscriptions.map((subscription) =>
+      this.mapToResponseDto(subscription),
+    );
   }
 
   async findById(subscriptionId: string): Promise<Subscription | null> {
     return this.subscriptions.get(subscriptionId) || null;
   }
 
-  async update(subscriptionId: string, userId: string, updateSubscriptionDto: UpdateSubscriptionDto): Promise<SubscriptionResponseDto> {
+  async update(
+    subscriptionId: string,
+    userId: string,
+    updateSubscriptionDto: UpdateSubscriptionDto,
+  ): Promise<SubscriptionResponseDto> {
     const subscription = this.subscriptions.get(subscriptionId);
     if (!subscription) {
       throw new NotFoundException('Subscription not found');
     }
 
     if (subscription.userId !== userId) {
-      throw new BadRequestException('You can only update your own subscriptions');
+      throw new BadRequestException(
+        'You can only update your own subscriptions',
+      );
     }
 
     // Update fields
     if (updateSubscriptionDto.frequency !== undefined) {
       subscription.frequency = updateSubscriptionDto.frequency;
-      subscription.deliveryDays = updateSubscriptionDto.days || this.getDefaultDeliveryDays(updateSubscriptionDto.frequency);
+      subscription.deliveryDays =
+        updateSubscriptionDto.days ||
+        this.getDefaultDeliveryDays(updateSubscriptionDto.frequency);
     }
 
     if (updateSubscriptionDto.quantity !== undefined) {
       subscription.quantity = updateSubscriptionDto.quantity;
       // Recalculate total amount
-      const product = await this.productService.findById(subscription.productId);
+      const product = await this.productService.findById(
+        subscription.productId,
+      );
       if (product) {
         const itemTotal = product.price * subscription.quantity;
-        const depositAmount = product.hasDeposit ? product.depositAmount * subscription.quantity : 0;
+        const depositAmount = product.hasDeposit
+          ? product.depositAmount * subscription.quantity
+          : 0;
         subscription.totalAmount = itemTotal + depositAmount + 15; // 15 is delivery fee
       }
     }
@@ -152,7 +204,8 @@ export class SubscriptionService {
     }
 
     if (updateSubscriptionDto.special_instructions !== undefined) {
-      subscription.specialInstructions = updateSubscriptionDto.special_instructions;
+      subscription.specialInstructions =
+        updateSubscriptionDto.special_instructions;
     }
 
     if (updateSubscriptionDto.delivery_address !== undefined) {
@@ -160,29 +213,39 @@ export class SubscriptionService {
     }
 
     // Recalculate next delivery date if frequency or days changed
-    if (updateSubscriptionDto.frequency !== undefined || updateSubscriptionDto.days !== undefined) {
+    if (
+      updateSubscriptionDto.frequency !== undefined ||
+      updateSubscriptionDto.days !== undefined
+    ) {
       subscription.nextDeliveryDate = this.calculateNextDeliveryDate(
         new Date(),
         subscription.frequency,
-        subscription.deliveryDays
+        subscription.deliveryDays,
       );
     }
 
     subscription.updatedAt = new Date();
     this.subscriptions.set(subscriptionId, subscription);
 
-    this.logger.log(`Updated subscription ${subscriptionId} for user ${userId}`);
+    this.logger.log(
+      `Updated subscription ${subscriptionId} for user ${userId}`,
+    );
     return this.mapToResponseDto(subscription);
   }
 
-  async cancel(subscriptionId: string, userId: string): Promise<SubscriptionResponseDto> {
+  async cancel(
+    subscriptionId: string,
+    userId: string,
+  ): Promise<SubscriptionResponseDto> {
     const subscription = this.subscriptions.get(subscriptionId);
     if (!subscription) {
       throw new NotFoundException('Subscription not found');
     }
 
     if (subscription.userId !== userId) {
-      throw new BadRequestException('You can only cancel your own subscriptions');
+      throw new BadRequestException(
+        'You can only cancel your own subscriptions',
+      );
     }
 
     if (subscription.status === SubscriptionStatus.CANCELLED) {
@@ -193,19 +256,26 @@ export class SubscriptionService {
     subscription.updatedAt = new Date();
 
     this.subscriptions.set(subscriptionId, subscription);
-    this.logger.log(`Cancelled subscription ${subscriptionId} for user ${userId}`);
+    this.logger.log(
+      `Cancelled subscription ${subscriptionId} for user ${userId}`,
+    );
 
     return this.mapToResponseDto(subscription);
   }
 
-  async pause(subscriptionId: string, userId: string): Promise<SubscriptionResponseDto> {
+  async pause(
+    subscriptionId: string,
+    userId: string,
+  ): Promise<SubscriptionResponseDto> {
     const subscription = this.subscriptions.get(subscriptionId);
     if (!subscription) {
       throw new NotFoundException('Subscription not found');
     }
 
     if (subscription.userId !== userId) {
-      throw new BadRequestException('You can only pause your own subscriptions');
+      throw new BadRequestException(
+        'You can only pause your own subscriptions',
+      );
     }
 
     if (subscription.status !== SubscriptionStatus.ACTIVE) {
@@ -221,14 +291,19 @@ export class SubscriptionService {
     return this.mapToResponseDto(subscription);
   }
 
-  async resume(subscriptionId: string, userId: string): Promise<SubscriptionResponseDto> {
+  async resume(
+    subscriptionId: string,
+    userId: string,
+  ): Promise<SubscriptionResponseDto> {
     const subscription = this.subscriptions.get(subscriptionId);
     if (!subscription) {
       throw new NotFoundException('Subscription not found');
     }
 
     if (subscription.userId !== userId) {
-      throw new BadRequestException('You can only resume your own subscriptions');
+      throw new BadRequestException(
+        'You can only resume your own subscriptions',
+      );
     }
 
     if (subscription.status !== SubscriptionStatus.PAUSED) {
@@ -239,19 +314,25 @@ export class SubscriptionService {
     subscription.nextDeliveryDate = this.calculateNextDeliveryDate(
       new Date(),
       subscription.frequency,
-      subscription.deliveryDays
+      subscription.deliveryDays,
     );
     subscription.updatedAt = new Date();
 
     this.subscriptions.set(subscriptionId, subscription);
-    this.logger.log(`Resumed subscription ${subscriptionId} for user ${userId}`);
+    this.logger.log(
+      `Resumed subscription ${subscriptionId} for user ${userId}`,
+    );
 
     return this.mapToResponseDto(subscription);
   }
 
-  private calculateNextDeliveryDate(startDate: Date, frequency: SubscriptionFrequency, days?: string[]): Date {
+  private calculateNextDeliveryDate(
+    startDate: Date,
+    frequency: SubscriptionFrequency,
+    days?: string[],
+  ): Date {
     const nextDate = new Date(startDate);
-    
+
     switch (frequency) {
       case SubscriptionFrequency.DAILY:
         nextDate.setDate(nextDate.getDate() + 1);
@@ -262,16 +343,27 @@ export class SubscriptionService {
       case SubscriptionFrequency.CUSTOM:
         if (days && days.length > 0) {
           // Find next delivery day
-          const dayMap = { 'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4, 'friday': 5, 'saturday': 6, 'sunday': 0 };
+          const dayMap = {
+            monday: 1,
+            tuesday: 2,
+            wednesday: 3,
+            thursday: 4,
+            friday: 5,
+            saturday: 6,
+            sunday: 0,
+          };
           const currentDay = nextDate.getDay();
-          const deliveryDays = days.map(day => dayMap[day.toLowerCase()]).filter(d => d !== undefined).sort();
-          
-          let nextDeliveryDay = deliveryDays.find(day => day > currentDay);
+          const deliveryDays = days
+            .map((day) => dayMap[day.toLowerCase()])
+            .filter((d) => d !== undefined)
+            .sort();
+
+          let nextDeliveryDay = deliveryDays.find((day) => day > currentDay);
           if (!nextDeliveryDay) {
             nextDeliveryDay = deliveryDays[0];
             nextDate.setDate(nextDate.getDate() + 7); // Next week
           }
-          
+
           const daysToAdd = nextDeliveryDay - currentDay;
           nextDate.setDate(nextDate.getDate() + daysToAdd);
         } else {
@@ -279,14 +371,22 @@ export class SubscriptionService {
         }
         break;
     }
-    
+
     return nextDate;
   }
 
   private getDefaultDeliveryDays(frequency: SubscriptionFrequency): string[] {
     switch (frequency) {
       case SubscriptionFrequency.DAILY:
-        return ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        return [
+          'monday',
+          'tuesday',
+          'wednesday',
+          'thursday',
+          'friday',
+          'saturday',
+          'sunday',
+        ];
       case SubscriptionFrequency.WEEKLY:
         return ['monday'];
       case SubscriptionFrequency.CUSTOM:
@@ -303,12 +403,14 @@ export class SubscriptionService {
       state: 'Delhi',
       pincode: '110001',
       latitude: 28.6139,
-      longitude: 77.2090,
+      longitude: 77.209,
       contactPhone: user.phone,
     };
   }
 
-  private mapToResponseDto(subscription: Subscription): SubscriptionResponseDto {
+  private mapToResponseDto(
+    subscription: Subscription,
+  ): SubscriptionResponseDto {
     return {
       id: subscription.id,
       userId: subscription.userId,

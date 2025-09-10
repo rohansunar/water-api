@@ -1,21 +1,29 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import { MonthlyLedger, MonthlyLedgerDocument } from '../common/schemas/monthly-ledger.schema';
-import { 
-  MonthlyLedgerStatus, 
-  InvoiceStatus, 
-  MonthlyInvoice, 
-  MonthlyBillingSummary 
+import {
+  MonthlyLedger,
+  MonthlyLedgerDocument,
+} from '../common/schemas/monthly-ledger.schema';
+import {
+  MonthlyLedgerStatus,
+  InvoiceStatus,
+  MonthlyInvoice,
+  MonthlyBillingSummary,
 } from '../common/interfaces/monthly-ledger.interface';
-import { 
-  CreateMonthlyLedgerDto, 
-  UpdateMonthlyLedgerDto, 
+import {
+  CreateMonthlyLedgerDto,
+  UpdateMonthlyLedgerDto,
   MonthlyLedgerResponseDto,
   MonthlyInvoiceDto,
   MonthlyBillingSummaryDto,
-  GenerateInvoiceDto
+  GenerateInvoiceDto,
 } from '../common/dto/monthly-ledger.dto';
 import { CustomLoggerService } from '../common/logger/logger.service';
 
@@ -24,11 +32,14 @@ export class MonthlyLedgerService {
   private readonly logger = new Logger(MonthlyLedgerService.name);
 
   constructor(
-    @InjectModel(MonthlyLedger.name) private monthlyLedgerModel: Model<MonthlyLedgerDocument>,
+    @InjectModel(MonthlyLedger.name)
+    private monthlyLedgerModel: Model<MonthlyLedgerDocument>,
     private customLogger: CustomLoggerService,
   ) {}
 
-  async createLedgerEntry(createDto: CreateMonthlyLedgerDto): Promise<MonthlyLedgerResponseDto> {
+  async createLedgerEntry(
+    createDto: CreateMonthlyLedgerDto,
+  ): Promise<MonthlyLedgerResponseDto> {
     try {
       const ledgerEntry = new this.monthlyLedgerModel({
         ...createDto,
@@ -37,8 +48,10 @@ export class MonthlyLedgerService {
       });
 
       const savedEntry = await ledgerEntry.save();
-      
-      this.logger.log(`Created monthly ledger entry ${savedEntry._id} for user ${createDto.userId}`);
+
+      this.logger.log(
+        `Created monthly ledger entry ${savedEntry._id} for user ${createDto.userId}`,
+      );
       this.customLogger.logBusinessEvent('monthly_ledger_created', {
         ledgerId: savedEntry._id.toString(),
         userId: createDto.userId,
@@ -51,19 +64,25 @@ export class MonthlyLedgerService {
       return this.mapToResponseDto(savedEntry);
     } catch (error) {
       this.logger.error(`Failed to create monthly ledger entry:`, error);
-      this.customLogger.logApiError('monthly-ledger', 'POST', 400, error, createDto.userId);
+      this.customLogger.logApiError(
+        'monthly-ledger',
+        'POST',
+        400,
+        error,
+        createDto.userId,
+      );
       throw new BadRequestException('Failed to create monthly ledger entry');
     }
   }
 
   async getUserLedgerEntries(
-    userId: string, 
-    month?: number, 
-    year?: number
+    userId: string,
+    month?: number,
+    year?: number,
   ): Promise<MonthlyLedgerResponseDto[]> {
     try {
       const query: any = { userId };
-      
+
       if (month !== undefined) query.month = month;
       if (year !== undefined) query.year = year;
 
@@ -74,21 +93,24 @@ export class MonthlyLedgerService {
         .sort({ deliveryDate: -1 })
         .exec();
 
-      return entries.map(entry => this.mapToResponseDto(entry));
+      return entries.map((entry) => this.mapToResponseDto(entry));
     } catch (error) {
-      this.logger.error(`Failed to get user ledger entries for user ${userId}:`, error);
+      this.logger.error(
+        `Failed to get user ledger entries for user ${userId}:`,
+        error,
+      );
       throw new BadRequestException('Failed to retrieve ledger entries');
     }
   }
 
   async getVendorLedgerEntries(
-    vendorId: string, 
-    month?: number, 
-    year?: number
+    vendorId: string,
+    month?: number,
+    year?: number,
   ): Promise<MonthlyLedgerResponseDto[]> {
     try {
       const query: any = { vendorId };
-      
+
       if (month !== undefined) query.month = month;
       if (year !== undefined) query.year = year;
 
@@ -99,18 +121,21 @@ export class MonthlyLedgerService {
         .sort({ deliveryDate: -1 })
         .exec();
 
-      return entries.map(entry => this.mapToResponseDto(entry));
+      return entries.map((entry) => this.mapToResponseDto(entry));
     } catch (error) {
-      this.logger.error(`Failed to get vendor ledger entries for vendor ${vendorId}:`, error);
+      this.logger.error(
+        `Failed to get vendor ledger entries for vendor ${vendorId}:`,
+        error,
+      );
       throw new BadRequestException('Failed to retrieve vendor ledger entries');
     }
   }
 
   async getMonthlyBillingSummary(
-    userId: string, 
-    vendorId: string, 
-    month: number, 
-    year: number
+    userId: string,
+    vendorId: string,
+    month: number,
+    year: number,
   ): Promise<MonthlyBillingSummaryDto> {
     try {
       const entries = await this.monthlyLedgerModel
@@ -118,10 +143,13 @@ export class MonthlyLedgerService {
         .exec();
 
       const totalDeliveries = entries.length;
-      const totalAmount = entries.reduce((sum, entry) => sum + (entry.rate * entry.quantity), 0);
+      const totalAmount = entries.reduce(
+        (sum, entry) => sum + entry.rate * entry.quantity,
+        0,
+      );
       const paidAmount = entries
-        .filter(entry => entry.status === MonthlyLedgerStatus.PAID)
-        .reduce((sum, entry) => sum + (entry.rate * entry.quantity), 0);
+        .filter((entry) => entry.status === MonthlyLedgerStatus.PAID)
+        .reduce((sum, entry) => sum + entry.rate * entry.quantity, 0);
       const pendingAmount = totalAmount - paidAmount;
 
       return {
@@ -133,21 +161,25 @@ export class MonthlyLedgerService {
         totalAmount,
         paidAmount,
         pendingAmount,
-        ledgerEntries: entries.map(entry => this.mapToResponseDto(entry)),
+        ledgerEntries: entries.map((entry) => this.mapToResponseDto(entry)),
       };
     } catch (error) {
       this.logger.error(`Failed to get monthly billing summary:`, error);
-      throw new BadRequestException('Failed to retrieve monthly billing summary');
+      throw new BadRequestException(
+        'Failed to retrieve monthly billing summary',
+      );
     }
   }
 
-  async markLedgerEntryPaid(ledgerId: string): Promise<MonthlyLedgerResponseDto> {
+  async markLedgerEntryPaid(
+    ledgerId: string,
+  ): Promise<MonthlyLedgerResponseDto> {
     try {
       const entry = await this.monthlyLedgerModel
         .findByIdAndUpdate(
           ledgerId,
           { status: MonthlyLedgerStatus.PAID, updatedAt: new Date() },
-          { new: true }
+          { new: true },
         )
         .exec();
 
@@ -173,10 +205,13 @@ export class MonthlyLedgerService {
     }
   }
 
-  async getPendingDues(month?: number, year?: number): Promise<MonthlyBillingSummaryDto[]> {
+  async getPendingDues(
+    month?: number,
+    year?: number,
+  ): Promise<MonthlyBillingSummaryDto[]> {
     try {
       const query: any = { status: MonthlyLedgerStatus.UNPAID };
-      
+
       if (month !== undefined) query.month = month;
       if (year !== undefined) query.year = year;
 
@@ -203,7 +238,10 @@ export class MonthlyLedgerService {
       }, {});
 
       return Object.values(groupedEntries).map((group: any) => {
-        const totalAmount = group.entries.reduce((sum, entry) => sum + (entry.rate * entry.quantity), 0);
+        const totalAmount = group.entries.reduce(
+          (sum, entry) => sum + entry.rate * entry.quantity,
+          0,
+        );
         return {
           userId: group.userId,
           vendorId: group.vendorId,
@@ -213,7 +251,9 @@ export class MonthlyLedgerService {
           totalAmount,
           paidAmount: 0,
           pendingAmount: totalAmount,
-          ledgerEntries: group.entries.map(entry => this.mapToResponseDto(entry)),
+          ledgerEntries: group.entries.map((entry) =>
+            this.mapToResponseDto(entry),
+          ),
         };
       });
     } catch (error) {
@@ -222,7 +262,9 @@ export class MonthlyLedgerService {
     }
   }
 
-  private mapToResponseDto(ledger: MonthlyLedgerDocument): MonthlyLedgerResponseDto {
+  private mapToResponseDto(
+    ledger: MonthlyLedgerDocument,
+  ): MonthlyLedgerResponseDto {
     return {
       id: ledger._id.toString(),
       userId: ledger.userId.toString(),

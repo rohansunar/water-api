@@ -1,6 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
-import { Order, OrderStatus, OrderSchedule, PaymentMethod, PaymentStatus } from '../common/interfaces/order.interface';
+import {
+  Order,
+  OrderStatus,
+  OrderSchedule,
+  PaymentMethod,
+  PaymentStatus,
+} from '../common/interfaces/order.interface';
 import { CreateOrderDto, OrderResponseDto } from '../common/dto/order.dto';
 import { ProductService } from '../product/product.service';
 import { UserService } from '../user/user.service';
@@ -19,10 +30,15 @@ export class OrderService {
     private readonly monthlyLedgerService: MonthlyLedgerService,
   ) {}
 
-  async create(userId: string, createOrderDto: CreateOrderDto): Promise<OrderResponseDto> {
+  async create(
+    userId: string,
+    createOrderDto: CreateOrderDto,
+  ): Promise<OrderResponseDto> {
     try {
       // Validate product exists and is available
-      const product = await this.productService.findById(createOrderDto.product_id);
+      const product = await this.productService.findById(
+        createOrderDto.product_id,
+      );
       if (!product) {
         throw new NotFoundException('Product not found');
       }
@@ -43,14 +59,18 @@ export class OrderService {
 
       // Calculate pricing
       const itemTotal = product.price * createOrderDto.quantity;
-      const depositAmount = product.hasDeposit ? product.depositAmount * createOrderDto.quantity : 0;
+      const depositAmount = product.hasDeposit
+        ? product.depositAmount * createOrderDto.quantity
+        : 0;
       const deliveryFee = this.calculateDeliveryFee(product.vendorId);
       const totalAmount = itemTotal + depositAmount + deliveryFee;
 
       // Validate payment method and balance
       if (createOrderDto.payment_method === PaymentMethod.WALLET) {
         if (user.walletBalance < totalAmount) {
-          throw new BadRequestException(`Insufficient wallet balance. Order total is ₹${totalAmount} (₹${itemTotal} + ₹${depositAmount} deposit + ₹${deliveryFee} delivery), but your wallet balance is ₹${user.walletBalance}. Please add money to your wallet or choose a different payment method.`);
+          throw new BadRequestException(
+            `Insufficient wallet balance. Order total is ₹${totalAmount} (₹${itemTotal} + ₹${depositAmount} deposit + ₹${deliveryFee} delivery), but your wallet balance is ₹${user.walletBalance}. Please add money to your wallet or choose a different payment method.`,
+          );
         }
       }
 
@@ -66,10 +86,13 @@ export class OrderService {
         deliveryFee,
         status: OrderStatus.PENDING,
         schedule: createOrderDto.schedule,
-        deliveryTime: createOrderDto.delivery_time ? new Date(createOrderDto.delivery_time) : undefined,
+        deliveryTime: createOrderDto.delivery_time
+          ? new Date(createOrderDto.delivery_time)
+          : undefined,
         paymentMethod: createOrderDto.payment_method,
         paymentStatus: PaymentStatus.PENDING,
-        deliveryAddress: createOrderDto.delivery_address || this.getDefaultAddress(user),
+        deliveryAddress:
+          createOrderDto.delivery_address || this.getDefaultAddress(user),
         specialInstructions: createOrderDto.special_instructions,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -79,7 +102,10 @@ export class OrderService {
       await this.processPayment(order);
 
       // Update product stock
-      await this.productService.updateStock(product.id, -createOrderDto.quantity);
+      await this.productService.updateStock(
+        product.id,
+        -createOrderDto.quantity,
+      );
 
       // Update user wallet if wallet payment
       if (createOrderDto.payment_method === PaymentMethod.WALLET) {
@@ -88,7 +114,7 @@ export class OrderService {
 
       // Store order
       this.orders.set(order.id, order);
-      
+
       // Update indexes
       const userOrders = this.userOrderIndex.get(userId) || [];
       userOrders.push(order.id);
@@ -109,29 +135,36 @@ export class OrderService {
 
   async findByUser(userId: string): Promise<OrderResponseDto[]> {
     const orderIds = this.userOrderIndex.get(userId) || [];
-    const orders = orderIds.map(id => this.orders.get(id)).filter(Boolean) as Order[];
-    
+    const orders = orderIds
+      .map((id) => this.orders.get(id))
+      .filter(Boolean) as Order[];
+
     // Sort by creation date (newest first)
     orders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    
-    return orders.map(order => this.mapToResponseDto(order));
+
+    return orders.map((order) => this.mapToResponseDto(order));
   }
 
   async findByVendor(vendorId: string): Promise<OrderResponseDto[]> {
     const orderIds = this.vendorOrderIndex.get(vendorId) || [];
-    const orders = orderIds.map(id => this.orders.get(id)).filter(Boolean) as Order[];
-    
+    const orders = orderIds
+      .map((id) => this.orders.get(id))
+      .filter(Boolean) as Order[];
+
     // Sort by creation date (newest first)
     orders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    
-    return orders.map(order => this.mapToResponseDto(order));
+
+    return orders.map((order) => this.mapToResponseDto(order));
   }
 
   async findById(orderId: string): Promise<Order | null> {
     return this.orders.get(orderId) || null;
   }
 
-  async cancelOrder(orderId: string, userId: string): Promise<OrderResponseDto> {
+  async cancelOrder(
+    orderId: string,
+    userId: string,
+  ): Promise<OrderResponseDto> {
     const order = this.orders.get(orderId);
     if (!order) {
       throw new NotFoundException('Order not found');
@@ -141,7 +174,10 @@ export class OrderService {
       throw new BadRequestException('You can only cancel your own orders');
     }
 
-    if (order.status === OrderStatus.DELIVERED || order.status === OrderStatus.CANCELLED) {
+    if (
+      order.status === OrderStatus.DELIVERED ||
+      order.status === OrderStatus.CANCELLED
+    ) {
       throw new BadRequestException('Cannot cancel this order');
     }
 
@@ -163,7 +199,11 @@ export class OrderService {
     return this.mapToResponseDto(order);
   }
 
-  async updateOrderStatus(orderId: string, status: OrderStatus, notes?: string): Promise<OrderResponseDto> {
+  async updateOrderStatus(
+    orderId: string,
+    status: OrderStatus,
+    notes?: string,
+  ): Promise<OrderResponseDto> {
     const order = this.orders.get(orderId);
     if (!order) {
       throw new NotFoundException('Order not found');
@@ -207,10 +247,15 @@ export class OrderService {
             month: deliveryDate.getMonth() + 1,
             year: deliveryDate.getFullYear(),
           });
-          this.logger.log(`Created monthly ledger entry for delivered order ${orderId}`);
+          this.logger.log(
+            `Created monthly ledger entry for delivered order ${orderId}`,
+          );
         }
       } catch (error) {
-        this.logger.error(`Failed to create monthly ledger entry for order ${orderId}:`, error);
+        this.logger.error(
+          `Failed to create monthly ledger entry for order ${orderId}:`,
+          error,
+        );
         // Don't fail the order status update if ledger creation fails
       }
     }
@@ -246,7 +291,10 @@ export class OrderService {
 
   private async processRefund(order: Order): Promise<void> {
     if (order.paymentMethod === PaymentMethod.WALLET) {
-      await this.userService.updateWalletBalance(order.userId, order.totalAmount);
+      await this.userService.updateWalletBalance(
+        order.userId,
+        order.totalAmount,
+      );
     }
     order.paymentStatus = PaymentStatus.REFUNDED;
   }
@@ -264,7 +312,7 @@ export class OrderService {
       state: 'Delhi',
       pincode: '110001',
       latitude: 28.6139,
-      longitude: 77.2090,
+      longitude: 77.209,
       contactPhone: user.phone,
     };
   }

@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Query, UseGuards, Logger, ParseFloatPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  UseGuards,
+  Logger,
+  ParseFloatPipe,
+} from '@nestjs/common';
 import { ProductService } from './product.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ProductResponseDto } from '../common/dto/product.dto';
@@ -16,7 +24,9 @@ export class ProductController {
     @Query('lat', ParseFloatPipe) lat: number,
     @Query('lng', ParseFloatPipe) lng: number,
   ): Promise<ProductResponseDto[]> {
-    this.logger.log(`Getting products for location: ${location} (${lat}, ${lng})`);
+    this.logger.log(
+      `Getting products for location: ${location} (${lat}, ${lng})`,
+    );
     return this.productService.findByLocation(lat, lng);
   }
 

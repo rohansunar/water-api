@@ -84,7 +84,10 @@ describe('MonthlyLedgerService', () => {
         year: 2024,
       };
 
-      const mockSavedEntry = { ...mockLedgerEntry, save: jest.fn().mockResolvedValue(mockLedgerEntry) };
+      const mockSavedEntry = {
+        ...mockLedgerEntry,
+        save: jest.fn().mockResolvedValue(mockLedgerEntry),
+      };
       mockModel = jest.fn().mockImplementation(() => mockSavedEntry);
 
       const result = await service.createLedgerEntry(createDto);
@@ -94,14 +97,17 @@ describe('MonthlyLedgerService', () => {
         deliveryDate: new Date(createDto.deliveryDate),
         status: MonthlyLedgerStatus.UNPAID,
       });
-      expect(mockLogger.logBusinessEvent).toHaveBeenCalledWith('monthly_ledger_created', {
-        ledgerId: mockLedgerEntry._id,
-        userId: createDto.userId,
-        vendorId: createDto.vendorId,
-        amount: createDto.rate * createDto.quantity,
-        month: createDto.month,
-        year: createDto.year,
-      });
+      expect(mockLogger.logBusinessEvent).toHaveBeenCalledWith(
+        'monthly_ledger_created',
+        {
+          ledgerId: mockLedgerEntry._id,
+          userId: createDto.userId,
+          vendorId: createDto.vendorId,
+          amount: createDto.rate * createDto.quantity,
+          month: createDto.month,
+          year: createDto.year,
+        },
+      );
       expect(result.id).toBe(mockLedgerEntry._id);
     });
 
@@ -122,8 +128,16 @@ describe('MonthlyLedgerService', () => {
         throw error;
       });
 
-      await expect(service.createLedgerEntry(createDto)).rejects.toThrow(BadRequestException);
-      expect(mockLogger.logApiError).toHaveBeenCalledWith('monthly-ledger', 'POST', 400, error, createDto.userId);
+      await expect(service.createLedgerEntry(createDto)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockLogger.logApiError).toHaveBeenCalledWith(
+        'monthly-ledger',
+        'POST',
+        400,
+        error,
+        createDto.userId,
+      );
     });
   });
 
@@ -136,7 +150,10 @@ describe('MonthlyLedgerService', () => {
       const result = await service.getUserLedgerEntries(userId, month, year);
 
       expect(mockModel.find).toHaveBeenCalledWith({ userId, month, year });
-      expect(mockModel.populate).toHaveBeenCalledWith('vendorId', 'businessName');
+      expect(mockModel.populate).toHaveBeenCalledWith(
+        'vendorId',
+        'businessName',
+      );
       expect(mockModel.populate).toHaveBeenCalledWith('orderId', 'totalAmount');
       expect(mockModel.sort).toHaveBeenCalledWith({ deliveryDate: -1 });
       expect(result).toHaveLength(1);
@@ -155,8 +172,11 @@ describe('MonthlyLedgerService', () => {
   describe('markLedgerEntryPaid', () => {
     it('should mark ledger entry as paid successfully', async () => {
       const ledgerId = 'ledger-id-1';
-      const updatedEntry = { ...mockLedgerEntry, status: MonthlyLedgerStatus.PAID };
-      
+      const updatedEntry = {
+        ...mockLedgerEntry,
+        status: MonthlyLedgerStatus.PAID,
+      };
+
       mockModel.findByIdAndUpdate.mockReturnValue({
         exec: jest.fn().mockResolvedValue(updatedEntry),
       });
@@ -166,14 +186,17 @@ describe('MonthlyLedgerService', () => {
       expect(mockModel.findByIdAndUpdate).toHaveBeenCalledWith(
         ledgerId,
         { status: MonthlyLedgerStatus.PAID, updatedAt: expect.any(Date) },
-        { new: true }
+        { new: true },
       );
-      expect(mockLogger.logBusinessEvent).toHaveBeenCalledWith('monthly_ledger_paid', {
-        ledgerId,
-        userId: mockLedgerEntry.userId,
-        vendorId: mockLedgerEntry.vendorId,
-        amount: mockLedgerEntry.rate * mockLedgerEntry.quantity,
-      });
+      expect(mockLogger.logBusinessEvent).toHaveBeenCalledWith(
+        'monthly_ledger_paid',
+        {
+          ledgerId,
+          userId: mockLedgerEntry.userId,
+          vendorId: mockLedgerEntry.vendorId,
+          amount: mockLedgerEntry.rate * mockLedgerEntry.quantity,
+        },
+      );
       expect(result.status).toBe(MonthlyLedgerStatus.PAID);
     });
 
@@ -183,7 +206,9 @@ describe('MonthlyLedgerService', () => {
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.markLedgerEntryPaid(ledgerId)).rejects.toThrow(NotFoundException);
+      await expect(service.markLedgerEntryPaid(ledgerId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -195,15 +220,30 @@ describe('MonthlyLedgerService', () => {
       const year = 2024;
 
       const mockEntries = [
-        { ...mockLedgerEntry, status: MonthlyLedgerStatus.UNPAID, rate: 30, quantity: 2 },
-        { ...mockLedgerEntry, status: MonthlyLedgerStatus.PAID, rate: 25, quantity: 1 },
+        {
+          ...mockLedgerEntry,
+          status: MonthlyLedgerStatus.UNPAID,
+          rate: 30,
+          quantity: 2,
+        },
+        {
+          ...mockLedgerEntry,
+          status: MonthlyLedgerStatus.PAID,
+          rate: 25,
+          quantity: 1,
+        },
       ];
 
       mockModel.find.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockEntries),
       });
 
-      const result = await service.getMonthlyBillingSummary(userId, vendorId, month, year);
+      const result = await service.getMonthlyBillingSummary(
+        userId,
+        vendorId,
+        month,
+        year,
+      );
 
       expect(result.totalDeliveries).toBe(2);
       expect(result.totalAmount).toBe(85); // (30*2) + (25*1)
@@ -240,7 +280,9 @@ describe('MonthlyLedgerService', () => {
 
       const result = await service.getPendingDues();
 
-      expect(mockModel.find).toHaveBeenCalledWith({ status: MonthlyLedgerStatus.UNPAID });
+      expect(mockModel.find).toHaveBeenCalledWith({
+        status: MonthlyLedgerStatus.UNPAID,
+      });
       expect(result).toHaveLength(1); // Grouped by user-vendor-month-year
       expect(result[0].totalAmount).toBe(85); // (30*2) + (25*1)
       expect(result[0].pendingAmount).toBe(85);

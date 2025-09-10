@@ -1,6 +1,18 @@
-import { IsString, IsNumber, IsEnum, IsOptional, IsDateString, IsArray, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  IsDateString,
+  IsArray,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
-import { MonthlyLedgerStatus, InvoiceStatus } from '../interfaces/monthly-ledger.interface';
+import {
+  MonthlyLedgerStatus,
+  InvoiceStatus,
+} from '../interfaces/monthly-ledger.interface';
 
 export class CreateMonthlyLedgerDto {
   @IsString()

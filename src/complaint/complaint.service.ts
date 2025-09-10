@@ -1,7 +1,20 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
-import { Complaint, ComplaintStatus, ComplaintType, ComplaintPriority } from '../common/interfaces/complaint.interface';
-import { CreateComplaintDto, ComplaintResponseDto } from '../common/dto/complaint.dto';
+import {
+  Complaint,
+  ComplaintStatus,
+  ComplaintType,
+  ComplaintPriority,
+} from '../common/interfaces/complaint.interface';
+import {
+  CreateComplaintDto,
+  ComplaintResponseDto,
+} from '../common/dto/complaint.dto';
 import { UserService } from '../user/user.service';
 
 @Injectable()
@@ -12,7 +25,10 @@ export class ComplaintService {
 
   constructor(private readonly userService: UserService) {}
 
-  async createComplaint(userId: string, createComplaintDto: CreateComplaintDto): Promise<ComplaintResponseDto> {
+  async createComplaint(
+    userId: string,
+    createComplaintDto: CreateComplaintDto,
+  ): Promise<ComplaintResponseDto> {
     try {
       // Validate user exists
       const user = await this.userService.findById(userId);
@@ -24,7 +40,9 @@ export class ComplaintService {
       if (createComplaintDto.order_id) {
         // In a real implementation, this would validate the order exists and belongs to the user
         // For now, we'll just log it
-        this.logger.log(`Complaint associated with order: ${createComplaintDto.order_id}`);
+        this.logger.log(
+          `Complaint associated with order: ${createComplaintDto.order_id}`,
+        );
       }
 
       // Create complaint
@@ -51,11 +69,16 @@ export class ComplaintService {
       userComplaints.push(complaint.id);
       this.userComplaintIndex.set(userId, userComplaints);
 
-      this.logger.log(`Created complaint ${complaint.id} for user ${userId}: ${complaint.subject}`);
+      this.logger.log(
+        `Created complaint ${complaint.id} for user ${userId}: ${complaint.subject}`,
+      );
 
       return this.mapToResponseDto(complaint);
     } catch (error) {
-      this.logger.error(`Failed to create complaint for user ${userId}:`, error);
+      this.logger.error(
+        `Failed to create complaint for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -70,22 +93,27 @@ export class ComplaintService {
 
       const complaintIds = this.userComplaintIndex.get(userId) || [];
       const complaints = complaintIds
-        .map(id => this.complaints.get(id))
+        .map((id) => this.complaints.get(id))
         .filter(Boolean) as Complaint[];
 
       // Sort by creation date (newest first)
       complaints.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-      this.logger.log(`Retrieved ${complaints.length} complaints for user ${userId}`);
+      this.logger.log(
+        `Retrieved ${complaints.length} complaints for user ${userId}`,
+      );
 
-      return complaints.map(complaint => this.mapToResponseDto(complaint));
+      return complaints.map((complaint) => this.mapToResponseDto(complaint));
     } catch (error) {
       this.logger.error(`Failed to get complaints for user ${userId}:`, error);
       throw error;
     }
   }
 
-  async getComplaintById(complaintId: string, userId: string): Promise<ComplaintResponseDto> {
+  async getComplaintById(
+    complaintId: string,
+    userId: string,
+  ): Promise<ComplaintResponseDto> {
     try {
       const complaint = this.complaints.get(complaintId);
       if (!complaint) {
@@ -101,12 +129,19 @@ export class ComplaintService {
 
       return this.mapToResponseDto(complaint);
     } catch (error) {
-      this.logger.error(`Failed to get complaint ${complaintId} for user ${userId}:`, error);
+      this.logger.error(
+        `Failed to get complaint ${complaintId} for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
 
-  async updateComplaintStatus(complaintId: string, status: ComplaintStatus, resolution?: string): Promise<ComplaintResponseDto> {
+  async updateComplaintStatus(
+    complaintId: string,
+    status: ComplaintStatus,
+    resolution?: string,
+  ): Promise<ComplaintResponseDto> {
     try {
       const complaint = this.complaints.get(complaintId);
       if (!complaint) {
@@ -121,7 +156,10 @@ export class ComplaintService {
         complaint.resolution = resolution;
       }
 
-      if (status === ComplaintStatus.RESOLVED || status === ComplaintStatus.CLOSED) {
+      if (
+        status === ComplaintStatus.RESOLVED ||
+        status === ComplaintStatus.CLOSED
+      ) {
         complaint.resolvedAt = new Date();
       }
 
@@ -178,13 +216,15 @@ export class ComplaintService {
         order_id: 'test-order-1',
         type: ComplaintType.DELIVERY_ISSUE,
         subject: 'Late delivery',
-        message: 'My water jar delivery was 2 hours late. This caused inconvenience as I had guests coming over.',
+        message:
+          'My water jar delivery was 2 hours late. This caused inconvenience as I had guests coming over.',
       },
       {
         userId: 'eda9574d-ded0-4320-8c76-ab4b12535272', // Test customer user
         type: ComplaintType.PRODUCT_QUALITY,
         subject: 'Water quality issue',
-        message: 'The water jar delivered had a strange taste and smell. Please check the quality control.',
+        message:
+          'The water jar delivered had a strange taste and smell. Please check the quality control.',
       },
     ];
 
@@ -200,7 +240,10 @@ export class ComplaintService {
         await this.createComplaint(complaintData.userId, createDto);
       } catch (error) {
         // Ignore errors during seeding (user might not exist yet)
-        this.logger.warn(`Failed to seed complaint for user ${complaintData.userId}:`, error.message);
+        this.logger.warn(
+          `Failed to seed complaint for user ${complaintData.userId}:`,
+          error.message,
+        );
       }
     }
 

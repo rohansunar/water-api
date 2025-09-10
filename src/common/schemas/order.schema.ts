@@ -1,6 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { OrderStatus, PaymentMethod, PaymentStatus, OrderSchedule } from '../interfaces/order.interface';
+import {
+  OrderStatus,
+  PaymentMethod,
+  PaymentStatus,
+  OrderSchedule,
+} from '../interfaces/order.interface';
 
 export type OrderDocument = Order & Document;
 
@@ -32,7 +37,11 @@ export class Order {
   @Prop({ required: true })
   totalAmount: number;
 
-  @Prop({ required: true, enum: Object.values(OrderStatus), default: OrderStatus.PENDING })
+  @Prop({
+    required: true,
+    enum: Object.values(OrderStatus),
+    default: OrderStatus.PENDING,
+  })
   status: OrderStatus;
 
   @Prop({ required: true, enum: Object.values(OrderSchedule) })
@@ -44,7 +53,11 @@ export class Order {
   @Prop({ required: true, enum: Object.values(PaymentMethod) })
   paymentMethod: PaymentMethod;
 
-  @Prop({ required: true, enum: Object.values(PaymentStatus), default: PaymentStatus.PENDING })
+  @Prop({
+    required: true,
+    enum: Object.values(PaymentStatus),
+    default: PaymentStatus.PENDING,
+  })
   paymentStatus: PaymentStatus;
 
   @Prop({
@@ -81,11 +94,13 @@ export class Order {
   @Prop()
   notes?: string;
 
-  @Prop([{
-    status: { type: String, required: true },
-    timestamp: { type: Date, default: Date.now },
-    notes: { type: String },
-  }])
+  @Prop([
+    {
+      status: { type: String, required: true },
+      timestamp: { type: Date, default: Date.now },
+      notes: { type: String },
+    },
+  ])
   statusHistory: Array<{
     status: string;
     timestamp: Date;

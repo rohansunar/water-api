@@ -1,9 +1,20 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Logger,
+} from '@nestjs/common';
 import { ComplaintService } from './complaint.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../common/interfaces/user.interface';
-import { CreateComplaintDto, ComplaintResponseDto } from '../common/dto/complaint.dto';
+import {
+  CreateComplaintDto,
+  ComplaintResponseDto,
+} from '../common/dto/complaint.dto';
 
 @Controller('api/complaints')
 @UseGuards(JwtAuthGuard)
@@ -17,12 +28,16 @@ export class ComplaintController {
     @CurrentUser() user: User,
     @Body() createComplaintDto: CreateComplaintDto,
   ): Promise<ComplaintResponseDto> {
-    this.logger.log(`Creating complaint for user: ${user.id}, subject: ${createComplaintDto.subject}`);
+    this.logger.log(
+      `Creating complaint for user: ${user.id}, subject: ${createComplaintDto.subject}`,
+    );
     return this.complaintService.createComplaint(user.id, createComplaintDto);
   }
 
   @Get()
-  async getUserComplaints(@CurrentUser() user: User): Promise<ComplaintResponseDto[]> {
+  async getUserComplaints(
+    @CurrentUser() user: User,
+  ): Promise<ComplaintResponseDto[]> {
     this.logger.log(`Getting complaints for user: ${user.id}`);
     return this.complaintService.getUserComplaints(user.id);
   }

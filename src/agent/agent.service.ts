@@ -1,6 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
-import { OrderResponseDto, UpdateOrderStatusDto } from '../common/dto/order.dto';
+import {
+  OrderResponseDto,
+  UpdateOrderStatusDto,
+} from '../common/dto/order.dto';
 import { OrderStatus } from '../common/interfaces/order.interface';
 
 export interface DeliveryAgent {
@@ -100,7 +108,11 @@ export class AgentService {
     return mockOrders;
   }
 
-  async updateOrderStatus(orderId: string, userId: string, updateOrderStatusDto: UpdateOrderStatusDto): Promise<OrderResponseDto> {
+  async updateOrderStatus(
+    orderId: string,
+    userId: string,
+    updateOrderStatusDto: UpdateOrderStatusDto,
+  ): Promise<OrderResponseDto> {
     const agent = await this.findByUserId(userId);
     if (!agent) {
       throw new NotFoundException('Delivery agent profile not found');
@@ -138,11 +150,16 @@ export class AgentService {
       updatedAt: new Date(),
     };
 
-    this.logger.log(`Agent ${agent.id} updated order ${orderId} status to ${updateOrderStatusDto.status}`);
+    this.logger.log(
+      `Agent ${agent.id} updated order ${orderId} status to ${updateOrderStatusDto.status}`,
+    );
     return updatedOrder;
   }
 
-  async updateLocation(userId: string, locationUpdateDto: LocationUpdateDto): Promise<{ message: string; location: any }> {
+  async updateLocation(
+    userId: string,
+    locationUpdateDto: LocationUpdateDto,
+  ): Promise<{ message: string; location: any }> {
     const agent = await this.findByUserId(userId);
     if (!agent) {
       throw new NotFoundException('Delivery agent profile not found');
@@ -158,7 +175,9 @@ export class AgentService {
 
     this.agents.set(agent.id, agent);
 
-    this.logger.log(`Updated location for agent ${agent.id}: ${locationUpdateDto.latitude}, ${locationUpdateDto.longitude}`);
+    this.logger.log(
+      `Updated location for agent ${agent.id}: ${locationUpdateDto.latitude}, ${locationUpdateDto.longitude}`,
+    );
 
     return {
       message: 'Location updated successfully',
@@ -174,7 +193,10 @@ export class AgentService {
     return agent;
   }
 
-  async updateAvailability(userId: string, isAvailable: boolean): Promise<DeliveryAgent> {
+  async updateAvailability(
+    userId: string,
+    isAvailable: boolean,
+  ): Promise<DeliveryAgent> {
     const agent = await this.findByUserId(userId);
     if (!agent) {
       throw new NotFoundException('Delivery agent profile not found');
@@ -184,11 +206,19 @@ export class AgentService {
     agent.updatedAt = new Date();
     this.agents.set(agent.id, agent);
 
-    this.logger.log(`Agent ${agent.id} availability updated to: ${isAvailable}`);
+    this.logger.log(
+      `Agent ${agent.id} availability updated to: ${isAvailable}`,
+    );
     return agent;
   }
 
-  async create(userId: string, name: string, phone: string, vehicleType: string, vehicleNumber: string): Promise<DeliveryAgent> {
+  async create(
+    userId: string,
+    name: string,
+    phone: string,
+    vehicleType: string,
+    vehicleNumber: string,
+  ): Promise<DeliveryAgent> {
     const agent: DeliveryAgent = {
       id: uuidv4(),
       userId,
@@ -206,7 +236,7 @@ export class AgentService {
 
     this.agents.set(agent.id, agent);
     this.userAgentIndex.set(userId, agent.id);
-    
+
     this.logger.log(`Created delivery agent: ${agent.id} for user: ${userId}`);
     return agent;
   }
@@ -238,11 +268,11 @@ export class AgentService {
           agentData.name,
           agentData.phone,
           agentData.vehicleType,
-          agentData.vehicleNumber
+          agentData.vehicleNumber,
         );
       }
     }
-    
+
     this.logger.log('Delivery agent test data seeded successfully');
   }
 }

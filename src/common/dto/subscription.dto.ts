@@ -1,4 +1,14 @@
-import { IsString, IsNumber, IsEnum, IsOptional, IsDateString, IsUUID, Min, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  IsDateString,
+  IsUUID,
+  Min,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { SubscriptionFrequency } from '../interfaces/subscription.interface';
 import { DeliveryAddressDto } from './order.dto';

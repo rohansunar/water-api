@@ -27,7 +27,11 @@ export class SecurityMiddleware implements NestMiddleware {
     next();
   }
 
-  private detectSuspiciousActivity(req: Request, ip: string, userAgent: string) {
+  private detectSuspiciousActivity(
+    req: Request,
+    ip: string,
+    userAgent: string,
+  ) {
     const suspiciousPatterns = [
       /\b(union|select|insert|delete|drop|create|alter|exec|script)\b/i,
       /<script[^>]*>.*?<\/script>/gi,
@@ -42,31 +46,50 @@ export class SecurityMiddleware implements NestMiddleware {
 
     for (const pattern of suspiciousPatterns) {
       if (pattern.test(fullContent)) {
-        this.logger.logSecurityEvent('suspicious_request', {
-          pattern: pattern.toString(),
-          url: req.url,
-          method: req.method,
-          body: req.body,
-          query: req.query,
-        }, ip, userAgent);
+        this.logger.logSecurityEvent(
+          'suspicious_request',
+          {
+            pattern: pattern.toString(),
+            url: req.url,
+            method: req.method,
+            body: req.body,
+            query: req.query,
+          },
+          ip,
+          userAgent,
+        );
         break;
       }
     }
 
     // Detect potential brute force attempts
     if (req.url.includes('/auth/') && req.method === 'POST') {
-      this.logger.logSecurityEvent('auth_attempt', {
-        url: req.url,
-        method: req.method,
-      }, ip, userAgent);
+      this.logger.logSecurityEvent(
+        'auth_attempt',
+        {
+          url: req.url,
+          method: req.method,
+        },
+        ip,
+        userAgent,
+      );
     }
 
     // Detect unusual user agents
-    if (!userAgent || userAgent.length < 10 || /bot|crawler|spider/i.test(userAgent)) {
-      this.logger.logSecurityEvent('unusual_user_agent', {
+    if (
+      !userAgent ||
+      userAgent.length < 10 ||
+      /bot|crawler|spider/i.test(userAgent)
+    ) {
+      this.logger.logSecurityEvent(
+        'unusual_user_agent',
+        {
+          userAgent,
+          url: req.url,
+        },
+        ip,
         userAgent,
-        url: req.url,
-      }, ip, userAgent);
+      );
     }
   }
 }

@@ -18,7 +18,7 @@ export class AppController {
     return {
       status: 'OK',
       timestamp: new Date().toISOString(),
-      service: 'Water Jar Delivery API'
+      service: 'Water Jar Delivery API',
     };
   }
 }

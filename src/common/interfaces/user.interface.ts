@@ -32,11 +32,11 @@ export enum UserRole {
   CUSTOMER = 'customer',
   VENDOR = 'vendor',
   DELIVERY_AGENT = 'delivery_agent',
-  ADMIN = 'admin'
+  ADMIN = 'admin',
 }
 
 export enum AddressType {
   HOME = 'home',
   OFFICE = 'office',
-  OTHER = 'other'
+  OTHER = 'other',
 }

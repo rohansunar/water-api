@@ -30,14 +30,14 @@ export interface ProductSpecification {
 export enum ProductCategory {
   WATER_JAR = 'water_jar',
   DISPENSER = 'dispenser',
-  ACCESSORIES = 'accessories'
+  ACCESSORIES = 'accessories',
 }
 
 export enum ProductSize {
   SMALL = '10L',
   MEDIUM = '20L',
   LARGE = '25L',
-  EXTRA_LARGE = '30L'
+  EXTRA_LARGE = '30L',
 }
 
 export interface ProductAvailability {

@@ -23,7 +23,9 @@ export class WalletController {
     @CurrentUser() user: User,
     @Body() topupDto: TopupWalletDto,
   ): Promise<{ message: string; transactionId: string }> {
-    this.logger.log(`Wallet topup request for user: ${user.id}, amount: ₹${topupDto.amount}`);
+    this.logger.log(
+      `Wallet topup request for user: ${user.id}, amount: ₹${topupDto.amount}`,
+    );
     return this.walletService.topupWallet(user.id, topupDto);
   }
 }

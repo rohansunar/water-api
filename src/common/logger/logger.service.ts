@@ -28,11 +28,13 @@ export class CustomLoggerService implements LoggerService {
           format: winston.format.combine(
             winston.format.colorize(),
             winston.format.simple(),
-            winston.format.printf(({ timestamp, level, message, context, stack }) => {
-              const contextStr = context ? `[${context}] ` : '';
-              const stackStr = stack ? `\n${stack}` : '';
-              return `${timestamp} ${level}: ${contextStr}${message}${stackStr}`;
-            }),
+            winston.format.printf(
+              ({ timestamp, level, message, context, stack }) => {
+                const contextStr = context ? `[${context}] ` : '';
+                const stackStr = stack ? `\n${stack}` : '';
+                return `${timestamp} ${level}: ${contextStr}${message}${stackStr}`;
+              },
+            ),
           ),
         }),
 
@@ -121,7 +123,13 @@ export class CustomLoggerService implements LoggerService {
   }
 
   // Custom methods for specific log types
-  logHttpRequest(method: string, url: string, statusCode: number, responseTime: number, userAgent?: string): void {
+  logHttpRequest(
+    method: string,
+    url: string,
+    statusCode: number,
+    responseTime: number,
+    userAgent?: string,
+  ): void {
     this.logger.info('HTTP Request', {
       type: 'http_request',
       method,
@@ -143,7 +151,12 @@ export class CustomLoggerService implements LoggerService {
     });
   }
 
-  logSecurityEvent(event: string, details: any, ip?: string, userAgent?: string): void {
+  logSecurityEvent(
+    event: string,
+    details: any,
+    ip?: string,
+    userAgent?: string,
+  ): void {
     this.logger.warn('Security Event', {
       type: 'security_event',
       event,
@@ -154,7 +167,13 @@ export class CustomLoggerService implements LoggerService {
     });
   }
 
-  logDatabaseOperation(operation: string, collection: string, duration: number, success: boolean, error?: any): void {
+  logDatabaseOperation(
+    operation: string,
+    collection: string,
+    duration: number,
+    success: boolean,
+    error?: any,
+  ): void {
     const logLevel = success ? 'info' : 'error';
     this.logger.log(logLevel, 'Database Operation', {
       type: 'database_operation',
@@ -162,16 +181,25 @@ export class CustomLoggerService implements LoggerService {
       collection,
       duration,
       success,
-      error: error ? {
-        message: error.message,
-        stack: error.stack,
-        code: error.code,
-      } : undefined,
+      error: error
+        ? {
+            message: error.message,
+            stack: error.stack,
+            code: error.code,
+          }
+        : undefined,
       timestamp: new Date().toISOString(),
     });
   }
 
-  logApiError(endpoint: string, method: string, statusCode: number, error: any, userId?: string, requestId?: string): void {
+  logApiError(
+    endpoint: string,
+    method: string,
+    statusCode: number,
+    error: any,
+    userId?: string,
+    requestId?: string,
+  ): void {
     this.logger.error('API Error', {
       type: 'api_error',
       endpoint,
@@ -188,7 +216,12 @@ export class CustomLoggerService implements LoggerService {
     });
   }
 
-  logValidationError(field: string, value: any, constraint: string, userId?: string): void {
+  logValidationError(
+    field: string,
+    value: any,
+    constraint: string,
+    userId?: string,
+  ): void {
     this.logger.warn('Validation Error', {
       type: 'validation_error',
       field,

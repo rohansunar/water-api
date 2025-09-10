@@ -94,22 +94,44 @@ describe('MonthlyLedgerController', () => {
 
       mockService.getUserLedgerEntries.mockResolvedValue([mockLedgerEntry]);
 
-      const result = await controller.getUserLedgerEntries(userId, mockUser, month, year);
+      const result = await controller.getUserLedgerEntries(
+        userId,
+        mockUser,
+        month,
+        year,
+      );
 
-      expect(mockService.getUserLedgerEntries).toHaveBeenCalledWith(userId, 1, 2024);
+      expect(mockService.getUserLedgerEntries).toHaveBeenCalledWith(
+        userId,
+        1,
+        2024,
+      );
       expect(result).toEqual([mockLedgerEntry]);
     });
 
     it('should restrict non-admin users to their own entries', async () => {
-      const customerUser = { ...mockUser, role: UserRole.CUSTOMER, id: 'customer-id' };
+      const customerUser = {
+        ...mockUser,
+        role: UserRole.CUSTOMER,
+        id: 'customer-id',
+      };
       const requestedUserId = 'other-user-id';
 
       mockService.getUserLedgerEntries.mockResolvedValue([mockLedgerEntry]);
 
-      await controller.getUserLedgerEntries(requestedUserId, customerUser, '1', '2024');
+      await controller.getUserLedgerEntries(
+        requestedUserId,
+        customerUser,
+        '1',
+        '2024',
+      );
 
       // Should call with customer's own ID, not the requested ID
-      expect(mockService.getUserLedgerEntries).toHaveBeenCalledWith('customer-id', 1, 2024);
+      expect(mockService.getUserLedgerEntries).toHaveBeenCalledWith(
+        'customer-id',
+        1,
+        2024,
+      );
     });
 
     it('should handle optional month and year parameters', async () => {
@@ -119,7 +141,11 @@ describe('MonthlyLedgerController', () => {
 
       await controller.getUserLedgerEntries(userId, mockUser);
 
-      expect(mockService.getUserLedgerEntries).toHaveBeenCalledWith(userId, undefined, undefined);
+      expect(mockService.getUserLedgerEntries).toHaveBeenCalledWith(
+        userId,
+        undefined,
+        undefined,
+      );
     });
   });
 
@@ -131,9 +157,18 @@ describe('MonthlyLedgerController', () => {
 
       mockService.getVendorLedgerEntries.mockResolvedValue([mockLedgerEntry]);
 
-      const result = await controller.getVendorLedgerEntries(vendorId, mockUser, month, year);
+      const result = await controller.getVendorLedgerEntries(
+        vendorId,
+        mockUser,
+        month,
+        year,
+      );
 
-      expect(mockService.getVendorLedgerEntries).toHaveBeenCalledWith(vendorId, 1, 2024);
+      expect(mockService.getVendorLedgerEntries).toHaveBeenCalledWith(
+        vendorId,
+        1,
+        2024,
+      );
       expect(result).toEqual([mockLedgerEntry]);
     });
   });
@@ -159,14 +194,29 @@ describe('MonthlyLedgerController', () => {
 
       mockService.getMonthlyBillingSummary.mockResolvedValue(mockSummary);
 
-      const result = await controller.getMonthlyBillingSummary(userId, vendorId, month, year, mockUser);
+      const result = await controller.getMonthlyBillingSummary(
+        userId,
+        vendorId,
+        month,
+        year,
+        mockUser,
+      );
 
-      expect(mockService.getMonthlyBillingSummary).toHaveBeenCalledWith(userId, vendorId, 1, 2024);
+      expect(mockService.getMonthlyBillingSummary).toHaveBeenCalledWith(
+        userId,
+        vendorId,
+        1,
+        2024,
+      );
       expect(result).toBe(mockSummary);
     });
 
     it('should restrict customer users to their own billing summary', async () => {
-      const customerUser = { ...mockUser, role: UserRole.CUSTOMER, id: 'customer-id' };
+      const customerUser = {
+        ...mockUser,
+        role: UserRole.CUSTOMER,
+        id: 'customer-id',
+      };
       const requestedUserId = 'other-user-id';
       const vendorId = 'vendor-id-1';
 
@@ -184,17 +234,31 @@ describe('MonthlyLedgerController', () => {
 
       mockService.getMonthlyBillingSummary.mockResolvedValue(mockSummary);
 
-      await controller.getMonthlyBillingSummary(requestedUserId, vendorId, '1', '2024', customerUser);
+      await controller.getMonthlyBillingSummary(
+        requestedUserId,
+        vendorId,
+        '1',
+        '2024',
+        customerUser,
+      );
 
       // Should call with customer's own ID
-      expect(mockService.getMonthlyBillingSummary).toHaveBeenCalledWith('customer-id', vendorId, 1, 2024);
+      expect(mockService.getMonthlyBillingSummary).toHaveBeenCalledWith(
+        'customer-id',
+        vendorId,
+        1,
+        2024,
+      );
     });
   });
 
   describe('markLedgerEntryPaid', () => {
     it('should mark ledger entry as paid', async () => {
       const ledgerId = 'ledger-id-1';
-      const paidEntry = { ...mockLedgerEntry, status: MonthlyLedgerStatus.PAID };
+      const paidEntry = {
+        ...mockLedgerEntry,
+        status: MonthlyLedgerStatus.PAID,
+      };
 
       mockService.markLedgerEntryPaid.mockResolvedValue(paidEntry);
 
@@ -238,7 +302,10 @@ describe('MonthlyLedgerController', () => {
 
       const result = await controller.getPendingDues();
 
-      expect(mockService.getPendingDues).toHaveBeenCalledWith(undefined, undefined);
+      expect(mockService.getPendingDues).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+      );
       expect(result).toBe(mockPendingDues);
     });
   });

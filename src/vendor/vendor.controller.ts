@@ -1,12 +1,28 @@
-import { Controller, Get, Post, Put, Body, Param, UseGuards, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Body,
+  Param,
+  UseGuards,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { VendorService } from './vendor.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User, UserRole } from '../common/interfaces/user.interface';
-import { CreateProductDto, ProductResponseDto } from '../common/dto/product.dto';
-import { OrderResponseDto, UpdateOrderStatusDto } from '../common/dto/order.dto';
+import {
+  CreateProductDto,
+  ProductResponseDto,
+} from '../common/dto/product.dto';
+import {
+  OrderResponseDto,
+  UpdateOrderStatusDto,
+} from '../common/dto/order.dto';
 
 @Controller('api/vendor')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -14,12 +30,12 @@ import { OrderResponseDto, UpdateOrderStatusDto } from '../common/dto/order.dto'
 export class VendorController {
   private readonly logger = new Logger(VendorController.name);
 
-  constructor(
-    private readonly vendorService: VendorService,
-  ) {}
+  constructor(private readonly vendorService: VendorService) {}
 
   @Get('orders')
-  async getVendorOrders(@CurrentUser() user: User): Promise<OrderResponseDto[]> {
+  async getVendorOrders(
+    @CurrentUser() user: User,
+  ): Promise<OrderResponseDto[]> {
     this.logger.log(`Getting orders for vendor user: ${user.id}`);
     return this.vendorService.getVendorOrders(user.id);
   }
@@ -30,12 +46,20 @@ export class VendorController {
     @CurrentUser() user: User,
     @Body() updateOrderStatusDto: UpdateOrderStatusDto,
   ): Promise<OrderResponseDto> {
-    this.logger.log(`Updating order ${orderId} status for vendor user: ${user.id}`);
-    return this.vendorService.updateOrderStatus(orderId, user.id, updateOrderStatusDto);
+    this.logger.log(
+      `Updating order ${orderId} status for vendor user: ${user.id}`,
+    );
+    return this.vendorService.updateOrderStatus(
+      orderId,
+      user.id,
+      updateOrderStatusDto,
+    );
   }
 
   @Get('products')
-  async getVendorProducts(@CurrentUser() user: User): Promise<ProductResponseDto[]> {
+  async getVendorProducts(
+    @CurrentUser() user: User,
+  ): Promise<ProductResponseDto[]> {
     this.logger.log(`Getting products for vendor user: ${user.id}`);
     return this.vendorService.getVendorProducts(user.id);
   }
@@ -55,7 +79,13 @@ export class VendorController {
     @CurrentUser() user: User,
     @Body() updateStockDto: { quantity: number },
   ): Promise<ProductResponseDto> {
-    this.logger.log(`Updating stock for product ${productId} by vendor user: ${user.id}`);
-    return this.vendorService.updateProductStock(productId, user.id, updateStockDto.quantity);
+    this.logger.log(
+      `Updating stock for product ${productId} by vendor user: ${user.id}`,
+    );
+    return this.vendorService.updateProductStock(
+      productId,
+      user.id,
+      updateStockDto.quantity,
+    );
   }
 }

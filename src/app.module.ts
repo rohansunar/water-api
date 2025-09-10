@@ -34,10 +34,12 @@ import { SecurityMiddleware } from './common/middleware/security.middleware';
     MongooseModule.forRoot(
       process.env.MONGODB_URI || 'mongodb://localhost:27017/water-jar-delivery',
     ),
-    ThrottlerModule.forRoot([{
-      ttl: 60000, // 1 minute
-      limit: 100, // 100 requests per minute
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1 minute
+        limit: 100, // 100 requests per minute
+      },
+    ]),
     AuthModule,
     UserModule,
     VendorModule,
@@ -64,7 +66,8 @@ import { SecurityMiddleware } from './common/middleware/security.middleware';
     },
     {
       provide: APP_FILTER,
-      useFactory: (customLogger: CustomLoggerService) => new HttpExceptionFilter(customLogger),
+      useFactory: (customLogger: CustomLoggerService) =>
+        new HttpExceptionFilter(customLogger),
       inject: [CustomLoggerService],
     },
     {
@@ -75,8 +78,6 @@ import { SecurityMiddleware } from './common/middleware/security.middleware';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(RequestIdMiddleware, SecurityMiddleware)
-      .forRoutes('*');
+    consumer.apply(RequestIdMiddleware, SecurityMiddleware).forRoutes('*');
   }
 }

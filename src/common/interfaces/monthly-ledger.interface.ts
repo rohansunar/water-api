@@ -15,7 +15,7 @@ export interface MonthlyLedger {
 
 export enum MonthlyLedgerStatus {
   UNPAID = 'unpaid',
-  PAID = 'paid'
+  PAID = 'paid',
 }
 
 export interface MonthlyInvoice {
@@ -37,7 +37,7 @@ export enum InvoiceStatus {
   PENDING = 'pending',
   PAID = 'paid',
   PARTIAL = 'partial',
-  OVERDUE = 'overdue'
+  OVERDUE = 'overdue',
 }
 
 export interface MonthlyBillingSummary {

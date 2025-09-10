@@ -43,7 +43,7 @@ export class Vendor {
       businessLicense: { type: String },
       gstCertificate: { type: String },
       addressProof: { type: String },
-    }
+    },
   })
   documents?: {
     kycDoc?: string;
@@ -54,21 +54,23 @@ export class Vendor {
 
   @Prop({
     enum: ['pending_approval', 'approved', 'rejected'],
-    default: 'pending_approval'
+    default: 'pending_approval',
   })
   approvalStatus: string;
 
   @Prop()
   rejectionReason?: string;
 
-  @Prop([{
-    accountNumber: { type: String, required: true },
-    ifscCode: { type: String, required: true },
-    bankName: { type: String, required: true },
-    accountHolderName: { type: String, required: true },
-    upiId: { type: String },
-    isDefault: { type: Boolean, default: false },
-  }])
+  @Prop([
+    {
+      accountNumber: { type: String, required: true },
+      ifscCode: { type: String, required: true },
+      bankName: { type: String, required: true },
+      accountHolderName: { type: String, required: true },
+      upiId: { type: String },
+      isDefault: { type: Boolean, default: false },
+    },
+  ])
   bankAccounts: Array<{
     accountNumber: string;
     ifscCode: string;
@@ -87,12 +89,14 @@ export class Vendor {
   @Prop({ default: 0 })
   totalOrders: number;
 
-  @Prop([{
-    name: { type: String, required: true },
-    lat: { type: Number, required: true },
-    lng: { type: Number, required: true },
-    radius: { type: Number, default: 5 }, // km
-  }])
+  @Prop([
+    {
+      name: { type: String, required: true },
+      lat: { type: Number, required: true },
+      lng: { type: Number, required: true },
+      radius: { type: Number, default: 5 }, // km
+    },
+  ])
   deliveryZones: Array<{
     name: string;
     lat: number;

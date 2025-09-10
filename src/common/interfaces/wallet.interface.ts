@@ -25,7 +25,7 @@ export interface WalletTransaction {
 
 export enum TransactionType {
   CREDIT = 'credit',
-  DEBIT = 'debit'
+  DEBIT = 'debit',
 }
 
 export enum ReferenceType {
@@ -33,14 +33,14 @@ export enum ReferenceType {
   TOPUP = 'topup',
   REFUND = 'refund',
   CASHBACK = 'cashback',
-  PENALTY = 'penalty'
+  PENALTY = 'penalty',
 }
 
 export enum TransactionStatus {
   PENDING = 'pending',
   COMPLETED = 'completed',
   FAILED = 'failed',
-  CANCELLED = 'cancelled'
+  CANCELLED = 'cancelled',
 }
 
 export interface TopupRequest {

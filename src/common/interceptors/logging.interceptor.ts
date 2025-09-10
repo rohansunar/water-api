@@ -28,7 +28,13 @@ export class LoggingInterceptor implements NestInterceptor {
         const { statusCode } = response;
 
         // Log HTTP request
-        this.logger.logHttpRequest(method, url, statusCode, responseTime, userAgent);
+        this.logger.logHttpRequest(
+          method,
+          url,
+          statusCode,
+          responseTime,
+          userAgent,
+        );
 
         // Log slow requests as warnings
         if (responseTime > 1000) {

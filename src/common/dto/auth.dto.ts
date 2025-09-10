@@ -1,10 +1,19 @@
-import { IsString, IsPhoneNumber, Length, IsOptional, IsNotEmpty, Matches } from 'class-validator';
+import {
+  IsString,
+  IsPhoneNumber,
+  Length,
+  IsOptional,
+  IsNotEmpty,
+  Matches,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class LoginDto {
   @IsString({ message: 'Phone number must be a string' })
   @IsNotEmpty({ message: 'Phone number is required' })
-  @IsPhoneNumber('IN', { message: 'Please provide a valid Indian phone number' })
+  @IsPhoneNumber('IN', {
+    message: 'Please provide a valid Indian phone number',
+  })
   @Transform(({ value }) => value?.toString().trim())
   phone: string;
 }
@@ -12,7 +21,9 @@ export class LoginDto {
 export class VerifyOtpDto {
   @IsString({ message: 'Phone number must be a string' })
   @IsNotEmpty({ message: 'Phone number is required' })
-  @IsPhoneNumber('IN', { message: 'Please provide a valid Indian phone number' })
+  @IsPhoneNumber('IN', {
+    message: 'Please provide a valid Indian phone number',
+  })
   @Transform(({ value }) => value?.toString().trim())
   phone: string;
 

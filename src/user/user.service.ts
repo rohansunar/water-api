@@ -36,7 +36,7 @@ export class UserService {
 
     this.users.set(user.id, user);
     this.phoneIndex.set(user.phone, user.id);
-    
+
     this.logger.log(`Created new user: ${user.id} with phone: ${user.phone}`);
     return user;
   }
@@ -74,7 +74,7 @@ export class UserService {
       walletBalance: user.walletBalance,
       isActive: user.isActive,
       monthlyPaymentMode: user.monthlyPaymentMode,
-      addresses: user.addresses.map(addr => ({
+      addresses: user.addresses.map((addr) => ({
         id: addr.id,
         type: addr.type,
         street: addr.street,
@@ -100,11 +100,16 @@ export class UserService {
     user.updatedAt = new Date();
 
     this.users.set(userId, user);
-    this.logger.log(`Updated wallet balance for user ${userId}: ${user.walletBalance}`);
+    this.logger.log(
+      `Updated wallet balance for user ${userId}: ${user.walletBalance}`,
+    );
     return user;
   }
 
-  async updateMonthlyPaymentMode(userId: string, monthlyPaymentMode: boolean): Promise<User> {
+  async updateMonthlyPaymentMode(
+    userId: string,
+    monthlyPaymentMode: boolean,
+  ): Promise<User> {
     const user = this.users.get(userId);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -114,7 +119,9 @@ export class UserService {
     user.updatedAt = new Date();
 
     this.users.set(userId, user);
-    this.logger.log(`Updated monthly payment mode for user ${userId}: ${monthlyPaymentMode}`);
+    this.logger.log(
+      `Updated monthly payment mode for user ${userId}: ${monthlyPaymentMode}`,
+    );
     return user;
   }
 
