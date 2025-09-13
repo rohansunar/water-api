@@ -156,7 +156,7 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     if (!user || !user.isActive) {
       throw new UnauthorizedException('User not found or inactive');
     }
-    return user;
+    return user as unknown as User;
   }
 
   private generateOTP(): string {

@@ -1,10 +1,17 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { User, UserDocument } from '../common/schemas/user.schema';
-import { Address, AddressDocument } from '../common/schemas/address.schema';
-import { UserRole } from '../common/interfaces/user.interface';
-import { UserProfileDto } from '../common/dto/auth.dto';
+import { User, UserDocument } from '../schemas/user.schema';
+import { Address, AddressDocument } from '../schemas/address.schema';
+import { UserRole } from '../interfaces/user.interface';
+import { 
+  CreateUserDto, 
+  UpdateUserDto, 
+  CreateAddressDto, 
+  UpdateAddressDto, 
+  UserProfileDto,
+  UpdateWalletBalanceDto 
+} from '../dto/user.dto';
 
 @Injectable()
 export class UserService {
@@ -17,6 +24,9 @@ export class UserService {
 
   async findById(id: string): Promise<UserDocument | null> {
     try {
+      if (!Types.ObjectId.isValid(id)) {
+        return null;
+      }
       return await this.userModel.findById(id).exec();
     } catch (error) {
       this.logger.error(`Error finding user by ID ${id}:`, error);
@@ -33,17 +43,22 @@ export class UserService {
     }
   }
 
-  async create(userData: Partial<User>): Promise<UserDocument> {
+  async create(createUserDto: CreateUserDto): Promise<UserDocument> {
     try {
+      // Check if user already exists
+      const existingUser = await this.findByPhone(createUserDto.phone);
+      if (existingUser) {
+        throw new BadRequestException('User with this phone number already exists');
+      }
+
       const user = new this.userModel({
-        phone: userData.phone,
-        name: userData.name,
-        email: userData.email,
-        addresses: userData.addresses || [],
-        walletBalance: userData.walletBalance || 0,
-        role: userData.role || UserRole.CUSTOMER,
-        isActive: userData.isActive !== false,
-        monthlyPaymentMode: userData.monthlyPaymentMode || false,
+        phone: createUserDto.phone,
+        name: createUserDto.name,
+        email: createUserDto.email,
+        role: createUserDto.role || UserRole.CUSTOMER,
+        walletBalance: createUserDto.walletBalance || 0,
+        monthlyPaymentMode: createUserDto.monthlyPaymentMode || false,
+        isActive: true,
       });
 
       const savedUser = await user.save();
@@ -55,12 +70,12 @@ export class UserService {
     }
   }
 
-  async update(id: string, updateData: Partial<User>): Promise<UserDocument> {
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<UserDocument> {
     try {
       const updatedUser = await this.userModel
         .findByIdAndUpdate(
           id,
-          { ...updateData, updatedAt: new Date() },
+          { ...updateUserDto, updatedAt: new Date() },
           { new: true, runValidators: true }
         )
         .exec();
@@ -127,14 +142,19 @@ export class UserService {
     };
   }
 
-  async updateWalletBalance(userId: string, amount: number): Promise<UserDocument> {
+  async updateWalletBalance(userId: string, updateWalletDto: UpdateWalletBalanceDto): Promise<UserDocument> {
     try {
       const user = await this.userModel.findById(userId).exec();
       if (!user) {
         throw new NotFoundException('User not found');
       }
 
-      user.walletBalance += amount;
+      const newBalance = user.walletBalance + updateWalletDto.amount;
+      if (newBalance < 0) {
+        throw new BadRequestException('Insufficient wallet balance');
+      }
+
+      user.walletBalance = newBalance;
       user.updatedAt = new Date();
 
       const updatedUser = await user.save();
@@ -176,11 +196,29 @@ export class UserService {
   }
 
   // Address management methods
-  async createAddress(userId: string, addressData: any): Promise<AddressDocument> {
+  async createAddress(userId: string, createAddressDto: CreateAddressDto): Promise<AddressDocument> {
     try {
+      // Verify user exists
+      const user = await this.findById(userId);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // If this is set as default, unset other default addresses
+      if (createAddressDto.isDefault) {
+        await this.addressModel.updateMany(
+          { userId: new Types.ObjectId(userId) },
+          { isDefault: false }
+        );
+      }
+
       const address = new this.addressModel({
         userId: new Types.ObjectId(userId),
-        ...addressData,
+        ...createAddressDto,
+        location: {
+          type: 'Point',
+          coordinates: [createAddressDto.longitude, createAddressDto.latitude]
+        }
       });
 
       const savedAddress = await address.save();
@@ -201,23 +239,54 @@ export class UserService {
     }
   }
 
-  async updateAddress(addressId: string, updateData: any): Promise<AddressDocument> {
+  async updateAddress(addressId: string, updateAddressDto: UpdateAddressDto): Promise<AddressDocument> {
     try {
+      const updateData: any = { ...updateAddressDto, updatedAt: new Date() };
+      
+      // Update location if coordinates are provided
+      if (updateAddressDto.latitude !== undefined && updateAddressDto.longitude !== undefined) {
+        updateData.location = {
+          type: 'Point',
+          coordinates: [updateAddressDto.longitude, updateAddressDto.latitude]
+        };
+      }
+
       const updatedAddress = await this.addressModel
-        .findByIdAndUpdate(
-          addressId,
-          { ...updateData, updatedAt: new Date() },
-          { new: true, runValidators: true }
-        )
+        .findByIdAndUpdate(addressId, updateData, { new: true, runValidators: true })
         .exec();
 
       if (!updatedAddress) {
         throw new NotFoundException('Address not found');
       }
 
+      // If this is set as default, unset other default addresses for the same user
+      if (updateAddressDto.isDefault) {
+        await this.addressModel.updateMany(
+          { userId: updatedAddress.userId, _id: { $ne: addressId } },
+          { isDefault: false }
+        );
+      }
+
       return updatedAddress;
     } catch (error) {
       this.logger.error(`Error updating address ${addressId}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteAddress(addressId: string): Promise<void> {
+    try {
+      const result = await this.addressModel
+        .findByIdAndUpdate(addressId, { isActive: false, updatedAt: new Date() })
+        .exec();
+
+      if (!result) {
+        throw new NotFoundException('Address not found');
+      }
+
+      this.logger.log(`Deleted address: ${addressId}`);
+    } catch (error) {
+      this.logger.error(`Error deleting address ${addressId}:`, error);
       throw error;
     }
   }

@@ -1,0 +1,206 @@
+version: '3.8'
+
+services:
+  # MongoDB instances for each service
+  mongodb-user:
+    image: mongo:6
+    container_name: mongodb-user
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: water-jar-user-service
+    volumes:
+      - mongodb-user-data:/data/db
+    networks:
+      - water-jar-network
+
+  mongodb-product:
+    image: mongo:6
+    container_name: mongodb-product
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_DATABASE: water-jar-product-service
+    volumes:
+      - mongodb-product-data:/data/db
+    networks:
+      - water-jar-network
+
+  mongodb-vendor:
+    image: mongo:6
+    container_name: mongodb-vendor
+    ports:
+      - "27019:27017"
+    environment:
+      MONGO_INITDB_DATABASE: water-jar-vendor-service
+    volumes:
+      - mongodb-vendor-data:/data/db
+    networks:
+      - water-jar-network
+
+  mongodb-order:
+    image: mongo:6
+    container_name: mongodb-order
+    ports:
+      - "27020:27017"
+    environment:
+      MONGO_INITDB_DATABASE: water-jar-order-service
+    volumes:
+      - mongodb-order-data:/data/db
+    networks:
+      - water-jar-network
+
+  mongodb-payment:
+    image: mongo:6
+    container_name: mongodb-payment
+    ports:
+      - "27021:27017"
+    environment:
+      MONGO_INITDB_DATABASE: water-jar-payment-service
+    volumes:
+      - mongodb-payment-data:/data/db
+    networks:
+      - water-jar-network
+
+  mongodb-delivery:
+    image: mongo:6
+    container_name: mongodb-delivery
+    ports:
+      - "27022:27017"
+    environment:
+      MONGO_INITDB_DATABASE: water-jar-delivery-service
+    volumes:
+      - mongodb-delivery-data:/data/db
+    networks:
+      - water-jar-network
+
+  mongodb-support:
+    image: mongo:6
+    container_name: mongodb-support
+    ports:
+      - "27023:27017"
+    environment:
+      MONGO_INITDB_DATABASE: water-jar-support-service
+    volumes:
+      - mongodb-support-data:/data/db
+    networks:
+      - water-jar-network
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - water-jar-network
+
+  # User Service
+  user-service:
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - USER_SERVICE_PORT=3001
+      - MONGODB_URI=mongodb://mongodb-user:27017/water-jar-user-service
+      - JWT_SECRET=dev-jwt-secret
+      - CORS_ORIGIN=http://localhost:3000
+    depends_on:
+      - mongodb-user
+      - redis
+    volumes:
+      - ./services/user-service:/app
+      - /app/node_modules
+    networks:
+      - water-jar-network
+    restart: unless-stopped
+
+  # Product Service
+  product-service:
+    build:
+      context: ./services/product-service
+      dockerfile: Dockerfile
+    container_name: product-service
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PRODUCT_SERVICE_PORT=3002
+      - MONGODB_URI=mongodb://mongodb-product:27017/water-jar-product-service
+      - USER_SERVICE_URL=http://user-service:3001
+      - CORS_ORIGIN=http://localhost:3000
+    depends_on:
+      - mongodb-product
+      - redis
+      - user-service
+    volumes:
+      - ./services/product-service:/app
+      - /app/node_modules
+    networks:
+      - water-jar-network
+    restart: unless-stopped
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - GATEWAY_PORT=3000
+      - USER_SERVICE_URL=http://user-service:3001
+      - PRODUCT_SERVICE_URL=http://product-service:3002
+      - VENDOR_SERVICE_URL=http://vendor-service:3003
+      - ORDER_SERVICE_URL=http://order-service:3004
+      - PAYMENT_SERVICE_URL=http://payment-service:3005
+      - DELIVERY_SERVICE_URL=http://delivery-service:3006
+      - SUPPORT_SERVICE_URL=http://support-service:3007
+      - JWT_SECRET=dev-jwt-secret
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - user-service
+      - product-service
+      - redis
+    volumes:
+      - ./gateway:/app
+      - /app/node_modules
+    networks:
+      - water-jar-network
+    restart: unless-stopped
+
+  # Nginx for load balancing (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-lb
+    ports:
+      - "80:80"
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - api-gateway
+    networks:
+      - water-jar-network
+    restart: unless-stopped
+
+volumes:
+  mongodb-user-data:
+  mongodb-product-data:
+  mongodb-vendor-data:
+  mongodb-order-data:
+  mongodb-payment-data:
+  mongodb-delivery-data:
+  mongodb-support-data:
+  redis-data:
+
+networks:
+  water-jar-network:
+    driver: bridge

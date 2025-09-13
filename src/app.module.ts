@@ -18,6 +18,7 @@ import { MonthlyLedgerModule } from './monthly-ledger/monthly-ledger.module';
 import { AdminModule } from './admin/admin.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { CustomLoggerService } from './common/logger/logger.service';
+import { DatabaseInitService } from './common/database/database-init.service';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -56,6 +57,7 @@ import { SecurityMiddleware } from './common/middleware/security.middleware';
   controllers: [AppController],
   providers: [
     AppService,
+    DatabaseInitService,
     {
       provide: APP_GUARD,
       useClass: CustomThrottlerGuard,
