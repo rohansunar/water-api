@@ -1,7 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AppService } from './app.service';
-import { Public } from './auth/decorators/public.decorator';
 
 @ApiTags('Health')
 @Controller()
@@ -9,7 +8,6 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  @Public()
   @ApiOperation({
     summary: 'Welcome message',
     description: 'Get a welcome message from the API',
@@ -27,7 +25,6 @@ export class AppController {
   }
 
   @Get('health')
-  @Public()
   @ApiOperation({
     summary: 'Health check',
     description: 'Check the health status of the API service',

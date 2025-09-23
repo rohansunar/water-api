@@ -1,7 +1,7 @@
 {
   "name": "water-jar-delivery-api",
   "private": true,
-  "version": "4.0.0",
+  "version": "6.0.0",
   "description": "Backend API for Water Jar Delivery Platform - On-demand and subscription-based water jar delivery service",
   "license": "MIT",
   "scripts": {
@@ -23,7 +23,8 @@
     "test:integration": "jest --testPathPattern=\"test/integration/.*\\.spec\\.ts$\"",
     "test:all": "npm run test && npm run test:e2e && npm run test:integration",
     "migrate": "ts-node scripts/migrate-database.ts",
-    "migrate:rollback": "ts-node scripts/rollback-migration.ts"
+    "migrate:rollback": "ts-node scripts/rollback-migration.ts",
+    "prisma:studio": "prisma studio"
   },
   "engines": {
     "npm": ">=10.0.0",
@@ -43,6 +44,7 @@
     "@nestjs/platform-fastify": "^11.1.6",
     "@nestjs/swagger": "^11.2.0",
     "@nestjs/throttler": "^6.4.0",
+    "@prisma/client": "^6.16.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "cors": "^2.8.5",
@@ -50,6 +52,7 @@
     "mongoose": "^8.17.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "prisma": "^6.16.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1",

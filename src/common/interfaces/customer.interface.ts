@@ -12,9 +12,6 @@ export interface Customer {
   updatedAt: Date;
 }
 
-// Legacy interface for backward compatibility during migration
-export interface User extends Customer {}
-
 export interface Address {
   id: string;
   customerId: string;
@@ -32,14 +29,6 @@ export interface Address {
 }
 
 export enum CustomerRole {
-  CUSTOMER = 'customer',
-  VENDOR = 'vendor',
-  DELIVERY_RIDER = 'delivery_rider',
-  ADMIN = 'admin',
-}
-
-// Legacy enum for backward compatibility during migration
-export enum UserRole {
   CUSTOMER = 'customer',
   VENDOR = 'vendor',
   DELIVERY_RIDER = 'delivery_rider',

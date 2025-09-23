@@ -9,14 +9,18 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../modules/user/services/user.service';
+import { CustomerService } from '../customer/customer.service';
 import {
   LoginDto,
   VerifyOtpDto,
   AuthResponseDto,
   UserProfileDto,
+  CustomerProfileDto,
 } from '../common/dto/auth.dto';
 import { User, UserRole } from '../modules/user/entities/user.entity';
+import { Customer, CustomerRole } from '../common/interfaces/customer.interface';
 import { CreateUserDto } from '../modules/user/dto/user.dto';
+import { CreateCustomerDto } from '../common/dto/customer.dto';
 
 @Injectable()
 export class AuthService implements OnModuleInit, OnModuleDestroy {
@@ -31,6 +35,7 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly userService: UserService,
+    private readonly customerService: CustomerService,
   ) {}
 
   onModuleInit() {
@@ -68,7 +73,7 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`OTP for ${phone}: ${otp}`);
 
       // For development, we'll log the OTP
-      console.log(`🔐 OTP for ${phone}: ${otp}`);
+      this.logger.debug(`OTP generated for ${phone}: ${otp}`);
 
       return {
         message: 'OTP sent successfully to your phone number',
@@ -117,7 +122,19 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
       // OTP verified successfully, remove from store
       this.otpStore.delete(phone);
 
-      // Find or create user
+      // Find or create customer (using new customer service)
+      let customer = await this.customerService.findByPhone(phone);
+      if (!customer) {
+        const createCustomerDto: CreateCustomerDto = {
+          phone,
+          role: CustomerRole.CUSTOMER,
+          isActive: true,
+          walletBalance: 0,
+        };
+        customer = await this.customerService.create(createCustomerDto);
+      }
+
+      // Legacy: Also maintain user service compatibility
       let user = await this.userService.findByPhoneDocument(phone);
       if (!user) {
         const createUserDto: CreateUserDto = {
@@ -129,15 +146,30 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
         user = await this.userService.create(createUserDto);
       }
 
-      // Generate JWT token
-      const payload = { sub: user.id, phone: user.phone, role: user.role };
+      // Generate JWT token using customer data
+      const payload = { sub: customer._id.toString(), phone: customer.phone, role: customer.role };
       const token = this.jwtService.sign(payload);
 
-      this.logger.log(`User ${user.id} authenticated successfully`);
+      this.logger.log(`Customer ${customer._id} authenticated successfully`);
 
+      const customerProfile = await this.customerService.getCustomerProfile(customer._id.toString());
       const userProfile = await this.userService.getUserProfile(user.id);
 
-      // Convert to auth DTO format
+      // Convert to auth DTO format (new customer format)
+      const authCustomerProfile: CustomerProfileDto = {
+        id: customerProfile.id,
+        phone: customerProfile.phone,
+        name: customerProfile.name,
+        email: customerProfile.email,
+        role: customerProfile.role,
+        walletBalance: customerProfile.walletBalance,
+        isActive: customerProfile.isActive,
+        monthlyPaymentMode: customerProfile.monthlyPaymentMode,
+        addresses: customerProfile.addresses,
+        createdAt: customerProfile.createdAt,
+      };
+
+      // Legacy user profile for backward compatibility
       const authUserProfile: UserProfileDto = {
         id: userProfile.id,
         phone: userProfile.phone,
@@ -164,7 +196,8 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
 
       return {
         token,
-        user: authUserProfile,
+        customer: authCustomerProfile,
+        user: authUserProfile, // Legacy property for backward compatibility
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) {

@@ -1,8 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { UserRole } from '../interfaces/user.interface';
+import { CustomerRole } from '../interfaces/customer.interface';
 
-export type UserDocument = User & Document;
+export type CustomerDocument = Customer & Document;
 
 // Role-specific extension interfaces
 export interface CustomerExtension {
@@ -60,7 +60,7 @@ export interface AdminExtension {
 }
 
 @Schema({
-  collection: 'customers', // Updated to use customers collection
+  collection: 'customers',
   timestamps: true,
   toJSON: {
     transform: (doc, ret: any) => {
@@ -73,27 +73,29 @@ export interface AdminExtension {
     },
   },
 })
-export class User {
-  @Prop({ unique: true, sparse: true })
-  email?: string;
-
-  @Prop({ required: true, unique: true })
+export class Customer {
+  @Prop({ required: true, unique: true, index: true })
   phone: string;
 
-  @Prop({ required: true })
-  name: string;
+  @Prop({ required: false })
+  name?: string;
+
+  @Prop({ required: false, unique: true, sparse: true, index: true })
+  email?: string;
 
   @Prop({
+    type: String,
+    enum: CustomerRole,
+    default: CustomerRole.CUSTOMER,
     required: true,
-    enum: Object.values(UserRole),
-    default: UserRole.CUSTOMER,
+    index: true,
   })
-  role: UserRole;
+  role: CustomerRole;
 
-  @Prop({ default: 0 })
+  @Prop({ default: 0, min: 0 })
   walletBalance: number;
 
-  @Prop({ default: true })
+  @Prop({ default: true, index: true })
   isActive: boolean;
 
   @Prop({ default: false })
@@ -102,13 +104,52 @@ export class User {
   @Prop({ default: false })
   monthlyPaymentMode: boolean;
 
-  @Prop()
-  lastActiveAt?: Date;
+  @Prop({
+    type: [
+      {
+        id: { type: String, required: true },
+        type: {
+          type: String,
+          enum: ['home', 'office', 'other'],
+          required: true,
+        },
+        street: { type: String, required: true },
+        city: { type: String, required: true },
+        state: { type: String, required: true },
+        pincode: { type: String, required: true },
+        landmark: { type: String },
+        latitude: { type: Number, required: true },
+        longitude: { type: Number, required: true },
+        isDefault: { type: Boolean, default: false },
+        createdAt: { type: Date, default: Date.now },
+        updatedAt: { type: Date, default: Date.now },
+      },
+    ],
+    default: [],
+  })
+  addresses: Array<{
+    id: string;
+    type: string;
+    street: string;
+    city: string;
+    state: string;
+    pincode: string;
+    landmark?: string;
+    latitude: number;
+    longitude: number;
+    isDefault: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
 
-  @Prop({ type: Object })
-  metadata?: Record<string, any>;
+  // OTP fields for authentication
+  @Prop({ select: false })
+  otpCode?: string;
 
-  // Role-specific extensions as embedded documents
+  @Prop({ select: false })
+  otpExpiry?: Date;
+
+  // Role-specific extensions
   @Prop({
     type: {
       loyaltyPoints: { type: Number, default: 0 },
@@ -150,8 +191,8 @@ export class User {
       licenseNumber: { type: String },
       vehicleType: { type: String },
       shift: {
-        startTime: { type: String },
-        endTime: { type: String },
+        startTime: { type: String, required: true },
+        endTime: { type: String, required: true },
         daysOfWeek: [{ type: String }],
       },
       status: {
@@ -187,133 +228,58 @@ export class User {
   })
   adminExtension?: AdminExtension;
 
-  @Prop([
-    {
-      street: { type: String, required: true },
-      city: { type: String, required: true },
-      state: { type: String, required: true },
-      pincode: { type: String, required: true },
-      latitude: { type: Number, required: true },
-      longitude: { type: Number, required: true },
-      contactPhone: { type: String, required: true },
-      isDefault: { type: Boolean, default: false },
-      label: { type: String }, // 'home', 'office', 'other'
-      landmark: { type: String },
-    },
-  ])
-  addresses: Array<{
-    street: string;
-    city: string;
-    state: string;
-    pincode: string;
-    latitude: number;
-    longitude: number;
-    contactPhone: string;
-    isDefault: boolean;
-    label?: string;
-    landmark?: string;
-  }>;
-
-  // OTP fields for authentication
-  @Prop()
-  otpCode?: string;
-
-  @Prop()
-  otpExpiry?: Date;
-
-  @Prop({ default: Date.now })
+  @Prop({ default: Date.now, index: true })
   createdAt: Date;
 
   @Prop({ default: Date.now })
   updatedAt: Date;
 }
 
-export const UserSchema = SchemaFactory.createForClass(User);
+export const CustomerSchema = SchemaFactory.createForClass(Customer);
 
 // Create indexes for performance optimization
-UserSchema.index({ phone: 1 }, { unique: true });
-UserSchema.index({ email: 1 }, { unique: true, sparse: true });
-UserSchema.index({ role: 1 });
-UserSchema.index({ isActive: 1 });
-UserSchema.index({ 'addresses.pincode': 1 });
-UserSchema.index({ 'addresses.latitude': 1, 'addresses.longitude': 1 });
-UserSchema.index({ createdAt: -1 });
+CustomerSchema.index({ phone: 1 }, { unique: true });
+CustomerSchema.index({ email: 1 }, { unique: true, sparse: true });
+CustomerSchema.index({ role: 1 });
+CustomerSchema.index({ isActive: 1 });
+CustomerSchema.index({ 'addresses.pincode': 1 });
+CustomerSchema.index({ 'addresses.latitude': 1, 'addresses.longitude': 1 });
+CustomerSchema.index({ createdAt: -1 });
 
 // Role-specific indexes
-UserSchema.index({ 'vendorExtension.kycStatus': 1 });
-UserSchema.index({ 'vendorExtension.rating': -1 });
-UserSchema.index({ 'riderExtension.status': 1 });
-UserSchema.index({
+CustomerSchema.index({ 'vendorExtension.kycStatus': 1 });
+CustomerSchema.index({ 'vendorExtension.rating': -1 });
+CustomerSchema.index({ 'riderExtension.status': 1 });
+CustomerSchema.index({
   'riderExtension.currentLocation.latitude': 1,
   'riderExtension.currentLocation.longitude': 1,
 });
 
-// Pre-save middleware to initialize role extensions
-UserSchema.pre('save', function (next) {
-  // Initialize role-specific extensions based on user role
-  if (this.isNew) {
-    switch (this.role) {
-      case UserRole.CUSTOMER:
-        if (!this.customerExtension) {
-          this.customerExtension = {
-            loyaltyPoints: 0,
-            preferences: {
-              notificationPreferences: {
-                sms: true,
-                email: true,
-                push: true,
-              },
-            },
-          };
-        }
-        break;
-      case UserRole.VENDOR:
-        if (!this.vendorExtension) {
-          this.vendorExtension = {
-            kycStatus: 'pending',
-            rating: 0,
-            totalOrders: 0,
-            businessMetrics: {
-              totalRevenue: 0,
-              averageOrderValue: 0,
-              customerRetentionRate: 0,
-            },
-          };
-        }
-        break;
-      case UserRole.DELIVERY_RIDER:
-        if (!this.riderExtension) {
-          this.riderExtension = {
-            shift: {
-              startTime: '09:00',
-              endTime: '18:00',
-              daysOfWeek: [
-                'monday',
-                'tuesday',
-                'wednesday',
-                'thursday',
-                'friday',
-              ],
-            },
-            status: 'inactive',
-            performanceMetrics: {
-              totalDeliveries: 0,
-              averageRating: 0,
-              onTimeDeliveryRate: 0,
-            },
-          };
-        }
-        break;
-      case UserRole.ADMIN:
-        if (!this.adminExtension) {
-          this.adminExtension = {
-            roleLevel: 'support',
-            permissions: [],
-            accessLevel: 1,
-          };
-        }
-        break;
-    }
-  }
+// Pre-save middleware to update timestamps
+CustomerSchema.pre('save', function (next) {
+  this.updatedAt = new Date();
   next();
+});
+
+// Pre-update middleware to update timestamps
+CustomerSchema.pre(['updateOne', 'findOneAndUpdate'], function (next) {
+  this.set({ updatedAt: new Date() });
+  next();
+});
+
+// Virtual for id
+CustomerSchema.virtual('id').get(function () {
+  return this._id.toHexString();
+});
+
+// Ensure virtual fields are serialized
+CustomerSchema.set('toJSON', {
+  virtuals: true,
+  transform: (doc, ret) => {
+    delete ret._id;
+    delete ret.__v;
+    delete ret.otpCode;
+    delete ret.otpExpiry;
+    return ret;
+  },
 });

@@ -12,7 +12,7 @@ export class DatabaseIndexStrategy {
    * Apply all database indexes for optimal performance
    */
   static async applyAllIndexes(connection: Connection): Promise<void> {
-    console.log('Applying database indexes for performance optimization...');
+    // Logging handled by DatabaseInitService
 
     try {
       // Apply indexes for each collection
@@ -31,7 +31,7 @@ export class DatabaseIndexStrategy {
       await this.applyWalletIndexes(connection);
       await this.applyComplaintIndexes(connection);
 
-      console.log('All database indexes applied successfully');
+      // Success logging handled by DatabaseInitService
     } catch (error) {
       console.error('Error applying database indexes:', error);
       throw error;

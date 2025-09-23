@@ -6,7 +6,6 @@ import {
 } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { UserService } from './modules/user/services/user.service';
 import { CustomLoggerService } from './common/logger/logger.service';
 
 async function bootstrap() {
@@ -128,24 +127,24 @@ async function bootstrap() {
   });
 
   // Seed test data for development
-  const userService = app.get(UserService);
-  await userService.seedTestData();
+  // const userService = app.get(UserService);
+  // await userService.seedTestData();
 
   const { VendorService } = await import('./vendor/vendor.service');
   const vendorService = app.get(VendorService);
   await vendorService.seedTestData();
 
-  const { ProductService } = await import('./product/product.service');
-  const productService = app.get(ProductService);
-  await productService.seedTestData();
+  // const { ProductService } = await import('./product/product.service');
+  // const productService = app.get(ProductService);
+  // await productService.seedTestData();
 
-  const { RiderService } = await import('./rider/rider.service');
-  const riderService = app.get(RiderService);
-  await riderService.seedTestData();
+  // const { RiderService } = await import('./rider/rider.service');
+  // const riderService = app.get(RiderService);
+  // await riderService.seedTestData();
 
-  const { ComplaintService } = await import('./complaint/complaint.service');
-  const complaintService = app.get(ComplaintService);
-  await complaintService.seedTestData();
+  // const { ComplaintService } = await import('./complaint/complaint.service');
+  // const complaintService = app.get(ComplaintService);
+  // await complaintService.seedTestData();
 
   const port = process.env.PORT || 4242;
   await app.listen(port);

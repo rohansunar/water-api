@@ -1,0 +1,237 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  password          String
+  name              String
+  phone             String?
+  role              UserRole @default(CUSTOMER)
+  isActive          Boolean  @default(true)
+  monthlyPaymentMode Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  addresses   Address[]
+  orders      Order[]
+  subscriptions Subscription[]
+  wallet      Wallet?
+  vendor      Vendor?
+
+  @@map("users")
+}
+
+model Address {
+  id          String   @id @default(cuid())
+  userId      String
+  type        AddressType @default(HOME)
+  street      String
+  city        String
+  state       String
+  pincode     String
+  landmark    String?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders      Order[]  @relation("OrderDeliveryAddress")
+
+  @@map("addresses")
+}
+
+model Vendor {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  businessName  String
+  description   String?
+  address       String
+  phone         String
+  email         String
+  rating        Float    @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [id])
+  products      Product[]
+
+  @@map("vendors")
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  vendorId      String
+  name          String
+  description   String?
+  price         Float
+  category      String
+  imageUrl      String?
+  isAvailable   Boolean  @default(true)
+  isActive      Boolean  @default(true)
+  stockQuantity Int      @default(0)
+  hasDeposit    Boolean  @default(false)
+  depositAmount Float    @default(0)
+  size          String?
+  images        String[] @default([])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  vendor        Vendor   @relation(fields: [vendorId], references: [id])
+  orderItems    OrderItem[]
+  subscriptions Subscription[]
+
+  @@map("products")
+}
+
+model Order {
+  id            String   @id @default(cuid())
+  userId        String
+  vendorId      String?
+  productId     String?
+  quantity      Int?
+  schedule      String?
+  deliveryTime  DateTime?
+  depositAmount Float    @default(0)
+  status        OrderStatus @default(PENDING)
+  totalAmount   Float
+  deliveryFee   Float    @default(0)
+  paymentStatus PaymentStatus @default(PENDING)
+  paymentMethod PaymentMethod?
+  deliveryAddressId String
+  scheduledDate DateTime?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [id])
+  deliveryAddress Address @relation("OrderDeliveryAddress", fields: [deliveryAddressId], references: [id])
+  items         OrderItem[]
+  payments      Payment[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+  total     Float
+
+  // Relations
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Subscription {
+  id            String   @id @default(cuid())
+  userId        String
+  productId     String
+  frequency     SubscriptionFrequency
+  quantity      Int
+  startDate     DateTime
+  endDate       DateTime?
+  isActive      Boolean  @default(true)
+  nextDelivery  DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [id])
+  product       Product  @relation(fields: [productId], references: [id])
+
+  @@map("subscriptions")
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  orderId       String
+  amount        Float
+  status        PaymentStatus @default(PENDING)
+  paymentMethod String
+  transactionId String?
+  razorpayOrderId String?
+  razorpayPaymentId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  order         Order    @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  balance   Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("wallets")
+}
+
+enum UserRole {
+  CUSTOMER
+  VENDOR
+  RIDER
+  ADMIN
+}
+
+enum AddressType {
+  HOME
+  WORK
+  OTHER
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY_FOR_PICKUP
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum SubscriptionFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum PaymentMethod {
+  WALLET
+  UPI
+  COD
+  CARD
+}

@@ -16,8 +16,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { UserRole } from '../common/interfaces/user.interface';
-import { User } from '../common/interfaces/user.interface';
+import { UserRole, CustomerRole } from '../common/interfaces/user.interface';
+import { User, Customer } from '../common/interfaces/user.interface';
 import {
   CreateLedgerEntryDto,
   UpdateLedgerEntryDto,
@@ -87,7 +87,7 @@ export class LedgerController {
     this.logger.log(`Creating ledger entry for vendor ${createDto.vendorId}`);
 
     // Ensure vendor can only create entries for themselves
-    if (user.role === UserRole.VENDOR && createDto.vendorId !== user.id) {
+    if (user.role === 'vendor' && createDto.vendorId !== user.id) {
       throw new Error('Vendors can only create ledger entries for themselves');
     }
 

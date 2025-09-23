@@ -2,9 +2,10 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserDocument } from '../common/schemas/user.schema';
+import { Customer, CustomerDocument } from '../common/schemas/customer.schema';
 import { Address, AddressDocument } from '../common/schemas/address.schema';
-import { UserRole } from '../common/interfaces/user.interface';
-import { UserProfileDto } from '../common/dto/auth.dto';
+import { UserRole, CustomerRole } from '../common/interfaces/user.interface';
+import { UserProfileDto, CustomerProfileDto } from '../common/dto/auth.dto';
 
 @Injectable()
 export class UserService {
@@ -12,6 +13,7 @@ export class UserService {
 
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Customer.name) private customerModel: Model<CustomerDocument>,
     @InjectModel(Address.name) private addressModel: Model<AddressDocument>,
   ) {}
 

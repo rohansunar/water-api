@@ -117,35 +117,35 @@ export class AddressDto {
   isDefault: boolean;
 }
 
-export class UserProfileDto {
+export class CustomerProfileDto {
   @ApiProperty({
-    description: 'Unique user identifier',
-    example: 'user-123e4567-e89b-12d3-a456-426614174000',
+    description: 'Unique customer identifier',
+    example: 'customer-123e4567-e89b-12d3-a456-426614174000',
   })
   id: string;
 
   @ApiProperty({
-    description: 'User phone number',
+    description: 'Customer phone number',
     example: '+919876543210',
   })
   phone: string;
 
   @ApiProperty({
-    description: 'User full name',
+    description: 'Customer full name',
     example: 'John Doe',
     required: false,
   })
   name?: string;
 
   @ApiProperty({
-    description: 'User email address',
+    description: 'Customer email address',
     example: 'john.doe@example.com',
     required: false,
   })
   email?: string;
 
   @ApiProperty({
-    description: 'User role in the system',
+    description: 'Customer role in the system',
     example: 'customer',
     enum: ['customer', 'vendor', 'rider', 'admin'],
   })
@@ -158,7 +158,7 @@ export class UserProfileDto {
   walletBalance: number;
 
   @ApiProperty({
-    description: 'Whether the user account is active',
+    description: 'Whether the customer account is active',
     example: true,
   })
   isActive: boolean;
@@ -170,7 +170,7 @@ export class UserProfileDto {
   monthlyPaymentMode: boolean;
 
   @ApiProperty({
-    description: 'User delivery addresses',
+    description: 'Customer delivery addresses',
     type: [AddressDto],
   })
   addresses: AddressDto[];
@@ -182,6 +182,9 @@ export class UserProfileDto {
   createdAt: Date;
 }
 
+// Legacy DTO for backward compatibility during migration
+export class UserProfileDto extends CustomerProfileDto {}
+
 export class AuthResponseDto {
   @ApiProperty({
     description: 'JWT authentication token',
@@ -190,7 +193,13 @@ export class AuthResponseDto {
   token: string;
 
   @ApiProperty({
-    description: 'User profile information',
+    description: 'Customer profile information',
+  })
+  customer: CustomerProfileDto;
+
+  // Legacy property for backward compatibility during migration
+  @ApiProperty({
+    description: 'User profile information (deprecated, use customer instead)',
   })
   user: UserProfileDto;
 }

@@ -1,4 +1,7 @@
-// User Service API Contract
+// User Service API Contract (Legacy - use CustomerServiceContract instead)
+// This interface is maintained for backward compatibility during migration
+// New code should use ICustomerServiceContract from './customer-service.contract'
+
 export interface UserServiceContract {
   // User Management
   createUser(data: CreateUserRequest): Promise<UserResponse>;

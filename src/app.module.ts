@@ -7,6 +7,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './modules/user/user.module';
+import { CustomerModule } from './customer/customer.module';
 import { ProductModule } from './product/product.module';
 import { VendorModule } from './vendor/vendor.module';
 import { OrderModule } from './order/order.module';
@@ -46,6 +47,7 @@ import { SecurityMiddleware } from './common/middleware/security.middleware';
     LoggerModule,
     AuthModule,
     UserModule,
+    CustomerModule,
     VendorModule,
     ProductModule,
     OrderModule,
