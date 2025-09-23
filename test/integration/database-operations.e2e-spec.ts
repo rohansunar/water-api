@@ -6,12 +6,27 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 
 // Import schemas
 import { User, UserSchema } from '../../src/common/schemas/user.schema';
-import { Address, AddressSchema } from '../../src/common/schemas/address.schema';
-import { Product, ProductSchema } from '../../src/common/schemas/product.schema';
+import {
+  Address,
+  AddressSchema,
+} from '../../src/common/schemas/address.schema';
+import {
+  Product,
+  ProductSchema,
+} from '../../src/common/schemas/product.schema';
 import { Order, OrderSchema } from '../../src/common/schemas/order.schema';
-import { Subscription, SubscriptionSchema } from '../../src/common/schemas/subscription.schema';
-import { VendorStore, VendorStoreSchema } from '../../src/common/schemas/vendor-store.schema';
-import { Payment, PaymentSchema } from '../../src/common/schemas/payment.schema';
+import {
+  Subscription,
+  SubscriptionSchema,
+} from '../../src/common/schemas/subscription.schema';
+import {
+  VendorStore,
+  VendorStoreSchema,
+} from '../../src/common/schemas/vendor-store.schema';
+import {
+  Payment,
+  PaymentSchema,
+} from '../../src/common/schemas/payment.schema';
 
 describe('Database Operations Integration Tests', () => {
   let app: INestApplication;
@@ -49,12 +64,22 @@ describe('Database Operations Integration Tests', () => {
 
     // Get model instances
     userModel = moduleFixture.get<Model<User>>(getModelToken(User.name));
-    addressModel = moduleFixture.get<Model<Address>>(getModelToken(Address.name));
-    productModel = moduleFixture.get<Model<Product>>(getModelToken(Product.name));
+    addressModel = moduleFixture.get<Model<Address>>(
+      getModelToken(Address.name),
+    );
+    productModel = moduleFixture.get<Model<Product>>(
+      getModelToken(Product.name),
+    );
     orderModel = moduleFixture.get<Model<Order>>(getModelToken(Order.name));
-    subscriptionModel = moduleFixture.get<Model<Subscription>>(getModelToken(Subscription.name));
-    vendorStoreModel = moduleFixture.get<Model<VendorStore>>(getModelToken(VendorStore.name));
-    paymentModel = moduleFixture.get<Model<Payment>>(getModelToken(Payment.name));
+    subscriptionModel = moduleFixture.get<Model<Subscription>>(
+      getModelToken(Subscription.name),
+    );
+    vendorStoreModel = moduleFixture.get<Model<VendorStore>>(
+      getModelToken(VendorStore.name),
+    );
+    paymentModel = moduleFixture.get<Model<Payment>>(
+      getModelToken(Payment.name),
+    );
   });
 
   afterAll(async () => {
@@ -81,17 +106,19 @@ describe('Database Operations Integration Tests', () => {
         phone: '9999999999',
         email: 'john@example.com',
         role: 'customer',
-        addresses: [{
-          label: 'Home',
-          street: '123 Main St',
-          city: 'Bangalore',
-          state: 'Karnataka',
-          pincode: '560001',
-          latitude: 12.9716,
-          longitude: 77.5946,
-          contactPhone: '9999999999',
-          isDefault: true,
-        }],
+        addresses: [
+          {
+            label: 'Home',
+            street: '123 Main St',
+            city: 'Bangalore',
+            state: 'Karnataka',
+            pincode: '560001',
+            latitude: 12.9716,
+            longitude: 77.5946,
+            contactPhone: '9999999999',
+            isDefault: true,
+          },
+        ],
       };
 
       const user = await userModel.create(userData);
@@ -507,7 +534,9 @@ describe('Database Operations Integration Tests', () => {
 
       await subscription.save();
 
-      const updatedSubscription = await subscriptionModel.findById(subscription._id);
+      const updatedSubscription = await subscriptionModel.findById(
+        subscription._id,
+      );
       expect(updatedSubscription.deliveryHistory).toHaveLength(1);
       expect(updatedSubscription.deliveryHistory[0].status).toBe('delivered');
       expect(updatedSubscription.deliverySuccessRate).toBe(100); // 1/1 * 100
@@ -524,8 +553,18 @@ describe('Database Operations Integration Tests', () => {
       });
 
       const customers = await userModel.insertMany([
-        { name: 'Customer 1', phone: '1111111111', role: 'customer', walletBalance: 500 },
-        { name: 'Customer 2', phone: '2222222222', role: 'customer', walletBalance: 1000 },
+        {
+          name: 'Customer 1',
+          phone: '1111111111',
+          role: 'customer',
+          walletBalance: 500,
+        },
+        {
+          name: 'Customer 2',
+          phone: '2222222222',
+          role: 'customer',
+          walletBalance: 1000,
+        },
       ]);
 
       const products = await productModel.insertMany([

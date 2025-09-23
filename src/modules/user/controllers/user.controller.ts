@@ -40,7 +40,9 @@ export class UserController {
 
   @Get('me')
   @HttpCode(HttpStatus.OK)
-  async getCurrentUser(@CurrentUser('userId') userId: string): Promise<UserProfileDto> {
+  async getCurrentUser(
+    @CurrentUser('userId') userId: string,
+  ): Promise<UserProfileDto> {
     this.logger.logApiRequest('GET', '/users/me', HttpStatus.OK, 0, { userId });
     return await this.userService.getUserProfile(userId);
   }
@@ -52,13 +54,15 @@ export class UserController {
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<UserResponseDto> {
     const startTime = Date.now();
-    
+
     try {
       const updatedUser = await this.userService.update(userId, updateUserDto);
       const duration = Date.now() - startTime;
-      
-      this.logger.logApiRequest('PUT', '/users/me', HttpStatus.OK, duration, { userId });
-      
+
+      this.logger.logApiRequest('PUT', '/users/me', HttpStatus.OK, duration, {
+        userId,
+      });
+
       return {
         id: updatedUser._id.toString(),
         phone: updatedUser.phone,
@@ -73,7 +77,13 @@ export class UserController {
       };
     } catch (error) {
       const duration = Date.now() - startTime;
-      this.logger.logApiError('/users/me', 'PUT', HttpStatus.INTERNAL_SERVER_ERROR, error, userId);
+      this.logger.logApiError(
+        '/users/me',
+        'PUT',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+        userId,
+      );
       throw error;
     }
   }
@@ -85,20 +95,35 @@ export class UserController {
     @Body() updateDto: UpdateMonthlyPaymentModeDto,
   ): Promise<{ success: boolean; message: string }> {
     const startTime = Date.now();
-    
+
     try {
-      await this.userService.updateMonthlyPaymentMode(userId, updateDto.monthlyPaymentMode);
+      await this.userService.updateMonthlyPaymentMode(
+        userId,
+        updateDto.monthlyPaymentMode,
+      );
       const duration = Date.now() - startTime;
-      
-      this.logger.logApiRequest('PUT', '/users/monthly-payment-mode', HttpStatus.OK, duration, { userId });
-      
+
+      this.logger.logApiRequest(
+        'PUT',
+        '/users/monthly-payment-mode',
+        HttpStatus.OK,
+        duration,
+        { userId },
+      );
+
       return {
         success: true,
         message: 'Monthly payment mode updated successfully',
       };
     } catch (error) {
       const duration = Date.now() - startTime;
-      this.logger.logApiError('/users/monthly-payment-mode', 'PUT', HttpStatus.INTERNAL_SERVER_ERROR, error, userId);
+      this.logger.logApiError(
+        '/users/monthly-payment-mode',
+        'PUT',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+        userId,
+      );
       throw error;
     }
   }
@@ -106,16 +131,24 @@ export class UserController {
   // Address management endpoints
   @Get('me/addresses')
   @HttpCode(HttpStatus.OK)
-  async getUserAddresses(@CurrentUser('userId') userId: string): Promise<AddressResponseDto[]> {
+  async getUserAddresses(
+    @CurrentUser('userId') userId: string,
+  ): Promise<AddressResponseDto[]> {
     const startTime = Date.now();
-    
+
     try {
       const addresses = await this.userService.getUserAddresses(userId);
       const duration = Date.now() - startTime;
-      
-      this.logger.logApiRequest('GET', '/users/me/addresses', HttpStatus.OK, duration, { userId });
-      
-      return addresses.map(address => ({
+
+      this.logger.logApiRequest(
+        'GET',
+        '/users/me/addresses',
+        HttpStatus.OK,
+        duration,
+        { userId },
+      );
+
+      return addresses.map((address) => ({
         id: address._id.toString(),
         userId: address.userId.toString(),
         line1: address.line1,
@@ -134,7 +167,13 @@ export class UserController {
       }));
     } catch (error) {
       const duration = Date.now() - startTime;
-      this.logger.logApiError('/users/me/addresses', 'GET', HttpStatus.INTERNAL_SERVER_ERROR, error, userId);
+      this.logger.logApiError(
+        '/users/me/addresses',
+        'GET',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+        userId,
+      );
       throw error;
     }
   }
@@ -146,13 +185,22 @@ export class UserController {
     @Body() createAddressDto: CreateAddressDto,
   ): Promise<AddressResponseDto> {
     const startTime = Date.now();
-    
+
     try {
-      const address = await this.userService.createAddress(userId, createAddressDto);
+      const address = await this.userService.createAddress(
+        userId,
+        createAddressDto,
+      );
       const duration = Date.now() - startTime;
-      
-      this.logger.logApiRequest('POST', '/users/me/addresses', HttpStatus.CREATED, duration, { userId });
-      
+
+      this.logger.logApiRequest(
+        'POST',
+        '/users/me/addresses',
+        HttpStatus.CREATED,
+        duration,
+        { userId },
+      );
+
       return {
         id: address._id.toString(),
         userId: address.userId.toString(),
@@ -172,7 +220,13 @@ export class UserController {
       };
     } catch (error) {
       const duration = Date.now() - startTime;
-      this.logger.logApiError('/users/me/addresses', 'POST', HttpStatus.INTERNAL_SERVER_ERROR, error, userId);
+      this.logger.logApiError(
+        '/users/me/addresses',
+        'POST',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+        userId,
+      );
       throw error;
     }
   }
@@ -185,13 +239,22 @@ export class UserController {
     @Body() updateAddressDto: UpdateAddressDto,
   ): Promise<AddressResponseDto> {
     const startTime = Date.now();
-    
+
     try {
-      const address = await this.userService.updateAddress(addressId, updateAddressDto);
+      const address = await this.userService.updateAddress(
+        addressId,
+        updateAddressDto,
+      );
       const duration = Date.now() - startTime;
-      
-      this.logger.logApiRequest('PUT', `/users/me/addresses/${addressId}`, HttpStatus.OK, duration, { userId });
-      
+
+      this.logger.logApiRequest(
+        'PUT',
+        `/users/me/addresses/${addressId}`,
+        HttpStatus.OK,
+        duration,
+        { userId },
+      );
+
       return {
         id: address._id.toString(),
         userId: address.userId.toString(),
@@ -211,7 +274,13 @@ export class UserController {
       };
     } catch (error) {
       const duration = Date.now() - startTime;
-      this.logger.logApiError(`/users/me/addresses/${addressId}`, 'PUT', HttpStatus.INTERNAL_SERVER_ERROR, error, userId);
+      this.logger.logApiError(
+        `/users/me/addresses/${addressId}`,
+        'PUT',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+        userId,
+      );
       throw error;
     }
   }
@@ -223,15 +292,27 @@ export class UserController {
     @Param('addressId') addressId: string,
   ): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       await this.userService.deleteAddress(addressId);
       const duration = Date.now() - startTime;
-      
-      this.logger.logApiRequest('DELETE', `/users/me/addresses/${addressId}`, HttpStatus.NO_CONTENT, duration, { userId });
+
+      this.logger.logApiRequest(
+        'DELETE',
+        `/users/me/addresses/${addressId}`,
+        HttpStatus.NO_CONTENT,
+        duration,
+        { userId },
+      );
     } catch (error) {
       const duration = Date.now() - startTime;
-      this.logger.logApiError(`/users/me/addresses/${addressId}`, 'DELETE', HttpStatus.INTERNAL_SERVER_ERROR, error, userId);
+      this.logger.logApiError(
+        `/users/me/addresses/${addressId}`,
+        'DELETE',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+        userId,
+      );
       throw error;
     }
   }
@@ -243,20 +324,32 @@ export class UserController {
     @Param('addressId') addressId: string,
   ): Promise<{ success: boolean; message: string }> {
     const startTime = Date.now();
-    
+
     try {
       await this.userService.setDefaultAddress(userId, addressId);
       const duration = Date.now() - startTime;
-      
-      this.logger.logApiRequest('PUT', `/users/me/addresses/${addressId}/default`, HttpStatus.OK, duration, { userId });
-      
+
+      this.logger.logApiRequest(
+        'PUT',
+        `/users/me/addresses/${addressId}/default`,
+        HttpStatus.OK,
+        duration,
+        { userId },
+      );
+
       return {
         success: true,
         message: 'Default address updated successfully',
       };
     } catch (error) {
       const duration = Date.now() - startTime;
-      this.logger.logApiError(`/users/me/addresses/${addressId}/default`, 'PUT', HttpStatus.INTERNAL_SERVER_ERROR, error, userId);
+      this.logger.logApiError(
+        `/users/me/addresses/${addressId}/default`,
+        'PUT',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+        userId,
+      );
       throw error;
     }
   }
@@ -272,22 +365,25 @@ export class UserController {
     @Query('limit') limit?: string,
   ): Promise<UserResponseDto[]> {
     const startTime = Date.now();
-    
+
     try {
       let users;
-      
+
       if (search) {
-        users = await this.userService.searchUsers(search, parseInt(limit || '10'));
+        users = await this.userService.searchUsers(
+          search,
+          parseInt(limit || '10'),
+        );
       } else if (role) {
         users = await this.userService.findByRole(role);
       } else {
         users = await this.userService.findActiveUsers();
       }
-      
+
       const duration = Date.now() - startTime;
       this.logger.logApiRequest('GET', '/users', HttpStatus.OK, duration);
-      
-      return users.map(user => ({
+
+      return users.map((user) => ({
         id: user._id.toString(),
         phone: user.phone,
         name: user.name,
@@ -301,7 +397,12 @@ export class UserController {
       }));
     } catch (error) {
       const duration = Date.now() - startTime;
-      this.logger.logApiError('/users', 'GET', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      this.logger.logApiError(
+        '/users',
+        'GET',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
       throw error;
     }
   }
@@ -312,17 +413,22 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   async getUserStats() {
     const startTime = Date.now();
-    
+
     try {
       const stats = await this.userService.getUserStats();
       const duration = Date.now() - startTime;
-      
+
       this.logger.logApiRequest('GET', '/users/stats', HttpStatus.OK, duration);
-      
+
       return stats;
     } catch (error) {
       const duration = Date.now() - startTime;
-      this.logger.logApiError('/users/stats', 'GET', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      this.logger.logApiError(
+        '/users/stats',
+        'GET',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
       throw error;
     }
   }

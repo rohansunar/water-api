@@ -3,7 +3,13 @@ import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { UserService } from '../services/user.service';
-import { User, UserDocument, UserAddress, UserAddressDocument, UserRole } from '../entities/user.entity';
+import {
+  User,
+  UserDocument,
+  UserAddress,
+  UserAddressDocument,
+  UserRole,
+} from '../entities/user.entity';
 import { CustomLoggerService } from '../../../common/logger/logger.service';
 import { EventBusService } from '../../../common/events/event-bus.service';
 import { CreateUserDto, UpdateUserDto } from '../dto/user.dto';
@@ -92,7 +98,9 @@ describe('UserService', () => {
 
     service = module.get<UserService>(UserService);
     userModel = module.get<Model<UserDocument>>(getModelToken(User.name));
-    addressModel = module.get<Model<UserAddressDocument>>(getModelToken(UserAddress.name));
+    addressModel = module.get<Model<UserAddressDocument>>(
+      getModelToken(UserAddress.name),
+    );
     logger = module.get<CustomLoggerService>(CustomLoggerService);
     eventBus = module.get<EventBusService>(EventBusService);
   });
@@ -132,7 +140,9 @@ describe('UserService', () => {
     });
 
     it('should throw error when id is not provided', async () => {
-      await expect(service.findById('')).rejects.toThrow('Missing required fields: id');
+      await expect(service.findById('')).rejects.toThrow(
+        'Missing required fields: id',
+      );
     });
   });
 
@@ -153,7 +163,9 @@ describe('UserService', () => {
         createdAt: mockUser.createdAt,
         updatedAt: mockUser.updatedAt,
       });
-      expect(mockUserModel.findOne).toHaveBeenCalledWith({ email: 'test@example.com' });
+      expect(mockUserModel.findOne).toHaveBeenCalledWith({
+        email: 'test@example.com',
+      });
     });
 
     it('should return null when user does not exist', async () => {
@@ -180,8 +192,13 @@ describe('UserService', () => {
         exec: jest.fn().mockResolvedValue(null), // No existing user
       });
 
-      const mockSavedUser = { ...mockUser, save: jest.fn().mockResolvedValue(mockUser) };
-      jest.spyOn(service as any, 'userModel').mockImplementation(() => mockSavedUser);
+      const mockSavedUser = {
+        ...mockUser,
+        save: jest.fn().mockResolvedValue(mockUser),
+      };
+      jest
+        .spyOn(service as any, 'userModel')
+        .mockImplementation(() => mockSavedUser);
 
       // Mock the constructor
       (userModel as any).mockImplementation(() => mockSavedUser);
@@ -209,11 +226,17 @@ describe('UserService', () => {
         exec: jest.fn().mockResolvedValue(mockUser),
       });
 
-      await expect(service.createUser({
-        email: createUserDto.email!,
-        phone: createUserDto.phone,
-        role: createUserDto.role! as 'customer' | 'vendor' | 'agent' | 'admin',
-      })).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createUser({
+          email: createUserDto.email!,
+          phone: createUserDto.phone,
+          role: createUserDto.role! as
+            | 'customer'
+            | 'vendor'
+            | 'agent'
+            | 'admin',
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -249,7 +272,9 @@ describe('UserService', () => {
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.updateUser('nonexistent', updateData)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.updateUser('nonexistent', updateData),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

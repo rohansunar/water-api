@@ -21,7 +21,7 @@ export interface IEventBus {
   publishMany<T extends IEvent>(events: T[]): Promise<void>;
   subscribe<T extends IEvent>(
     eventType: string,
-    handler: IEventHandler<T>
+    handler: IEventHandler<T>,
   ): void;
   unsubscribe(eventType: string, handler: IEventHandler): void;
 }
@@ -36,7 +36,7 @@ export abstract class BaseEvent implements IEvent {
     public readonly eventType: string,
     public readonly source: string,
     public readonly data: any,
-    correlationId?: string
+    correlationId?: string,
   ) {
     this.eventId = this.generateEventId();
     this.timestamp = new Date();
@@ -163,13 +163,23 @@ export class OrderCreatedEvent extends BaseEvent {
 
 export class ProductStockChangedEvent extends BaseEvent {
   constructor(data: ProductStockChangedEventData, correlationId?: string) {
-    super(EventTypes.PRODUCT_STOCK_CHANGED, 'product-module', data, correlationId);
+    super(
+      EventTypes.PRODUCT_STOCK_CHANGED,
+      'product-module',
+      data,
+      correlationId,
+    );
   }
 }
 
 export class LedgerEntryCreatedEvent extends BaseEvent {
   constructor(data: LedgerEntryCreatedEventData, correlationId?: string) {
-    super(EventTypes.LEDGER_ENTRY_CREATED, 'ledger-module', data, correlationId);
+    super(
+      EventTypes.LEDGER_ENTRY_CREATED,
+      'ledger-module',
+      data,
+      correlationId,
+    );
   }
 }
 

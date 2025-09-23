@@ -1,4 +1,15 @@
-import { IsString, IsEmail, IsOptional, IsBoolean, IsNumber, IsEnum, IsArray, ValidateNested, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+  IsEnum,
+  IsArray,
+  ValidateNested,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { UserRole } from '../entities/user.entity';
 

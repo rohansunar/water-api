@@ -47,7 +47,9 @@ export class UserService {
       });
 
       const savedUser = await user.save();
-      this.logger.log(`Created new user: ${savedUser._id} with phone: ${savedUser.phone}`);
+      this.logger.log(
+        `Created new user: ${savedUser._id} with phone: ${savedUser.phone}`,
+      );
       return savedUser;
     } catch (error) {
       this.logger.error('Error creating user:', error);
@@ -61,7 +63,7 @@ export class UserService {
         .findByIdAndUpdate(
           id,
           { ...updateData, updatedAt: new Date() },
-          { new: true, runValidators: true }
+          { new: true, runValidators: true },
         )
         .exec();
 
@@ -84,7 +86,9 @@ export class UserService {
     }
 
     // Get separate address documents for this user
-    const addresses = await this.addressModel.find({ userId: user._id, isActive: true }).exec();
+    const addresses = await this.addressModel
+      .find({ userId: user._id, isActive: true })
+      .exec();
 
     return {
       id: user._id.toString(),
@@ -127,7 +131,10 @@ export class UserService {
     };
   }
 
-  async updateWalletBalance(userId: string, amount: number): Promise<UserDocument> {
+  async updateWalletBalance(
+    userId: string,
+    amount: number,
+  ): Promise<UserDocument> {
     try {
       const user = await this.userModel.findById(userId).exec();
       if (!user) {
@@ -143,7 +150,10 @@ export class UserService {
       );
       return updatedUser;
     } catch (error) {
-      this.logger.error(`Error updating wallet balance for user ${userId}:`, error);
+      this.logger.error(
+        `Error updating wallet balance for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -157,7 +167,7 @@ export class UserService {
         .findByIdAndUpdate(
           userId,
           { monthlyPaymentMode, updatedAt: new Date() },
-          { new: true, runValidators: true }
+          { new: true, runValidators: true },
         )
         .exec();
 
@@ -170,13 +180,19 @@ export class UserService {
       );
       return updatedUser;
     } catch (error) {
-      this.logger.error(`Error updating monthly payment mode for user ${userId}:`, error);
+      this.logger.error(
+        `Error updating monthly payment mode for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
 
   // Address management methods
-  async createAddress(userId: string, addressData: any): Promise<AddressDocument> {
+  async createAddress(
+    userId: string,
+    addressData: any,
+  ): Promise<AddressDocument> {
     try {
       const address = new this.addressModel({
         userId: new Types.ObjectId(userId),
@@ -184,7 +200,9 @@ export class UserService {
       });
 
       const savedAddress = await address.save();
-      this.logger.log(`Created address for user ${userId}: ${savedAddress._id}`);
+      this.logger.log(
+        `Created address for user ${userId}: ${savedAddress._id}`,
+      );
       return savedAddress;
     } catch (error) {
       this.logger.error(`Error creating address for user ${userId}:`, error);
@@ -201,13 +219,16 @@ export class UserService {
     }
   }
 
-  async updateAddress(addressId: string, updateData: any): Promise<AddressDocument> {
+  async updateAddress(
+    addressId: string,
+    updateData: any,
+  ): Promise<AddressDocument> {
     try {
       const updatedAddress = await this.addressModel
         .findByIdAndUpdate(
           addressId,
           { ...updateData, updatedAt: new Date() },
-          { new: true, runValidators: true }
+          { new: true, runValidators: true },
         )
         .exec();
 

@@ -147,7 +147,7 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
         walletBalance: userProfile.walletBalance,
         isActive: userProfile.isActive,
         monthlyPaymentMode: userProfile.monthlyPaymentMode,
-        addresses: userProfile.addresses.map(addr => ({
+        addresses: userProfile.addresses.map((addr) => ({
           id: addr.id || '',
           type: addr.label || 'home', // Use label as type since type doesn't exist
           street: addr.street,

@@ -2,7 +2,12 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserController } from './controllers/user.controller';
 import { UserService } from './services/user.service';
-import { User, UserSchema, UserAddress, UserAddressSchema } from './entities/user.entity';
+import {
+  User,
+  UserSchema,
+  UserAddress,
+  UserAddressSchema,
+} from './entities/user.entity';
 import { EventBusModule } from '../../common/events/event-bus.module';
 import { LoggerModule } from '../../common/logger/logger.module';
 
@@ -28,9 +33,6 @@ import { LoggerModule } from '../../common/logger/logger.module';
       useExisting: UserService,
     },
   ],
-  exports: [
-    UserService,
-    'IUserService',
-  ],
+  exports: [UserService, 'IUserService'],
 })
 export class UserModule {}

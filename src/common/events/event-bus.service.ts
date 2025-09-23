@@ -37,7 +37,7 @@ export class EventBusService implements IEventBus, OnModuleDestroy {
 
       // Add to queue for processing
       this.eventQueue.push(event);
-      
+
       // Process queue if not already processing
       if (!this.isProcessing) {
         await this.processEventQueue();
@@ -58,10 +58,10 @@ export class EventBusService implements IEventBus, OnModuleDestroy {
   async publishMany<T extends IEvent>(events: T[]): Promise<void> {
     try {
       this.logger.debug(`Publishing ${events.length} events`);
-      
+
       // Add all events to queue
       this.eventQueue.push(...events);
-      
+
       // Process queue if not already processing
       if (!this.isProcessing) {
         await this.processEventQueue();
@@ -81,14 +81,14 @@ export class EventBusService implements IEventBus, OnModuleDestroy {
    */
   subscribe<T extends IEvent>(
     eventType: string,
-    handler: IEventHandler<T>
+    handler: IEventHandler<T>,
   ): void {
     if (!this.handlers.has(eventType)) {
       this.handlers.set(eventType, new Set());
     }
 
     this.handlers.get(eventType)!.add(handler);
-    
+
     this.logger.debug(`Subscribed handler to event: ${eventType}`, {
       handlerName: handler.constructor.name,
       totalHandlers: this.handlers.get(eventType)!.size,
@@ -102,12 +102,12 @@ export class EventBusService implements IEventBus, OnModuleDestroy {
     const eventHandlers = this.handlers.get(eventType);
     if (eventHandlers) {
       eventHandlers.delete(handler);
-      
+
       // Clean up empty handler sets
       if (eventHandlers.size === 0) {
         this.handlers.delete(eventType);
       }
-      
+
       this.logger.debug(`Unsubscribed handler from event: ${eventType}`, {
         handlerName: handler.constructor.name,
       });
@@ -144,7 +144,7 @@ export class EventBusService implements IEventBus, OnModuleDestroy {
    */
   private async processEvent(event: IEvent): Promise<void> {
     const eventHandlers = this.handlers.get(event.eventType);
-    
+
     if (!eventHandlers || eventHandlers.size === 0) {
       this.logger.debug(`No handlers found for event: ${event.eventType}`, {
         eventId: event.eventId,
@@ -182,7 +182,7 @@ export class EventBusService implements IEventBus, OnModuleDestroy {
       });
 
       await Promise.all(handlerPromises);
-      
+
       this.logger.debug(`Event processed by all handlers`, {
         eventType: event.eventType,
         eventId: event.eventId,
@@ -202,8 +202,10 @@ export class EventBusService implements IEventBus, OnModuleDestroy {
     queueSize: number;
     processingCount: number;
   } {
-    const totalHandlers = Array.from(this.handlers.values())
-      .reduce((sum, handlers) => sum + handlers.size, 0);
+    const totalHandlers = Array.from(this.handlers.values()).reduce(
+      (sum, handlers) => sum + handlers.size,
+      0,
+    );
 
     return {
       totalEventTypes: this.handlers.size,

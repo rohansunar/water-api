@@ -118,32 +118,33 @@ describe('Product Schema', () => {
     it('should have correct indexes defined', () => {
       const schema = ProductSchema;
       const indexes = schema.indexes();
-      
+
       // Check for vendorId index
-      const vendorIdIndex = indexes.find(index => index[0].vendorId === 1);
+      const vendorIdIndex = indexes.find((index) => index[0].vendorId === 1);
       expect(vendorIdIndex).toBeDefined();
-      
+
       // Check for SKU unique index
-      const skuIndex = indexes.find(index => index[0].sku === 1);
+      const skuIndex = indexes.find((index) => index[0].sku === 1);
       expect(skuIndex).toBeDefined();
       expect(skuIndex[1].unique).toBe(true);
       expect(skuIndex[1].sparse).toBe(true);
-      
+
       // Check for category index
-      const categoryIndex = indexes.find(index => index[0].category === 1);
+      const categoryIndex = indexes.find((index) => index[0].category === 1);
       expect(categoryIndex).toBeDefined();
-      
+
       // Check for compound indexes
-      const vendorAvailableIndex = indexes.find(index => 
-        index[0].vendorId === 1 && index[0].isAvailable === 1
+      const vendorAvailableIndex = indexes.find(
+        (index) => index[0].vendorId === 1 && index[0].isAvailable === 1,
       );
       expect(vendorAvailableIndex).toBeDefined();
-      
+
       // Check for text search index
-      const textIndex = indexes.find(index => 
-        index[0].name === 'text' || 
-        index[0].description === 'text' || 
-        index[0].tags === 'text'
+      const textIndex = indexes.find(
+        (index) =>
+          index[0].name === 'text' ||
+          index[0].description === 'text' ||
+          index[0].tags === 'text',
       );
       expect(textIndex).toBeDefined();
     });
@@ -169,12 +170,17 @@ describe('Product Schema', () => {
     it('should generate SKU if not provided', () => {
       // Simulate pre-save middleware logic
       if (mockProduct.isNew && !mockProduct.sku) {
-        const vendorPrefix = mockProduct.vendorId.toString().slice(-4).toUpperCase();
-        const categoryPrefix = mockProduct.category.substring(0, 3).toUpperCase();
+        const vendorPrefix = mockProduct.vendorId
+          .toString()
+          .slice(-4)
+          .toUpperCase();
+        const categoryPrefix = mockProduct.category
+          .substring(0, 3)
+          .toUpperCase();
         const timestamp = Date.now().toString().slice(-6);
         mockProduct.sku = `${vendorPrefix}-${categoryPrefix}-${timestamp}`;
       }
-      
+
       expect(mockProduct.sku).toBeDefined();
       expect(mockProduct.sku).toContain('9011'); // Last 4 chars of vendorId
       expect(mockProduct.sku).toContain('WAT'); // First 3 chars of WATER_JAR
@@ -183,34 +189,40 @@ describe('Product Schema', () => {
 
     it('should validate active discount', () => {
       const now = new Date();
-      
+
       // Simulate pre-save middleware logic
       if (mockProduct.pricing?.discountPercentage > 0) {
-        const discountActive = (!mockProduct.pricing.discountStartDate || now >= mockProduct.pricing.discountStartDate) &&
-                              (!mockProduct.pricing.discountEndDate || now <= mockProduct.pricing.discountEndDate);
-        
+        const discountActive =
+          (!mockProduct.pricing.discountStartDate ||
+            now >= mockProduct.pricing.discountStartDate) &&
+          (!mockProduct.pricing.discountEndDate ||
+            now <= mockProduct.pricing.discountEndDate);
+
         if (!discountActive) {
           mockProduct.pricing.discountPercentage = 0;
         }
       }
-      
+
       expect(mockProduct.pricing.discountPercentage).toBe(10); // Should remain active
     });
 
     it('should reset expired discount', () => {
       mockProduct.pricing.discountEndDate = new Date(Date.now() - 86400000); // Yesterday
       const now = new Date();
-      
+
       // Simulate pre-save middleware logic
       if (mockProduct.pricing?.discountPercentage > 0) {
-        const discountActive = (!mockProduct.pricing.discountStartDate || now >= mockProduct.pricing.discountStartDate) &&
-                              (!mockProduct.pricing.discountEndDate || now <= mockProduct.pricing.discountEndDate);
-        
+        const discountActive =
+          (!mockProduct.pricing.discountStartDate ||
+            now >= mockProduct.pricing.discountStartDate) &&
+          (!mockProduct.pricing.discountEndDate ||
+            now <= mockProduct.pricing.discountEndDate);
+
         if (!discountActive) {
           mockProduct.pricing.discountPercentage = 0;
         }
       }
-      
+
       expect(mockProduct.pricing.discountPercentage).toBe(0); // Should be reset
     });
   });
@@ -239,12 +251,14 @@ describe('Product Schema', () => {
 
     it('should check if product is in stock', () => {
       // Mock isInStock method
-      const isInStock = function(quantity: number = 1): boolean {
-        return this.stock >= quantity && this.isAvailable && this.status === 'active';
+      const isInStock = function (quantity: number = 1): boolean {
+        return (
+          this.stock >= quantity && this.isAvailable && this.status === 'active'
+        );
       };
-      
+
       mockProduct.isInStock = isInStock.bind(mockProduct);
-      
+
       expect(mockProduct.isInStock(10)).toBe(true);
       expect(mockProduct.isInStock(100)).toBe(false);
       expect(mockProduct.isInStock()).toBe(true);
@@ -252,67 +266,76 @@ describe('Product Schema', () => {
 
     it('should calculate effective price with discount', () => {
       // Mock getEffectivePrice method
-      const getEffectivePrice = function(quantity: number = 1): number {
+      const getEffectivePrice = function (quantity: number = 1): number {
         let effectivePrice = this.price;
-        
+
         // Check for bulk pricing
         if (this.pricing?.bulkPricing?.length > 0) {
           const applicableBulkPrice = this.pricing.bulkPricing
             .filter((bp: any) => quantity >= bp.minQuantity)
             .sort((a: any, b: any) => b.minQuantity - a.minQuantity)[0];
-          
+
           if (applicableBulkPrice) {
             effectivePrice = applicableBulkPrice.price;
           }
         }
-        
+
         // Apply discount if active
         if (this.pricing?.discountPercentage > 0) {
           const now = new Date();
-          const discountActive = (!this.pricing.discountStartDate || now >= this.pricing.discountStartDate) &&
-                                (!this.pricing.discountEndDate || now <= this.pricing.discountEndDate);
-          
+          const discountActive =
+            (!this.pricing.discountStartDate ||
+              now >= this.pricing.discountStartDate) &&
+            (!this.pricing.discountEndDate ||
+              now <= this.pricing.discountEndDate);
+
           if (discountActive) {
-            effectivePrice = effectivePrice * (1 - this.pricing.discountPercentage / 100);
+            effectivePrice =
+              effectivePrice * (1 - this.pricing.discountPercentage / 100);
           }
         }
-        
+
         return Math.round(effectivePrice * 100) / 100;
       };
-      
+
       mockProduct.getEffectivePrice = getEffectivePrice.bind(mockProduct);
-      
+
       // Test regular price with discount
       expect(mockProduct.getEffectivePrice(1)).toBe(90); // 100 - 10% = 90
-      
+
       // Test bulk pricing with discount
       expect(mockProduct.getEffectivePrice(10)).toBe(81); // 90 - 10% = 81
-      
+
       // Test bulk pricing tier
       expect(mockProduct.getEffectivePrice(5)).toBe(85.5); // 95 - 10% = 85.5
     });
 
     it('should check area availability', () => {
       // Mock isAvailableInArea method
-      const isAvailableInArea = function(pincode: string): boolean {
-        return this.areaPincodes.length === 0 || this.areaPincodes.includes(pincode);
+      const isAvailableInArea = function (pincode: string): boolean {
+        return (
+          this.areaPincodes.length === 0 || this.areaPincodes.includes(pincode)
+        );
       };
-      
+
       mockProduct.isAvailableInArea = isAvailableInArea.bind(mockProduct);
-      
+
       expect(mockProduct.isAvailableInArea('560001')).toBe(true);
       expect(mockProduct.isAvailableInArea('560004')).toBe(false);
     });
 
     it('should update stock correctly', () => {
       // Mock updateStock method
-      const updateStock = function(quantity: number, operation: 'add' | 'subtract' = 'subtract'): void {
+      const updateStock = function (
+        quantity: number,
+        operation: 'add' | 'subtract' = 'subtract',
+      ): void {
         if (operation === 'add') {
           this.stock += quantity;
         } else {
           this.stock = Math.max(0, this.stock - quantity);
         }
-        
+
         // Update status based on stock level
         if (this.stock === 0) {
           this.status = 'out_of_stock';
@@ -320,23 +343,23 @@ describe('Product Schema', () => {
           this.status = 'active';
         }
       };
-      
+
       mockProduct.updateStock = updateStock.bind(mockProduct);
-      
+
       // Test subtract operation
       mockProduct.updateStock(10, 'subtract');
       expect(mockProduct.stock).toBe(40);
       expect(mockProduct.status).toBe('active');
-      
+
       // Test add operation
       mockProduct.updateStock(20, 'add');
       expect(mockProduct.stock).toBe(60);
-      
+
       // Test stock depletion
       mockProduct.updateStock(60, 'subtract');
       expect(mockProduct.stock).toBe(0);
       expect(mockProduct.status).toBe('out_of_stock');
-      
+
       // Test stock restoration
       mockProduct.status = 'out_of_stock';
       mockProduct.updateStock(10, 'add');

@@ -25,7 +25,9 @@ describe('Subscription Schema', () => {
       ],
     }).compile();
 
-    subscriptionModel = module.get<Model<Subscription>>(getModelToken(Subscription.name));
+    subscriptionModel = module.get<Model<Subscription>>(
+      getModelToken(Subscription.name),
+    );
   });
 
   describe('Schema Definition', () => {
@@ -124,28 +126,32 @@ describe('Subscription Schema', () => {
     it('should have correct indexes defined', () => {
       const schema = SubscriptionSchema;
       const indexes = schema.indexes();
-      
+
       // Check for basic indexes
-      const customerIdIndex = indexes.find(index => index[0].customerId === 1);
+      const customerIdIndex = indexes.find(
+        (index) => index[0].customerId === 1,
+      );
       expect(customerIdIndex).toBeDefined();
-      
-      const vendorIdIndex = indexes.find(index => index[0].vendorId === 1);
+
+      const vendorIdIndex = indexes.find((index) => index[0].vendorId === 1);
       expect(vendorIdIndex).toBeDefined();
-      
-      const statusIndex = indexes.find(index => index[0].status === 1);
+
+      const statusIndex = indexes.find((index) => index[0].status === 1);
       expect(statusIndex).toBeDefined();
-      
-      const nextDeliveryIndex = indexes.find(index => index[0].nextDeliveryDate === 1);
+
+      const nextDeliveryIndex = indexes.find(
+        (index) => index[0].nextDeliveryDate === 1,
+      );
       expect(nextDeliveryIndex).toBeDefined();
-      
+
       // Check for compound indexes
-      const customerStatusIndex = indexes.find(index => 
-        index[0].customerId === 1 && index[0].status === 1
+      const customerStatusIndex = indexes.find(
+        (index) => index[0].customerId === 1 && index[0].status === 1,
       );
       expect(customerStatusIndex).toBeDefined();
-      
-      const statusDeliveryIndex = indexes.find(index => 
-        index[0].status === 1 && index[0].nextDeliveryDate === 1
+
+      const statusDeliveryIndex = indexes.find(
+        (index) => index[0].status === 1 && index[0].nextDeliveryDate === 1,
       );
       expect(statusDeliveryIndex).toBeDefined();
     });
@@ -169,31 +175,36 @@ describe('Subscription Schema', () => {
       // Simulate pre-save middleware logic
       if (mockSubscription.totalDeliveries > 0) {
         mockSubscription.deliverySuccessRate = Math.round(
-          (mockSubscription.successfulDeliveries / mockSubscription.totalDeliveries) * 100
+          (mockSubscription.successfulDeliveries /
+            mockSubscription.totalDeliveries) *
+            100,
         );
       }
-      
+
       expect(mockSubscription.deliverySuccessRate).toBe(80); // 8/10 * 100 = 80%
     });
 
     it('should calculate total amount per delivery', () => {
       // Simulate pre-save middleware logic
-      mockSubscription.totalAmount = mockSubscription.unitPrice * mockSubscription.quantity;
-      
+      mockSubscription.totalAmount =
+        mockSubscription.unitPrice * mockSubscription.quantity;
+
       expect(mockSubscription.totalAmount).toBe(200); // 100 * 2 = 200
     });
 
     it('should handle zero deliveries for success rate', () => {
       mockSubscription.totalDeliveries = 0;
       mockSubscription.successfulDeliveries = 0;
-      
+
       // Simulate pre-save middleware logic
       if (mockSubscription.totalDeliveries > 0) {
         mockSubscription.deliverySuccessRate = Math.round(
-          (mockSubscription.successfulDeliveries / mockSubscription.totalDeliveries) * 100
+          (mockSubscription.successfulDeliveries /
+            mockSubscription.totalDeliveries) *
+            100,
         );
       }
-      
+
       expect(mockSubscription.deliverySuccessRate).toBe(0); // Should remain 0
     });
   });
@@ -220,18 +231,20 @@ describe('Subscription Schema', () => {
 
     it('should check if subscription is active', () => {
       // Mock isActive method
-      const isActive = function(): boolean {
-        return this.status === 'active' && 
-               (!this.endDate || new Date() <= this.endDate);
+      const isActive = function (): boolean {
+        return (
+          this.status === 'active' &&
+          (!this.endDate || new Date() <= this.endDate)
+        );
       };
-      
+
       mockSubscription.isActive = isActive.bind(mockSubscription);
-      
+
       expect(mockSubscription.isActive()).toBe(true);
-      
+
       mockSubscription.status = 'paused';
       expect(mockSubscription.isActive()).toBe(false);
-      
+
       mockSubscription.status = 'active';
       mockSubscription.endDate = new Date(Date.now() - 86400000); // Yesterday
       expect(mockSubscription.isActive()).toBe(false);
@@ -239,58 +252,60 @@ describe('Subscription Schema', () => {
 
     it('should check if subscription can be paused', () => {
       // Mock canBePaused method
-      const canBePaused = function(): boolean {
+      const canBePaused = function (): boolean {
         return this.status === 'active';
       };
-      
+
       mockSubscription.canBePaused = canBePaused.bind(mockSubscription);
-      
+
       expect(mockSubscription.canBePaused()).toBe(true);
-      
+
       mockSubscription.status = 'paused';
       expect(mockSubscription.canBePaused()).toBe(false);
     });
 
     it('should check if subscription can be resumed', () => {
       // Mock canBeResumed method
-      const canBeResumed = function(): boolean {
-        return this.status === 'paused' && 
-               (!this.pausedUntil || new Date() >= this.pausedUntil);
+      const canBeResumed = function (): boolean {
+        return (
+          this.status === 'paused' &&
+          (!this.pausedUntil || new Date() >= this.pausedUntil)
+        );
       };
-      
+
       mockSubscription.canBeResumed = canBeResumed.bind(mockSubscription);
-      
+
       mockSubscription.status = 'paused';
       expect(mockSubscription.canBeResumed()).toBe(true);
-      
+
       mockSubscription.pausedUntil = new Date(Date.now() + 86400000); // Tomorrow
       expect(mockSubscription.canBeResumed()).toBe(false);
-      
+
       mockSubscription.status = 'active';
       expect(mockSubscription.canBeResumed()).toBe(false);
     });
 
     it('should check if delivery is due', () => {
       // Mock isDeliveryDue method
-      const isDeliveryDue = function(): boolean {
+      const isDeliveryDue = function (): boolean {
         return this.isActive() && new Date() >= this.nextDeliveryDate;
       };
-      
+
       mockSubscription.isDeliveryDue = isDeliveryDue.bind(mockSubscription);
       mockSubscription.isActive = () => true;
-      
+
       expect(mockSubscription.isDeliveryDue()).toBe(false); // Next delivery is tomorrow
-      
+
       mockSubscription.nextDeliveryDate = new Date(Date.now() - 3600000); // 1 hour ago
       expect(mockSubscription.isDeliveryDue()).toBe(true);
     });
 
     it('should calculate next delivery date for daily frequency', () => {
       // Mock calculateNextDeliveryDate method
-      const calculateNextDeliveryDate = function(fromDate?: Date): Date {
+      const calculateNextDeliveryDate = function (fromDate?: Date): Date {
         const baseDate = fromDate || this.nextDeliveryDate || this.startDate;
         const nextDate = new Date(baseDate);
-        
+
         switch (this.frequency) {
           case 'daily':
             nextDate.setDate(nextDate.getDate() + 1);
@@ -305,47 +320,54 @@ describe('Subscription Schema', () => {
             nextDate.setMonth(nextDate.getMonth() + 1);
             break;
         }
-        
+
         return nextDate;
       };
-      
-      mockSubscription.calculateNextDeliveryDate = calculateNextDeliveryDate.bind(mockSubscription);
+
+      mockSubscription.calculateNextDeliveryDate =
+        calculateNextDeliveryDate.bind(mockSubscription);
       mockSubscription.frequency = 'daily';
-      
+
       const baseDate = new Date('2024-01-15');
       const nextDate = mockSubscription.calculateNextDeliveryDate(baseDate);
-      
+
       expect(nextDate.getDate()).toBe(16);
       expect(nextDate.getMonth()).toBe(0); // January
     });
 
     it('should calculate next delivery date for weekly frequency', () => {
-      const calculateNextDeliveryDate = function(fromDate?: Date): Date {
+      const calculateNextDeliveryDate = function (fromDate?: Date): Date {
         const baseDate = fromDate || this.nextDeliveryDate || this.startDate;
         const nextDate = new Date(baseDate);
-        
+
         switch (this.frequency) {
           case 'weekly':
             nextDate.setDate(nextDate.getDate() + 7);
             break;
         }
-        
+
         return nextDate;
       };
-      
-      mockSubscription.calculateNextDeliveryDate = calculateNextDeliveryDate.bind(mockSubscription);
+
+      mockSubscription.calculateNextDeliveryDate =
+        calculateNextDeliveryDate.bind(mockSubscription);
       mockSubscription.frequency = 'weekly';
-      
+
       const baseDate = new Date('2024-01-15');
       const nextDate = mockSubscription.calculateNextDeliveryDate(baseDate);
-      
+
       expect(nextDate.getDate()).toBe(22);
       expect(nextDate.getMonth()).toBe(0); // January
     });
 
     it('should add delivery record to history', () => {
       // Mock addDeliveryRecord method
-      const addDeliveryRecord = function(orderId: Types.ObjectId, status: string, deliveredDate?: Date, notes?: string): void {
+      const addDeliveryRecord = function (
+        orderId: Types.ObjectId,
+        status: string,
+        deliveredDate?: Date,
+        notes?: string,
+      ): void {
         this.deliveryHistory.push({
           orderId,
           scheduledDate: this.nextDeliveryDate,
@@ -354,7 +376,7 @@ describe('Subscription Schema', () => {
           quantity: this.quantity,
           notes,
         });
-        
+
         this.totalDeliveries++;
         if (status === 'delivered') {
           this.successfulDeliveries++;
@@ -362,19 +384,26 @@ describe('Subscription Schema', () => {
         } else if (status === 'missed') {
           this.missedDeliveries++;
         }
-        
+
         // Update next delivery date
         this.nextDeliveryDate = this.calculateNextDeliveryDate();
       };
-      
-      mockSubscription.addDeliveryRecord = addDeliveryRecord.bind(mockSubscription);
-      mockSubscription.calculateNextDeliveryDate = () => new Date(Date.now() + 7 * 86400000); // Next week
-      
+
+      mockSubscription.addDeliveryRecord =
+        addDeliveryRecord.bind(mockSubscription);
+      mockSubscription.calculateNextDeliveryDate = () =>
+        new Date(Date.now() + 7 * 86400000); // Next week
+
       const orderId = new Types.ObjectId();
       const deliveredDate = new Date();
-      
-      mockSubscription.addDeliveryRecord(orderId, 'delivered', deliveredDate, 'Delivered successfully');
-      
+
+      mockSubscription.addDeliveryRecord(
+        orderId,
+        'delivered',
+        deliveredDate,
+        'Delivered successfully',
+      );
+
       expect(mockSubscription.deliveryHistory).toHaveLength(1);
       expect(mockSubscription.deliveryHistory[0].orderId).toBe(orderId);
       expect(mockSubscription.deliveryHistory[0].status).toBe('delivered');

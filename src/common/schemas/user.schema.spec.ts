@@ -111,20 +111,20 @@ describe('User Schema', () => {
     it('should have correct indexes defined', () => {
       const schema = UserSchema;
       const indexes = schema.indexes();
-      
+
       // Check for phone index
-      const phoneIndex = indexes.find(index => index[0].phone === 1);
+      const phoneIndex = indexes.find((index) => index[0].phone === 1);
       expect(phoneIndex).toBeDefined();
       expect(phoneIndex[1].unique).toBe(true);
-      
+
       // Check for email index
-      const emailIndex = indexes.find(index => index[0].email === 1);
+      const emailIndex = indexes.find((index) => index[0].email === 1);
       expect(emailIndex).toBeDefined();
       expect(emailIndex[1].unique).toBe(true);
       expect(emailIndex[1].sparse).toBe(true);
-      
+
       // Check for role index
-      const roleIndex = indexes.find(index => index[0].role === 1);
+      const roleIndex = indexes.find((index) => index[0].role === 1);
       expect(roleIndex).toBeDefined();
     });
   });
@@ -146,12 +146,16 @@ describe('User Schema', () => {
     it('should initialize customer extension for customer role', () => {
       const schema = UserSchema;
       const preSaveHook = schema.pre.bind(schema);
-      
+
       // Mock the pre-save middleware execution
       mockUser.role = UserRole.CUSTOMER;
-      
+
       // Simulate pre-save middleware logic
-      if (mockUser.isNew && mockUser.role === UserRole.CUSTOMER && !mockUser.customerExtension) {
+      if (
+        mockUser.isNew &&
+        mockUser.role === UserRole.CUSTOMER &&
+        !mockUser.customerExtension
+      ) {
         mockUser.customerExtension = {
           loyaltyPoints: 0,
           preferences: {
@@ -163,17 +167,23 @@ describe('User Schema', () => {
           },
         };
       }
-      
+
       expect(mockUser.customerExtension).toBeDefined();
       expect(mockUser.customerExtension.loyaltyPoints).toBe(0);
-      expect(mockUser.customerExtension.preferences.notificationPreferences.sms).toBe(true);
+      expect(
+        mockUser.customerExtension.preferences.notificationPreferences.sms,
+      ).toBe(true);
     });
 
     it('should initialize vendor extension for vendor role', () => {
       mockUser.role = UserRole.VENDOR;
-      
+
       // Simulate pre-save middleware logic
-      if (mockUser.isNew && mockUser.role === UserRole.VENDOR && !mockUser.vendorExtension) {
+      if (
+        mockUser.isNew &&
+        mockUser.role === UserRole.VENDOR &&
+        !mockUser.vendorExtension
+      ) {
         mockUser.vendorExtension = {
           kycStatus: 'pending',
           rating: 0,
@@ -185,7 +195,7 @@ describe('User Schema', () => {
           },
         };
       }
-      
+
       expect(mockUser.vendorExtension).toBeDefined();
       expect(mockUser.vendorExtension.kycStatus).toBe('pending');
       expect(mockUser.vendorExtension.rating).toBe(0);
@@ -196,12 +206,22 @@ describe('User Schema', () => {
       mockUser.role = UserRole.DELIVERY_RIDER;
 
       // Simulate pre-save middleware logic
-      if (mockUser.isNew && mockUser.role === UserRole.DELIVERY_RIDER && !mockUser.riderExtension) {
+      if (
+        mockUser.isNew &&
+        mockUser.role === UserRole.DELIVERY_RIDER &&
+        !mockUser.riderExtension
+      ) {
         mockUser.riderExtension = {
           shift: {
             startTime: '09:00',
             endTime: '18:00',
-            daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+            daysOfWeek: [
+              'monday',
+              'tuesday',
+              'wednesday',
+              'thursday',
+              'friday',
+            ],
           },
           status: 'inactive',
           performanceMetrics: {
@@ -215,21 +235,27 @@ describe('User Schema', () => {
       expect(mockUser.riderExtension).toBeDefined();
       expect(mockUser.riderExtension.status).toBe('inactive');
       expect(mockUser.riderExtension.shift.startTime).toBe('09:00');
-      expect(mockUser.riderExtension.performanceMetrics.totalDeliveries).toBe(0);
+      expect(mockUser.riderExtension.performanceMetrics.totalDeliveries).toBe(
+        0,
+      );
     });
 
     it('should initialize admin extension for admin role', () => {
       mockUser.role = UserRole.ADMIN;
-      
+
       // Simulate pre-save middleware logic
-      if (mockUser.isNew && mockUser.role === UserRole.ADMIN && !mockUser.adminExtension) {
+      if (
+        mockUser.isNew &&
+        mockUser.role === UserRole.ADMIN &&
+        !mockUser.adminExtension
+      ) {
         mockUser.adminExtension = {
           roleLevel: 'support',
           permissions: [],
           accessLevel: 1,
         };
       }
-      
+
       expect(mockUser.adminExtension).toBeDefined();
       expect(mockUser.adminExtension.roleLevel).toBe('support');
       expect(mockUser.adminExtension.permissions).toEqual([]);
@@ -263,7 +289,7 @@ describe('User Schema', () => {
     it('should transform document to JSON correctly', () => {
       const schema = UserSchema;
       const transformFunction = schema.options.toJSON.transform;
-      
+
       const mockDoc = {};
       const mockRet = {
         _id: '507f1f77bcf86cd799439011',
@@ -273,9 +299,9 @@ describe('User Schema', () => {
         name: 'Test User',
         phone: '9999999999',
       };
-      
+
       const result = transformFunction(mockDoc, mockRet);
-      
+
       expect(result.id).toBe('507f1f77bcf86cd799439011');
       expect(result._id).toBeUndefined();
       expect(result.__v).toBeUndefined();

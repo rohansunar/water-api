@@ -6,12 +6,29 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 
 // Import schemas
 import { User, UserSchema } from '../../src/common/schemas/user.schema';
-import { Product, ProductSchema } from '../../src/common/schemas/product.schema';
+import {
+  Product,
+  ProductSchema,
+} from '../../src/common/schemas/product.schema';
 import { Order, OrderSchema } from '../../src/common/schemas/order.schema';
-import { Subscription, SubscriptionSchema } from '../../src/common/schemas/subscription.schema';
-import { Wallet, WalletSchema, WalletTransaction, WalletTransactionSchema } from '../../src/common/schemas/wallet.schema';
-import { Payment, PaymentSchema } from '../../src/common/schemas/payment.schema';
-import { LedgerEntry, LedgerEntrySchema } from '../../src/common/schemas/ledger-entry.schema';
+import {
+  Subscription,
+  SubscriptionSchema,
+} from '../../src/common/schemas/subscription.schema';
+import {
+  Wallet,
+  WalletSchema,
+  WalletTransaction,
+  WalletTransactionSchema,
+} from '../../src/common/schemas/wallet.schema';
+import {
+  Payment,
+  PaymentSchema,
+} from '../../src/common/schemas/payment.schema';
+import {
+  LedgerEntry,
+  LedgerEntrySchema,
+} from '../../src/common/schemas/ledger-entry.schema';
 
 describe('Business Logic Validation Integration Tests', () => {
   let app: INestApplication;
@@ -49,13 +66,23 @@ describe('Business Logic Validation Integration Tests', () => {
     await app.init();
 
     userModel = moduleFixture.get<Model<User>>(getModelToken(User.name));
-    productModel = moduleFixture.get<Model<Product>>(getModelToken(Product.name));
+    productModel = moduleFixture.get<Model<Product>>(
+      getModelToken(Product.name),
+    );
     orderModel = moduleFixture.get<Model<Order>>(getModelToken(Order.name));
-    subscriptionModel = moduleFixture.get<Model<Subscription>>(getModelToken(Subscription.name));
+    subscriptionModel = moduleFixture.get<Model<Subscription>>(
+      getModelToken(Subscription.name),
+    );
     walletModel = moduleFixture.get<Model<Wallet>>(getModelToken(Wallet.name));
-    walletTransactionModel = moduleFixture.get<Model<WalletTransaction>>(getModelToken(WalletTransaction.name));
-    paymentModel = moduleFixture.get<Model<Payment>>(getModelToken(Payment.name));
-    ledgerEntryModel = moduleFixture.get<Model<LedgerEntry>>(getModelToken(LedgerEntry.name));
+    walletTransactionModel = moduleFixture.get<Model<WalletTransaction>>(
+      getModelToken(WalletTransaction.name),
+    );
+    paymentModel = moduleFixture.get<Model<Payment>>(
+      getModelToken(Payment.name),
+    );
+    ledgerEntryModel = moduleFixture.get<Model<LedgerEntry>>(
+      getModelToken(LedgerEntry.name),
+    );
   });
 
   afterAll(async () => {
@@ -147,17 +174,19 @@ describe('Business Logic Validation Integration Tests', () => {
       });
 
       // Test daily limit enforcement
-      const canDebit400 = wallet.balance >= 400 && 
-                         (wallet.dailySpent + 400) <= wallet.dailyTransactionLimit &&
-                         (wallet.monthlySpent + 400) <= wallet.monthlyTransactionLimit;
-      
+      const canDebit400 =
+        wallet.balance >= 400 &&
+        wallet.dailySpent + 400 <= wallet.dailyTransactionLimit &&
+        wallet.monthlySpent + 400 <= wallet.monthlyTransactionLimit;
+
       expect(canDebit400).toBe(false); // 300 + 400 = 700 > 500 (daily limit)
 
       // Test valid transaction within limits
-      const canDebit150 = wallet.balance >= 150 && 
-                         (wallet.dailySpent + 150) <= wallet.dailyTransactionLimit &&
-                         (wallet.monthlySpent + 150) <= wallet.monthlyTransactionLimit;
-      
+      const canDebit150 =
+        wallet.balance >= 150 &&
+        wallet.dailySpent + 150 <= wallet.dailyTransactionLimit &&
+        wallet.monthlySpent + 150 <= wallet.monthlyTransactionLimit;
+
       expect(canDebit150).toBe(true); // 300 + 150 = 450 < 500 (daily limit)
     });
 
@@ -181,10 +210,12 @@ describe('Business Logic Validation Integration Tests', () => {
 
       // Check if transaction can be reversed (within 24 hours)
       const reversalWindow = 24 * 60 * 60 * 1000; // 24 hours
-      const timeSinceTransaction = Date.now() - originalTransaction.createdAt.getTime();
-      const canBeReversed = originalTransaction.status === 'completed' && 
-                           !originalTransaction.reversalTransactionId && 
-                           timeSinceTransaction <= reversalWindow;
+      const timeSinceTransaction =
+        Date.now() - originalTransaction.createdAt.getTime();
+      const canBeReversed =
+        originalTransaction.status === 'completed' &&
+        !originalTransaction.reversalTransactionId &&
+        timeSinceTransaction <= reversalWindow;
 
       expect(canBeReversed).toBe(true);
 
@@ -204,7 +235,9 @@ describe('Business Logic Validation Integration Tests', () => {
       originalTransaction.reversedAt = new Date();
       await originalTransaction.save();
 
-      expect(originalTransaction.reversalTransactionId.toString()).toBe(reversalTransaction._id.toString());
+      expect(originalTransaction.reversalTransactionId.toString()).toBe(
+        reversalTransaction._id.toString(),
+      );
       expect(reversalTransaction.type).toBe('credit');
       expect(reversalTransaction.amount).toBe(200);
     });
@@ -350,9 +383,10 @@ describe('Business Logic Validation Integration Tests', () => {
       await wallet.save();
 
       // Check if payment can be processed
-      const canProcessPayment = wallet.balance >= order.totalAmount && 
-                               wallet.isActive && 
-                               !wallet.isBlocked;
+      const canProcessPayment =
+        wallet.balance >= order.totalAmount &&
+        wallet.isActive &&
+        !wallet.isBlocked;
 
       expect(canProcessPayment).toBe(false);
 
@@ -455,7 +489,9 @@ describe('Business Logic Validation Integration Tests', () => {
       expect(subscription.deliveryHistory).toHaveLength(1);
       expect(subscription.deliveryHistory[0].status).toBe('delivered');
       expect(subscription.deliverySuccessRate).toBe(100); // 1/1 * 100
-      expect(subscription.nextDeliveryDate.toDateString()).toBe(nextMonday.toDateString());
+      expect(subscription.nextDeliveryDate.toDateString()).toBe(
+        nextMonday.toDateString(),
+      );
     });
 
     it('should handle subscription pause and resume', async () => {
@@ -494,17 +530,19 @@ describe('Business Logic Validation Integration Tests', () => {
       expect(subscription.pauseReason).toBe('Customer requested pause');
 
       // Test if subscription can be resumed
-      const canBeResumed = subscription.status === 'paused' && 
-                          (!subscription.pausedUntil || new Date() >= subscription.pausedUntil);
-      
+      const canBeResumed =
+        subscription.status === 'paused' &&
+        (!subscription.pausedUntil || new Date() >= subscription.pausedUntil);
+
       // Should not be resumable yet (paused until future date)
       expect(canBeResumed).toBe(false);
 
       // Simulate time passing and resume
       subscription.pausedUntil = new Date(Date.now() - 1000); // Past date
-      const canBeResumedNow = subscription.status === 'paused' && 
-                             (!subscription.pausedUntil || new Date() >= subscription.pausedUntil);
-      
+      const canBeResumedNow =
+        subscription.status === 'paused' &&
+        (!subscription.pausedUntil || new Date() >= subscription.pausedUntil);
+
       expect(canBeResumedNow).toBe(true);
 
       // Resume subscription
@@ -551,7 +589,9 @@ describe('Business Logic Validation Integration Tests', () => {
       deliveries.forEach((delivery, index) => {
         subscription.deliveryHistory.push({
           orderId: new Types.ObjectId(),
-          scheduledDate: new Date(Date.now() - (5 - index) * 24 * 60 * 60 * 1000),
+          scheduledDate: new Date(
+            Date.now() - (5 - index) * 24 * 60 * 60 * 1000,
+          ),
           deliveredDate: delivery.success ? new Date() : undefined,
           status: delivery.status,
           quantity: 1,
@@ -567,9 +607,11 @@ describe('Business Logic Validation Integration Tests', () => {
 
       // Calculate metrics
       subscription.deliverySuccessRate = Math.round(
-        (subscription.successfulDeliveries / subscription.totalDeliveries) * 100
+        (subscription.successfulDeliveries / subscription.totalDeliveries) *
+          100,
       );
-      subscription.totalRevenue = subscription.successfulDeliveries * subscription.unitPrice;
+      subscription.totalRevenue =
+        subscription.successfulDeliveries * subscription.unitPrice;
 
       await subscription.save();
 

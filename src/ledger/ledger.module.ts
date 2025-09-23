@@ -6,10 +6,7 @@ import {
   LedgerEntry,
   LedgerEntrySchema,
 } from '../common/schemas/ledger-entry.schema';
-import {
-  Payout,
-  PayoutSchema,
-} from '../common/schemas/payout.schema';
+import { Payout, PayoutSchema } from '../common/schemas/payout.schema';
 import { LoggerModule } from '../common/logger/logger.module';
 
 /**

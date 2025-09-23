@@ -108,32 +108,34 @@ describe('Order Schema', () => {
     it('should have correct indexes defined', () => {
       const schema = OrderSchema;
       const indexes = schema.indexes();
-      
+
       // Check for orderUuid unique index
-      const orderUuidIndex = indexes.find(index => index[0].orderUuid === 1);
+      const orderUuidIndex = indexes.find((index) => index[0].orderUuid === 1);
       expect(orderUuidIndex).toBeDefined();
       expect(orderUuidIndex[1].unique).toBe(true);
-      
+
       // Check for customerId index
-      const customerIdIndex = indexes.find(index => index[0].customerId === 1);
+      const customerIdIndex = indexes.find(
+        (index) => index[0].customerId === 1,
+      );
       expect(customerIdIndex).toBeDefined();
-      
+
       // Check for vendorId index
-      const vendorIdIndex = indexes.find(index => index[0].vendorId === 1);
+      const vendorIdIndex = indexes.find((index) => index[0].vendorId === 1);
       expect(vendorIdIndex).toBeDefined();
-      
+
       // Check for status index
-      const statusIndex = indexes.find(index => index[0].status === 1);
+      const statusIndex = indexes.find((index) => index[0].status === 1);
       expect(statusIndex).toBeDefined();
-      
+
       // Check for compound indexes
-      const customerStatusIndex = indexes.find(index => 
-        index[0].customerId === 1 && index[0].status === 1
+      const customerStatusIndex = indexes.find(
+        (index) => index[0].customerId === 1 && index[0].status === 1,
       );
       expect(customerStatusIndex).toBeDefined();
-      
-      const vendorStatusIndex = indexes.find(index => 
-        index[0].vendorId === 1 && index[0].status === 1
+
+      const vendorStatusIndex = indexes.find(
+        (index) => index[0].vendorId === 1 && index[0].status === 1,
       );
       expect(vendorStatusIndex).toBeDefined();
     });
@@ -166,7 +168,7 @@ describe('Order Schema', () => {
         const random = Math.random().toString(36).substring(2, 8).toUpperCase();
         mockOrder.orderUuid = `ORD-${timestamp.slice(-8)}-${random}`;
       }
-      
+
       expect(mockOrder.orderUuid).toBeDefined();
       expect(mockOrder.orderUuid).toMatch(/^ORD-\d{8}-[A-Z0-9]{6}$/);
     });
@@ -175,11 +177,15 @@ describe('Order Schema', () => {
       // Simulate pre-save middleware logic
       let itemsTotal = 0;
       mockOrder.items.forEach((item: any) => {
-        itemsTotal += (item.price * item.quantity) - item.discount;
+        itemsTotal += item.price * item.quantity - item.discount;
       });
-      
-      mockOrder.totalAmount = itemsTotal + mockOrder.deliveryFee + mockOrder.taxes - mockOrder.discount;
-      
+
+      mockOrder.totalAmount =
+        itemsTotal +
+        mockOrder.deliveryFee +
+        mockOrder.taxes -
+        mockOrder.discount;
+
       // Items total: (100*2 - 10) + (50*1 - 5) = 190 + 45 = 235
       // Total: 235 + 20 + 15 - 25 = 245
       expect(mockOrder.totalAmount).toBe(245);
@@ -189,12 +195,17 @@ describe('Order Schema', () => {
       // Simulate pre-save middleware logic
       let itemsTotal = 0;
       mockOrder.items.forEach((item: any) => {
-        itemsTotal += (item.price * item.quantity) - item.discount;
+        itemsTotal += item.price * item.quantity - item.discount;
       });
-      
-      mockOrder.totalAmount = itemsTotal + mockOrder.deliveryFee + mockOrder.taxes - mockOrder.discount;
-      mockOrder.vendorEarnings = mockOrder.totalAmount - mockOrder.platformFee - mockOrder.deliveryFee;
-      
+
+      mockOrder.totalAmount =
+        itemsTotal +
+        mockOrder.deliveryFee +
+        mockOrder.taxes -
+        mockOrder.discount;
+      mockOrder.vendorEarnings =
+        mockOrder.totalAmount - mockOrder.platformFee - mockOrder.deliveryFee;
+
       // Vendor earnings: 245 - 10 - 20 = 215
       expect(mockOrder.vendorEarnings).toBe(215);
     });
@@ -208,7 +219,7 @@ describe('Order Schema', () => {
         status: 'pending',
         paymentStatus: 'pending',
         statusHistory: [
-          { status: 'pending', timestamp: new Date(), notes: 'Order created' }
+          { status: 'pending', timestamp: new Date(), notes: 'Order created' },
         ],
         items: [
           { productId: 'prod1', quantity: 2, status: 'pending' },
@@ -221,39 +232,45 @@ describe('Order Schema', () => {
 
     it('should check if order can be cancelled', () => {
       // Mock canBeCancelled method
-      const canBeCancelled = function(): boolean {
+      const canBeCancelled = function (): boolean {
         return ['pending', 'confirmed', 'preparing'].includes(this.status);
       };
-      
+
       mockOrder.canBeCancelled = canBeCancelled.bind(mockOrder);
-      
+
       expect(mockOrder.canBeCancelled()).toBe(true);
-      
+
       mockOrder.status = 'delivered';
       expect(mockOrder.canBeCancelled()).toBe(false);
     });
 
     it('should check if order is refundable', () => {
       // Mock isRefundable method
-      const isRefundable = function(): boolean {
-        return ['delivered', 'cancelled'].includes(this.status) && 
-               this.paymentStatus === 'completed' &&
-               this.refundAmount < this.totalAmount;
+      const isRefundable = function (): boolean {
+        return (
+          ['delivered', 'cancelled'].includes(this.status) &&
+          this.paymentStatus === 'completed' &&
+          this.refundAmount < this.totalAmount
+        );
       };
-      
+
       mockOrder.isRefundable = isRefundable.bind(mockOrder);
-      
+
       mockOrder.status = 'delivered';
       mockOrder.paymentStatus = 'completed';
       expect(mockOrder.isRefundable()).toBe(true);
-      
+
       mockOrder.refundAmount = 245;
       expect(mockOrder.isRefundable()).toBe(false);
     });
 
     it('should add status to history', () => {
       // Mock addStatusHistory method
-      const addStatusHistory = function(status: string, notes?: string, location?: any): void {
+      const addStatusHistory = function (
+        status: string,
+        notes?: string,
+        location?: any,
+      ): void {
         this.statusHistory.push({
           status,
           timestamp: new Date(),
@@ -262,40 +279,46 @@ describe('Order Schema', () => {
         });
         this.status = status;
       };
-      
+
       mockOrder.addStatusHistory = addStatusHistory.bind(mockOrder);
-      
+
       mockOrder.addStatusHistory('confirmed', 'Order confirmed by vendor');
-      
+
       expect(mockOrder.statusHistory).toHaveLength(2);
       expect(mockOrder.statusHistory[1].status).toBe('confirmed');
-      expect(mockOrder.statusHistory[1].notes).toBe('Order confirmed by vendor');
+      expect(mockOrder.statusHistory[1].notes).toBe(
+        'Order confirmed by vendor',
+      );
       expect(mockOrder.status).toBe('confirmed');
     });
 
     it('should calculate refund amount', () => {
       // Mock calculateRefundAmount method
-      const calculateRefundAmount = function(): number {
+      const calculateRefundAmount = function (): number {
         if (!this.isRefundable()) return 0;
-        
-        const fulfilledItems = this.items.filter((item: any) => item.status === 'delivered');
-        const fulfilledAmount = fulfilledItems.reduce((sum: number, item: any) => 
-          sum + (item.price * item.quantity), 0);
-        
+
+        const fulfilledItems = this.items.filter(
+          (item: any) => item.status === 'delivered',
+        );
+        const fulfilledAmount = fulfilledItems.reduce(
+          (sum: number, item: any) => sum + item.price * item.quantity,
+          0,
+        );
+
         const refundableAmount = this.totalAmount - fulfilledAmount;
         return Math.max(0, refundableAmount - this.refundAmount);
       };
-      
+
       mockOrder.calculateRefundAmount = calculateRefundAmount.bind(mockOrder);
       mockOrder.isRefundable = () => true;
-      
+
       // Mock item prices
       mockOrder.items[0].price = 100;
       mockOrder.items[1].price = 50;
-      
+
       // No items delivered - full refund
       expect(mockOrder.calculateRefundAmount()).toBe(245);
-      
+
       // One item delivered
       mockOrder.items[0].status = 'delivered';
       expect(mockOrder.calculateRefundAmount()).toBe(95); // 245 - (100*2) = 45, but should be 245 - 200 = 45
@@ -303,26 +326,29 @@ describe('Order Schema', () => {
 
     it('should get order summary', () => {
       // Mock getOrderSummary method
-      const getOrderSummary = function(): any {
+      const getOrderSummary = function (): any {
         return {
           orderUuid: this.orderUuid,
           status: this.status,
           paymentStatus: this.paymentStatus,
           totalAmount: this.totalAmount,
           itemCount: this.items.length,
-          totalQuantity: this.items.reduce((sum: number, item: any) => sum + item.quantity, 0),
+          totalQuantity: this.items.reduce(
+            (sum: number, item: any) => sum + item.quantity,
+            0,
+          ),
           canBeCancelled: this.canBeCancelled(),
           isRefundable: this.isRefundable(),
         };
       };
-      
+
       mockOrder.getOrderSummary = getOrderSummary.bind(mockOrder);
       mockOrder.canBeCancelled = () => true;
       mockOrder.isRefundable = () => false;
       mockOrder.orderUuid = 'ORD-12345678-ABC123';
-      
+
       const summary = mockOrder.getOrderSummary();
-      
+
       expect(summary.orderUuid).toBe('ORD-12345678-ABC123');
       expect(summary.status).toBe('pending');
       expect(summary.totalAmount).toBe(245);

@@ -4,7 +4,10 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Model } from 'mongoose';
 import { getModelToken } from '@nestjs/mongoose';
 import { LedgerService } from '../../src/ledger/ledger.service';
-import { LedgerEntry, LedgerEntrySchema } from '../../src/common/schemas/ledger-entry.schema';
+import {
+  LedgerEntry,
+  LedgerEntrySchema,
+} from '../../src/common/schemas/ledger-entry.schema';
 import { Payout, PayoutSchema } from '../../src/common/schemas/payout.schema';
 import {
   LedgerEntryType,
@@ -49,7 +52,9 @@ describe('Ledger Integration Tests', () => {
     }).compile();
 
     service = moduleFixture.get<LedgerService>(LedgerService);
-    ledgerEntryModel = moduleFixture.get<Model<any>>(getModelToken(LedgerEntry.name));
+    ledgerEntryModel = moduleFixture.get<Model<any>>(
+      getModelToken(LedgerEntry.name),
+    );
     payoutModel = moduleFixture.get<Model<any>>(getModelToken(Payout.name));
   });
 
@@ -210,7 +215,7 @@ describe('Ledger Integration Tests', () => {
       // Update entries to completed status
       await ledgerEntryModel.updateMany(
         { vendorId: mockVendorId },
-        { status: LedgerEntryStatus.COMPLETED }
+        { status: LedgerEntryStatus.COMPLETED },
       );
     });
 
@@ -219,7 +224,10 @@ describe('Ledger Integration Tests', () => {
         period: AnalyticsPeriod.MONTHLY,
       };
 
-      const analytics = await service.getVendorAnalytics(mockVendorId, analyticsDto);
+      const analytics = await service.getVendorAnalytics(
+        mockVendorId,
+        analyticsDto,
+      );
 
       expect(analytics).toBeDefined();
       expect(analytics.vendorId).toBe(mockVendorId);
@@ -237,7 +245,10 @@ describe('Ledger Integration Tests', () => {
         period: AnalyticsPeriod.MONTHLY,
       };
 
-      const analytics = await service.getVendorAnalytics(emptyVendorId, analyticsDto);
+      const analytics = await service.getVendorAnalytics(
+        emptyVendorId,
+        analyticsDto,
+      );
 
       expect(analytics.totalSales).toBe(0);
       expect(analytics.totalOrders).toBe(0);
@@ -260,7 +271,7 @@ describe('Ledger Integration Tests', () => {
 
       await ledgerEntryModel.updateMany(
         { vendorId: mockVendorId },
-        { status: LedgerEntryStatus.COMPLETED }
+        { status: LedgerEntryStatus.COMPLETED },
       );
     });
 
@@ -291,7 +302,9 @@ describe('Ledger Integration Tests', () => {
         method: PayoutMethod.BANK_TRANSFER,
       };
 
-      await expect(service.createPayout(mockVendorId, createDto)).rejects.toThrow();
+      await expect(
+        service.createPayout(mockVendorId, createDto),
+      ).rejects.toThrow();
     });
 
     it('should retrieve vendor payouts with pagination', async () => {
@@ -339,7 +352,7 @@ describe('Ledger Integration Tests', () => {
       // Update to completed status
       await ledgerEntryModel.updateMany(
         { vendorId: mockVendorId },
-        { status: LedgerEntryStatus.COMPLETED }
+        { status: LedgerEntryStatus.COMPLETED },
       );
 
       // Create a completed payout

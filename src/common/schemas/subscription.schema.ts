@@ -29,7 +29,7 @@ export class Subscription {
   storeId?: Types.ObjectId;
 
   // Subscription configuration
-  @Prop({ 
+  @Prop({
     required: true,
     enum: ['daily', 'weekly', 'bi_weekly', 'monthly', 'custom'],
   })
@@ -39,7 +39,20 @@ export class Subscription {
   quantity: number;
 
   // Delivery schedule
-  @Prop([{ type: String, enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] }])
+  @Prop([
+    {
+      type: String,
+      enum: [
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+        'sunday',
+      ],
+    },
+  ])
   deliveryDays: string[]; // For weekly/custom frequency
 
   @Prop([{ type: Number, min: 1, max: 31 }])
@@ -62,7 +75,7 @@ export class Subscription {
   renewalPeriodMonths?: number; // Auto-renewal period
 
   // Status and lifecycle
-  @Prop({ 
+  @Prop({
     required: true,
     enum: ['active', 'paused', 'cancelled', 'expired', 'suspended'],
     default: 'active',
@@ -106,10 +119,10 @@ export class Subscription {
       orderId: { type: Types.ObjectId, ref: 'Order' },
       scheduledDate: { type: Date, required: true },
       deliveredDate: { type: Date },
-      status: { 
-        type: String, 
+      status: {
+        type: String,
         enum: ['scheduled', 'delivered', 'missed', 'cancelled', 'rescheduled'],
-        required: true 
+        required: true,
       },
       quantity: { type: Number, required: true },
       notes: { type: String, maxlength: 500 },
@@ -131,7 +144,7 @@ export class Subscription {
   @Prop({ required: true, min: 0 })
   totalAmount: number; // Per delivery
 
-  @Prop({ 
+  @Prop({
     required: true,
     enum: ['wallet', 'upi', 'card', 'auto_debit'],
     default: 'wallet',
@@ -156,7 +169,7 @@ export class Subscription {
       contactPhone: { type: String, required: true },
       landmark: { type: String },
     },
-    required: false
+    required: false,
   })
   deliveryAddress: {
     street: string;
@@ -250,23 +263,27 @@ SubscriptionSchema.index({ customerId: 1, createdAt: -1 });
 SubscriptionSchema.index({ vendorId: 1, createdAt: -1 });
 
 // Pre-save middleware to calculate next delivery date and metrics
-SubscriptionSchema.pre('save', function(next) {
+SubscriptionSchema.pre('save', function (next) {
   // Calculate delivery success rate
   if (this.totalDeliveries > 0) {
-    this.deliverySuccessRate = Math.round((this.successfulDeliveries / this.totalDeliveries) * 100);
+    this.deliverySuccessRate = Math.round(
+      (this.successfulDeliveries / this.totalDeliveries) * 100,
+    );
   }
-  
+
   // Calculate total amount per delivery
   this.totalAmount = this.unitPrice * this.quantity;
-  
+
   next();
 });
 
 // Method to calculate next delivery date based on frequency
-SubscriptionSchema.methods.calculateNextDeliveryDate = function(fromDate?: Date): Date {
+SubscriptionSchema.methods.calculateNextDeliveryDate = function (
+  fromDate?: Date,
+): Date {
   const baseDate = fromDate || this.nextDeliveryDate || this.startDate;
   const nextDate = new Date(baseDate);
-  
+
   switch (this.frequency) {
     case 'daily':
       nextDate.setDate(nextDate.getDate() + 1);
@@ -283,10 +300,20 @@ SubscriptionSchema.methods.calculateNextDeliveryDate = function(fromDate?: Date)
     case 'custom':
       // For custom frequency, find next delivery day
       if (this.deliveryDays.length > 0) {
-        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const dayNames = [
+          'sunday',
+          'monday',
+          'tuesday',
+          'wednesday',
+          'thursday',
+          'friday',
+          'saturday',
+        ];
         const currentDay = nextDate.getDay();
-        const deliveryDayNumbers = this.deliveryDays.map(day => dayNames.indexOf(day));
-        
+        const deliveryDayNumbers = this.deliveryDays.map((day) =>
+          dayNames.indexOf(day),
+        );
+
         let daysToAdd = 1;
         while (daysToAdd <= 7) {
           const checkDay = (currentDay + daysToAdd) % 7;
@@ -299,34 +326,42 @@ SubscriptionSchema.methods.calculateNextDeliveryDate = function(fromDate?: Date)
       }
       break;
   }
-  
+
   return nextDate;
 };
 
 // Method to check if subscription is active
-SubscriptionSchema.methods.isActive = function(): boolean {
-  return this.status === 'active' && 
-         (!this.endDate || new Date() <= this.endDate);
+SubscriptionSchema.methods.isActive = function (): boolean {
+  return (
+    this.status === 'active' && (!this.endDate || new Date() <= this.endDate)
+  );
 };
 
 // Method to check if subscription can be paused
-SubscriptionSchema.methods.canBePaused = function(): boolean {
+SubscriptionSchema.methods.canBePaused = function (): boolean {
   return this.status === 'active';
 };
 
 // Method to check if subscription can be resumed
-SubscriptionSchema.methods.canBeResumed = function(): boolean {
-  return this.status === 'paused' && 
-         (!this.pausedUntil || new Date() >= this.pausedUntil);
+SubscriptionSchema.methods.canBeResumed = function (): boolean {
+  return (
+    this.status === 'paused' &&
+    (!this.pausedUntil || new Date() >= this.pausedUntil)
+  );
 };
 
 // Method to check if delivery is due
-SubscriptionSchema.methods.isDeliveryDue = function(): boolean {
+SubscriptionSchema.methods.isDeliveryDue = function (): boolean {
   return this.isActive() && new Date() >= this.nextDeliveryDate;
 };
 
 // Method to add delivery to history
-SubscriptionSchema.methods.addDeliveryRecord = function(orderId: Types.ObjectId, status: string, deliveredDate?: Date, notes?: string): void {
+SubscriptionSchema.methods.addDeliveryRecord = function (
+  orderId: Types.ObjectId,
+  status: string,
+  deliveredDate?: Date,
+  notes?: string,
+): void {
   this.deliveryHistory.push({
     orderId,
     scheduledDate: this.nextDeliveryDate,
@@ -335,7 +370,7 @@ SubscriptionSchema.methods.addDeliveryRecord = function(orderId: Types.ObjectId,
     quantity: this.quantity,
     notes,
   });
-  
+
   this.totalDeliveries++;
   if (status === 'delivered') {
     this.successfulDeliveries++;
@@ -343,7 +378,7 @@ SubscriptionSchema.methods.addDeliveryRecord = function(orderId: Types.ObjectId,
   } else if (status === 'missed') {
     this.missedDeliveries++;
   }
-  
+
   // Update next delivery date
   this.nextDeliveryDate = this.calculateNextDeliveryDate();
 };

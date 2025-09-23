@@ -3,7 +3,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ProductController } from './product.controller';
 import { ProductService } from './product.service';
 import { Product, ProductSchema } from '../common/schemas/product.schema';
-import { VendorStore, VendorStoreSchema } from '../common/schemas/vendor-store.schema';
+import {
+  VendorStore,
+  VendorStoreSchema,
+} from '../common/schemas/vendor-store.schema';
 import { VendorModule } from '../vendor/vendor.module';
 
 @Module({

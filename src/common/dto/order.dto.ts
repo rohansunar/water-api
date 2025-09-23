@@ -12,6 +12,7 @@ import {
   IsPhoneNumber,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
 import { OrderSchedule, PaymentMethod } from '../interfaces/order.interface';
 import {
   IsValidUUID,
@@ -96,27 +97,117 @@ export class CreateOrderDto {
 }
 
 export class UpdateOrderStatusDto {
+  @ApiProperty({
+    description: 'New order status',
+    example: 'in_transit',
+    enum: ['picked', 'in_transit', 'delivered'],
+  })
   @IsEnum(['picked', 'in_transit', 'delivered'])
   status: string;
 
+  @ApiProperty({
+    description: 'Optional notes about the status update',
+    example: 'Package picked up from vendor',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   notes?: string;
 }
 
 export class OrderResponseDto {
+  @ApiProperty({
+    description: 'Unique order identifier',
+    example: 'order-123e4567-e89b-12d3-a456-426614174000',
+  })
   id: string;
+
+  @ApiProperty({
+    description: 'Customer user ID',
+    example: 'user-123e4567-e89b-12d3-a456-426614174000',
+  })
   userId: string;
+
+  @ApiProperty({
+    description: 'Vendor ID',
+    example: 'vendor-123e4567-e89b-12d3-a456-426614174000',
+  })
   vendorId: string;
+
+  @ApiProperty({
+    description: 'Product ID',
+    example: 'product-123e4567-e89b-12d3-a456-426614174000',
+  })
   productId: string;
+
+  @ApiProperty({
+    description: 'Quantity ordered',
+    example: 2,
+  })
   quantity: number;
+
+  @ApiProperty({
+    description: 'Total order amount in rupees',
+    example: 150.5,
+  })
   totalAmount: number;
+
+  @ApiProperty({
+    description: 'Current order status',
+    example: 'confirmed',
+    enum: [
+      'pending',
+      'confirmed',
+      'picked',
+      'in_transit',
+      'delivered',
+      'cancelled',
+    ],
+  })
   status: string;
+
+  @ApiProperty({
+    description: 'Delivery schedule type',
+    example: 'immediate',
+    enum: ['immediate', 'scheduled'],
+  })
   schedule: string;
+
+  @ApiProperty({
+    description: 'Scheduled delivery time',
+    example: '2024-01-15T14:30:00Z',
+    required: false,
+  })
   deliveryTime?: Date;
+
+  @ApiProperty({
+    description: 'Payment method',
+    example: 'wallet',
+    enum: ['wallet', 'cash', 'card'],
+  })
   paymentMethod: string;
+
+  @ApiProperty({
+    description: 'Payment status',
+    example: 'paid',
+    enum: ['pending', 'paid', 'failed'],
+  })
   paymentStatus: string;
+
+  @ApiProperty({
+    description: 'Delivery address details',
+  })
   deliveryAddress: DeliveryAddressDto;
+
+  @ApiProperty({
+    description: 'Order creation timestamp',
+    example: '2024-01-15T10:30:00Z',
+  })
   createdAt: Date;
+
+  @ApiProperty({
+    description: 'Last update timestamp',
+    example: '2024-01-15T10:30:00Z',
+  })
   updatedAt: Date;
 }

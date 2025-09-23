@@ -130,7 +130,7 @@ export class User {
       kycStatus: {
         type: String,
         enum: ['pending', 'approved', 'rejected'],
-        default: 'pending'
+        default: 'pending',
       },
       gstin: { type: String },
       bankAccountId: { type: Types.ObjectId },
@@ -157,7 +157,7 @@ export class User {
       status: {
         type: String,
         enum: ['active', 'inactive', 'busy', 'offline'],
-        default: 'inactive'
+        default: 'inactive',
       },
       currentLocation: {
         latitude: { type: Number },
@@ -178,7 +178,7 @@ export class User {
       roleLevel: {
         type: String,
         enum: ['superadmin', 'ops', 'support'],
-        default: 'support'
+        default: 'support',
       },
       permissions: [{ type: String }],
       lastLoginAt: { type: Date },
@@ -243,10 +243,13 @@ UserSchema.index({ createdAt: -1 });
 UserSchema.index({ 'vendorExtension.kycStatus': 1 });
 UserSchema.index({ 'vendorExtension.rating': -1 });
 UserSchema.index({ 'riderExtension.status': 1 });
-UserSchema.index({ 'riderExtension.currentLocation.latitude': 1, 'riderExtension.currentLocation.longitude': 1 });
+UserSchema.index({
+  'riderExtension.currentLocation.latitude': 1,
+  'riderExtension.currentLocation.longitude': 1,
+});
 
 // Pre-save middleware to initialize role extensions
-UserSchema.pre('save', function(next) {
+UserSchema.pre('save', function (next) {
   // Initialize role-specific extensions based on user role
   if (this.isNew) {
     switch (this.role) {
@@ -284,7 +287,13 @@ UserSchema.pre('save', function(next) {
             shift: {
               startTime: '09:00',
               endTime: '18:00',
-              daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+              daysOfWeek: [
+                'monday',
+                'tuesday',
+                'wednesday',
+                'thursday',
+                'friday',
+              ],
             },
             status: 'inactive',
             performanceMetrics: {

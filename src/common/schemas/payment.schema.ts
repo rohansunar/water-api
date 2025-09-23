@@ -28,9 +28,16 @@ export class Payment {
   @Prop({ maxlength: 64 })
   provider?: string; // razorpay, stripe, paytm, etc.
 
-  @Prop({ 
+  @Prop({
     required: true,
-    enum: ['wallet', 'upi', 'card', 'net_banking', 'cash_on_delivery', 'bank_transfer'],
+    enum: [
+      'wallet',
+      'upi',
+      'card',
+      'net_banking',
+      'cash_on_delivery',
+      'bank_transfer',
+    ],
   })
   method: string;
 
@@ -43,9 +50,17 @@ export class Payment {
   @Prop({ default: 0, min: 0 })
   taxes: number; // Taxes on payment
 
-  @Prop({ 
+  @Prop({
     required: true,
-    enum: ['pending', 'processing', 'completed', 'failed', 'cancelled', 'refunded', 'partially_refunded'],
+    enum: [
+      'pending',
+      'processing',
+      'completed',
+      'failed',
+      'cancelled',
+      'refunded',
+      'partially_refunded',
+    ],
     default: 'pending',
   })
   status: string;
@@ -116,7 +131,7 @@ export class Payment {
       upiId: { type: String, maxlength: 100 },
       walletProvider: { type: String, maxlength: 50 },
     },
-    required: false
+    required: false,
   })
   paymentDetails?: {
     cardLast4?: string;
@@ -127,9 +142,9 @@ export class Payment {
   };
 
   // Risk and fraud detection
-  @Prop({ 
-    enum: ['low', 'medium', 'high'], 
-    default: 'low' 
+  @Prop({
+    enum: ['low', 'medium', 'high'],
+    default: 'low',
   })
   riskScore: string;
 
@@ -187,9 +202,9 @@ PaymentSchema.index({ provider: 1, status: 1 });
 PaymentSchema.index({ method: 1, status: 1 });
 
 // Pre-save middleware to update timing and attempt tracking
-PaymentSchema.pre('save', function(next) {
+PaymentSchema.pre('save', function (next) {
   const now = new Date();
-  
+
   // Update timing based on status changes
   if (this.isModified('status')) {
     switch (this.status) {
@@ -211,7 +226,7 @@ PaymentSchema.pre('save', function(next) {
         }
         break;
     }
-    
+
     // Add to payment attempts
     this.paymentAttempts.push({
       attemptNumber: this.attemptNumber,
@@ -221,22 +236,22 @@ PaymentSchema.pre('save', function(next) {
       errorMessage: this.gatewayMessage,
     });
   }
-  
+
   next();
 });
 
 // Method to check if payment is successful
-PaymentSchema.methods.isSuccessful = function(): boolean {
+PaymentSchema.methods.isSuccessful = function (): boolean {
   return this.status === 'completed';
 };
 
 // Method to check if payment can be refunded
-PaymentSchema.methods.canBeRefunded = function(): boolean {
+PaymentSchema.methods.canBeRefunded = function (): boolean {
   return this.status === 'completed' && this.refundedAmount < this.amount;
 };
 
 // Method to get refundable amount
-PaymentSchema.methods.getRefundableAmount = function(): number {
+PaymentSchema.methods.getRefundableAmount = function (): number {
   if (!this.canBeRefunded()) {
     return 0;
   }
@@ -244,11 +259,11 @@ PaymentSchema.methods.getRefundableAmount = function(): number {
 };
 
 // Method to calculate net amount (after fees and taxes)
-PaymentSchema.methods.getNetAmount = function(): number {
+PaymentSchema.methods.getNetAmount = function (): number {
   return this.amount - this.fees - this.taxes;
 };
 
 // Method to check if payment is expired
-PaymentSchema.methods.isExpired = function(): boolean {
+PaymentSchema.methods.isExpired = function (): boolean {
   return this.expiresAt ? new Date() > this.expiresAt : false;
 };

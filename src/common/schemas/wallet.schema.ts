@@ -131,7 +131,7 @@ export class WalletTransaction {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
-  @Prop({ 
+  @Prop({
     required: true,
     enum: ['credit', 'debit'],
   })
@@ -150,12 +150,21 @@ export class WalletTransaction {
   @Prop({ maxlength: 255 })
   referenceId?: string; // Order ID, Topup ID, etc.
 
-  @Prop({ 
-    enum: ['order', 'topup', 'refund', 'cashback', 'penalty', 'bonus', 'transfer', 'adjustment'],
+  @Prop({
+    enum: [
+      'order',
+      'topup',
+      'refund',
+      'cashback',
+      'penalty',
+      'bonus',
+      'transfer',
+      'adjustment',
+    ],
   })
   referenceType?: string;
 
-  @Prop({ 
+  @Prop({
     required: true,
     enum: ['pending', 'completed', 'failed', 'cancelled', 'reversed'],
     default: 'completed',
@@ -206,9 +215,9 @@ export class WalletTransaction {
   approvalNotes?: string;
 
   // Fraud detection
-  @Prop({ 
-    enum: ['low', 'medium', 'high'], 
-    default: 'low' 
+  @Prop({
+    enum: ['low', 'medium', 'high'],
+    default: 'low',
   })
   riskScore: string;
 
@@ -228,7 +237,8 @@ export class WalletTransaction {
   updatedAt: Date;
 }
 
-export const WalletTransactionSchema = SchemaFactory.createForClass(WalletTransaction);
+export const WalletTransactionSchema =
+  SchemaFactory.createForClass(WalletTransaction);
 
 // Create indexes for Wallet
 WalletSchema.index({ userId: 1 }, { unique: true });
@@ -254,53 +264,63 @@ WalletTransactionSchema.index({ userId: 1, createdAt: -1 });
 WalletTransactionSchema.index({ walletId: 1, createdAt: -1 });
 
 // Pre-save middleware for Wallet to reset daily/monthly limits
-WalletSchema.pre('save', function(next) {
+WalletSchema.pre('save', function (next) {
   const now = new Date();
-  
+
   // Reset daily spent if it's a new day
-  if (!this.lastDailyReset || this.lastDailyReset.toDateString() !== now.toDateString()) {
+  if (
+    !this.lastDailyReset ||
+    this.lastDailyReset.toDateString() !== now.toDateString()
+  ) {
     this.dailySpent = 0;
     this.lastDailyReset = now;
   }
-  
+
   // Reset monthly spent if it's a new month
-  if (!this.lastMonthlyReset || 
-      this.lastMonthlyReset.getMonth() !== now.getMonth() || 
-      this.lastMonthlyReset.getFullYear() !== now.getFullYear()) {
+  if (
+    !this.lastMonthlyReset ||
+    this.lastMonthlyReset.getMonth() !== now.getMonth() ||
+    this.lastMonthlyReset.getFullYear() !== now.getFullYear()
+  ) {
     this.monthlySpent = 0;
     this.lastMonthlyReset = now;
   }
-  
+
   next();
 });
 
 // Pre-save middleware for WalletTransaction to calculate net amount
-WalletTransactionSchema.pre('save', function(next) {
+WalletTransactionSchema.pre('save', function (next) {
   if (this.type === 'credit') {
     this.netAmount = this.amount - this.processingFee - this.taxes;
   } else {
     this.netAmount = this.amount;
   }
-  
+
   next();
 });
 
 // Wallet methods
-WalletSchema.methods.canDebit = function(amount: number): boolean {
-  return this.isActive && 
-         !this.isBlocked && 
-         this.balance >= amount &&
-         (this.dailySpent + amount) <= this.dailyTransactionLimit &&
-         (this.monthlySpent + amount) <= this.monthlyTransactionLimit;
+WalletSchema.methods.canDebit = function (amount: number): boolean {
+  return (
+    this.isActive &&
+    !this.isBlocked &&
+    this.balance >= amount &&
+    this.dailySpent + amount <= this.dailyTransactionLimit &&
+    this.monthlySpent + amount <= this.monthlyTransactionLimit
+  );
 };
 
-WalletSchema.methods.canCredit = function(amount: number): boolean {
-  return this.isActive && 
-         !this.isBlocked && 
-         (this.balance + amount) <= this.maxBalance;
+WalletSchema.methods.canCredit = function (amount: number): boolean {
+  return (
+    this.isActive && !this.isBlocked && this.balance + amount <= this.maxBalance
+  );
 };
 
-WalletSchema.methods.updateBalance = function(amount: number, type: 'credit' | 'debit'): number {
+WalletSchema.methods.updateBalance = function (
+  amount: number,
+  type: 'credit' | 'debit',
+): number {
   if (type === 'credit') {
     this.balance += amount;
     this.totalCredits += amount;
@@ -310,27 +330,29 @@ WalletSchema.methods.updateBalance = function(amount: number, type: 'credit' | '
     this.dailySpent += amount;
     this.monthlySpent += amount;
   }
-  
+
   this.totalTransactions++;
   this.lastTransactionAt = new Date();
-  
+
   return this.balance;
 };
 
 // WalletTransaction methods
-WalletTransactionSchema.methods.isCredit = function(): boolean {
+WalletTransactionSchema.methods.isCredit = function (): boolean {
   return this.type === 'credit';
 };
 
-WalletTransactionSchema.methods.isDebit = function(): boolean {
+WalletTransactionSchema.methods.isDebit = function (): boolean {
   return this.type === 'debit';
 };
 
-WalletTransactionSchema.methods.canBeReversed = function(): boolean {
+WalletTransactionSchema.methods.canBeReversed = function (): boolean {
   const reversalWindow = 24 * 60 * 60 * 1000; // 24 hours
   const timeSinceTransaction = Date.now() - this.createdAt.getTime();
-  
-  return this.status === 'completed' && 
-         !this.reversalTransactionId && 
-         timeSinceTransaction <= reversalWindow;
+
+  return (
+    this.status === 'completed' &&
+    !this.reversalTransactionId &&
+    timeSinceTransaction <= reversalWindow
+  );
 };

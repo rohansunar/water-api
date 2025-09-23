@@ -65,7 +65,13 @@ export class LedgerController {
     totalPages: number;
   }> {
     this.logger.log(`Getting ledger entries for vendor ${user.id}`);
-    return this.ledgerService.getVendorLedger(user.id, page, limit, type, status);
+    return this.ledgerService.getVendorLedger(
+      user.id,
+      page,
+      limit,
+      type,
+      status,
+    );
   }
 
   /**
@@ -79,12 +85,12 @@ export class LedgerController {
     @Body() createDto: CreateLedgerEntryDto,
   ): Promise<LedgerEntryResponseDto> {
     this.logger.log(`Creating ledger entry for vendor ${createDto.vendorId}`);
-    
+
     // Ensure vendor can only create entries for themselves
     if (user.role === UserRole.VENDOR && createDto.vendorId !== user.id) {
       throw new Error('Vendors can only create ledger entries for themselves');
     }
-    
+
     return this.ledgerService.createLedgerEntry(createDto);
   }
 
@@ -97,7 +103,9 @@ export class LedgerController {
     @CurrentUser() user: User,
     @Query() analyticsDto: GetAnalyticsDto,
   ): Promise<VendorAnalyticsResponseDto> {
-    this.logger.log(`Getting analytics for vendor ${user.id}, period: ${analyticsDto.period}`);
+    this.logger.log(
+      `Getting analytics for vendor ${user.id}, period: ${analyticsDto.period}`,
+    );
     return this.ledgerService.getVendorAnalytics(user.id, analyticsDto);
   }
 
@@ -142,7 +150,9 @@ export class LedgerController {
     @CurrentUser() user: User,
     @Body() createDto: CreatePayoutDto,
   ): Promise<PayoutResponseDto> {
-    this.logger.log(`Creating payout request for vendor ${user.id}, amount: ${createDto.amount}`);
+    this.logger.log(
+      `Creating payout request for vendor ${user.id}, amount: ${createDto.amount}`,
+    );
     return this.ledgerService.createPayout(user.id, createDto);
   }
 }
@@ -177,7 +187,13 @@ export class AdminLedgerController {
     totalPages: number;
   }> {
     this.logger.log(`Admin getting ledger entries for vendor ${vendorId}`);
-    return this.ledgerService.getVendorLedger(vendorId, page, limit, type, status);
+    return this.ledgerService.getVendorLedger(
+      vendorId,
+      page,
+      limit,
+      type,
+      status,
+    );
   }
 
   /**
@@ -222,7 +238,9 @@ export class AdminLedgerController {
     @CurrentUser() user: User,
     @Body() createDto: CreateLedgerEntryDto,
   ): Promise<LedgerEntryResponseDto> {
-    this.logger.log(`Admin creating ledger entry for vendor ${createDto.vendorId}`);
+    this.logger.log(
+      `Admin creating ledger entry for vendor ${createDto.vendorId}`,
+    );
     return this.ledgerService.createLedgerEntry(createDto);
   }
 }

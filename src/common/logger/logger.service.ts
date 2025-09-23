@@ -146,7 +146,7 @@ export class CustomLoggerService implements LoggerService {
     url: string,
     statusCode: number,
     duration: number,
-    context?: { userId?: string; requestId?: string; correlationId?: string }
+    context?: { userId?: string; requestId?: string; correlationId?: string },
   ): void {
     this.logger.info('API Request', {
       type: 'api_request',
@@ -265,7 +265,7 @@ export class CustomLoggerService implements LoggerService {
     module: string,
     action: string,
     data?: any,
-    context?: { userId?: string; requestId?: string; correlationId?: string }
+    context?: { userId?: string; requestId?: string; correlationId?: string },
   ): void {
     this.logger.info('Module Action', {
       type: 'module_action',
@@ -280,7 +280,7 @@ export class CustomLoggerService implements LoggerService {
   logEvent(
     eventType: string,
     eventData: any,
-    context?: { source?: string; correlationId?: string; userId?: string }
+    context?: { source?: string; correlationId?: string; userId?: string },
   ): void {
     this.logger.info('Event Published', {
       type: 'event',
@@ -297,7 +297,7 @@ export class CustomLoggerService implements LoggerService {
     operation: string,
     duration?: number,
     success?: boolean,
-    error?: any
+    error?: any,
   ): void {
     const logLevel = success === false ? 'error' : 'info';
     this.logger.log(logLevel, 'Inter-Module Communication', {
@@ -307,10 +307,12 @@ export class CustomLoggerService implements LoggerService {
       operation,
       duration,
       success,
-      error: error ? {
-        message: error.message,
-        stack: error.stack,
-      } : undefined,
+      error: error
+        ? {
+            message: error.message,
+            stack: error.stack,
+          }
+        : undefined,
       timestamp: new Date().toISOString(),
     });
   }

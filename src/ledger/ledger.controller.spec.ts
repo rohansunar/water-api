@@ -159,7 +159,9 @@ describe('LedgerController', () => {
         description: 'Test sale',
       };
 
-      await expect(controller.createLedgerEntry(mockVendor, createDto)).rejects.toThrow();
+      await expect(
+        controller.createLedgerEntry(mockVendor, createDto),
+      ).rejects.toThrow();
     });
   });
 
@@ -186,9 +188,15 @@ describe('LedgerController', () => {
 
       mockService.getVendorAnalytics.mockResolvedValue(mockAnalytics);
 
-      const result = await controller.getVendorAnalytics(mockVendor, analyticsDto);
+      const result = await controller.getVendorAnalytics(
+        mockVendor,
+        analyticsDto,
+      );
 
-      expect(mockService.getVendorAnalytics).toHaveBeenCalledWith(mockVendor.id, analyticsDto);
+      expect(mockService.getVendorAnalytics).toHaveBeenCalledWith(
+        mockVendor.id,
+        analyticsDto,
+      );
       expect(result).toBe(mockAnalytics);
     });
   });
@@ -255,7 +263,10 @@ describe('LedgerController', () => {
 
       const result = await controller.createPayout(mockVendor, createDto);
 
-      expect(mockService.createPayout).toHaveBeenCalledWith(mockVendor.id, createDto);
+      expect(mockService.createPayout).toHaveBeenCalledWith(
+        mockVendor.id,
+        createDto,
+      );
       expect(result).toBe(mockPayout);
     });
   });

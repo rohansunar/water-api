@@ -165,39 +165,51 @@ VendorStoreSchema.index({ vendorId: 1, isActive: 1 });
 VendorStoreSchema.index({ isActive: 1, rating: -1 });
 
 // Method to check if store is currently open
-VendorStoreSchema.methods.isCurrentlyOpen = function(): boolean {
+VendorStoreSchema.methods.isCurrentlyOpen = function (): boolean {
   const now = new Date();
-  const dayName = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+  const dayName = now
+    .toLocaleDateString('en-US', { weekday: 'long' })
+    .toLowerCase();
   const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
-  
+
   const daySchedule = this.activeHours[dayName];
   if (!daySchedule || !daySchedule.isOpen) {
     return false;
   }
-  
-  return currentTime >= daySchedule.openTime && currentTime <= daySchedule.closeTime;
+
+  return (
+    currentTime >= daySchedule.openTime && currentTime <= daySchedule.closeTime
+  );
 };
 
 // Method to get next opening time
-VendorStoreSchema.methods.getNextOpeningTime = function(): Date | null {
+VendorStoreSchema.methods.getNextOpeningTime = function (): Date | null {
   const now = new Date();
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  
+  const days = [
+    'sunday',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+  ];
+
   for (let i = 0; i < 7; i++) {
     const checkDate = new Date(now);
     checkDate.setDate(now.getDate() + i);
     const dayName = days[checkDate.getDay()];
-    
+
     const daySchedule = this.activeHours[dayName];
     if (daySchedule && daySchedule.isOpen) {
       const [hours, minutes] = daySchedule.openTime.split(':').map(Number);
       checkDate.setHours(hours, minutes, 0, 0);
-      
+
       if (checkDate > now) {
         return checkDate;
       }
     }
   }
-  
+
   return null;
 };

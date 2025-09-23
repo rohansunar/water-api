@@ -11,10 +11,7 @@ import {
   LedgerEntry,
   LedgerEntryDocument,
 } from '../common/schemas/ledger-entry.schema';
-import {
-  Payout,
-  PayoutDocument,
-} from '../common/schemas/payout.schema';
+import { Payout, PayoutDocument } from '../common/schemas/payout.schema';
 import {
   LedgerEntryType,
   LedgerEntryStatus,
@@ -74,7 +71,7 @@ export class LedgerService {
       });
 
       const savedEntry = await ledgerEntry.save();
-      
+
       this.customLogger.logBusinessEvent(
         'ledger_entry_created',
         {
@@ -110,7 +107,7 @@ export class LedgerService {
   }> {
     try {
       const filter: any = { vendorId: new Types.ObjectId(vendorId) };
-      
+
       if (type) filter.type = type;
       if (status) filter.status = status;
 
@@ -127,7 +124,7 @@ export class LedgerService {
       ]);
 
       return {
-        entries: entries.map(entry => this.mapToResponseDto(entry)),
+        entries: entries.map((entry) => this.mapToResponseDto(entry)),
         total,
         page,
         totalPages: Math.ceil(total / limit),
@@ -170,12 +167,20 @@ export class LedgerService {
             },
             totalRefunds: {
               $sum: {
-                $cond: [{ $eq: ['$type', LedgerEntryType.REFUND] }, '$amount', 0],
+                $cond: [
+                  { $eq: ['$type', LedgerEntryType.REFUND] },
+                  '$amount',
+                  0,
+                ],
               },
             },
             totalCommission: {
               $sum: {
-                $cond: [{ $eq: ['$type', LedgerEntryType.COMMISSION] }, '$amount', 0],
+                $cond: [
+                  { $eq: ['$type', LedgerEntryType.COMMISSION] },
+                  '$amount',
+                  0,
+                ],
               },
             },
             totalOrders: {
@@ -190,14 +195,20 @@ export class LedgerService {
       const [analytics] = await this.ledgerEntryModel.aggregate(pipeline);
 
       if (!analytics) {
-        return this.createEmptyAnalytics(vendorId, analyticsDto.period, startDate, endDate);
+        return this.createEmptyAnalytics(
+          vendorId,
+          analyticsDto.period,
+          startDate,
+          endDate,
+        );
       }
 
       const totalRevenue = analytics.totalSales - analytics.totalRefunds;
       const netEarnings = totalRevenue - analytics.totalCommission;
-      const averageOrderValue = analytics.totalOrders > 0 
-        ? analytics.totalSales / analytics.totalOrders 
-        : 0;
+      const averageOrderValue =
+        analytics.totalOrders > 0
+          ? analytics.totalSales / analytics.totalOrders
+          : 0;
 
       return {
         vendorId,
@@ -237,7 +248,12 @@ export class LedgerService {
             totalEarnings: {
               $sum: {
                 $cond: [
-                  { $in: ['$type', [LedgerEntryType.SALE, LedgerEntryType.ADJUSTMENT]] },
+                  {
+                    $in: [
+                      '$type',
+                      [LedgerEntryType.SALE, LedgerEntryType.ADJUSTMENT],
+                    ],
+                  },
                   '$amount',
                   0,
                 ],
@@ -245,7 +261,11 @@ export class LedgerService {
             },
             totalCommission: {
               $sum: {
-                $cond: [{ $eq: ['$type', LedgerEntryType.COMMISSION] }, '$amount', 0],
+                $cond: [
+                  { $eq: ['$type', LedgerEntryType.COMMISSION] },
+                  '$amount',
+                  0,
+                ],
               },
             },
           },
@@ -276,7 +296,10 @@ export class LedgerService {
         ]),
         this.payoutModel
           .findOne(
-            { vendorId: new Types.ObjectId(vendorId), status: PayoutStatus.COMPLETED },
+            {
+              vendorId: new Types.ObjectId(vendorId),
+              status: PayoutStatus.COMPLETED,
+            },
             {},
             { sort: { completedAt: -1 } },
           )
@@ -287,7 +310,11 @@ export class LedgerService {
       const totalCommission = summary?.totalCommission || 0;
       const pendingPayoutAmount = pendingPayouts[0]?.total || 0;
       const completedPayoutAmount = completedPayouts[0]?.total || 0;
-      const netBalance = totalEarnings - totalCommission - completedPayoutAmount - pendingPayoutAmount;
+      const netBalance =
+        totalEarnings -
+        totalCommission -
+        completedPayoutAmount -
+        pendingPayoutAmount;
 
       return {
         vendorId,
@@ -384,7 +411,7 @@ export class LedgerService {
       ]);
 
       return {
-        payouts: payouts.map(payout => this.mapPayoutToResponseDto(payout)),
+        payouts: payouts.map((payout) => this.mapPayoutToResponseDto(payout)),
         total,
         page,
         totalPages: Math.ceil(total / limit),
@@ -420,16 +447,20 @@ export class LedgerService {
       amount: payout.amount,
       status: payout.status,
       method: payout.method,
-      bankDetails: payout.payoutDetails ? {
-        accountNumber: payout.payoutDetails.bankAccountNumber || '',
-        ifscCode: payout.payoutDetails.ifscCode || '',
-        accountHolderName: payout.payoutDetails.accountHolderName || '',
-        bankName: payout.payoutDetails.bankName || '',
-      } : undefined,
-      upiDetails: payout.payoutDetails?.upiId ? {
-        upiId: payout.payoutDetails.upiId,
-        name: payout.payoutDetails.accountHolderName || '',
-      } : undefined,
+      bankDetails: payout.payoutDetails
+        ? {
+            accountNumber: payout.payoutDetails.bankAccountNumber || '',
+            ifscCode: payout.payoutDetails.ifscCode || '',
+            accountHolderName: payout.payoutDetails.accountHolderName || '',
+            bankName: payout.payoutDetails.bankName || '',
+          }
+        : undefined,
+      upiDetails: payout.payoutDetails?.upiId
+        ? {
+            upiId: payout.payoutDetails.upiId,
+            name: payout.payoutDetails.accountHolderName || '',
+          }
+        : undefined,
       transactionId: payout.transactionId,
       processedAt: payout.completedAt,
       failureReason: payout.failureReason,
@@ -501,7 +532,9 @@ export class LedgerService {
     // Calculate next payout date (e.g., weekly payouts on Fridays)
     const now = new Date();
     const daysUntilFriday = (5 - now.getDay() + 7) % 7;
-    const nextFriday = new Date(now.getTime() + daysUntilFriday * 24 * 60 * 60 * 1000);
+    const nextFriday = new Date(
+      now.getTime() + daysUntilFriday * 24 * 60 * 60 * 1000,
+    );
     return nextFriday;
   }
 }

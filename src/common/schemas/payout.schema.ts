@@ -27,7 +27,7 @@ export class Payout {
     required: true,
     enum: Object.values(PayoutStatus),
     default: PayoutStatus.PENDING,
-    index: true
+    index: true,
   })
   status: PayoutStatus;
 
@@ -49,7 +49,7 @@ export class Payout {
       walletId: { type: String, maxlength: 100 },
       chequeNumber: { type: String, maxlength: 20 },
     },
-    required: false
+    required: false,
   })
   payoutDetails?: {
     bankAccountNumber?: string;
@@ -192,9 +192,9 @@ export class Payout {
   taxCertificateUrl?: string;
 
   // Priority and scheduling
-  @Prop({ 
-    enum: ['low', 'normal', 'high', 'urgent'], 
-    default: 'normal' 
+  @Prop({
+    enum: ['low', 'normal', 'high', 'urgent'],
+    default: 'normal',
   })
   priority: string;
 
@@ -237,10 +237,10 @@ PayoutSchema.index({ status: 1, scheduledAt: 1 });
 PayoutSchema.index({ batchId: 1, status: 1 });
 
 // Pre-save middleware to calculate net amount and update timing
-PayoutSchema.pre('save', function(next) {
+PayoutSchema.pre('save', function (next) {
   // Calculate net amount
   this.netAmount = this.amount - this.processingFee - this.taxDeducted;
-  
+
   // Update timing based on status changes
   if (this.isModified('status')) {
     const now = new Date();
@@ -259,31 +259,34 @@ PayoutSchema.pre('save', function(next) {
         break;
     }
   }
-  
+
   next();
 });
 
 // Method to check if payout can be cancelled
-PayoutSchema.methods.canBeCancelled = function(): boolean {
+PayoutSchema.methods.canBeCancelled = function (): boolean {
   const cancellableStatuses = ['requested', 'pending_approval', 'approved'];
   return cancellableStatuses.includes(this.status);
 };
 
 // Method to check if payout can be retried
-PayoutSchema.methods.canBeRetried = function(): boolean {
+PayoutSchema.methods.canBeRetried = function (): boolean {
   return this.status === 'failed' && this.retryCount < this.maxRetries;
 };
 
 // Method to calculate processing time
-PayoutSchema.methods.getProcessingTime = function(): number | null {
+PayoutSchema.methods.getProcessingTime = function (): number | null {
   if (this.requestedAt && this.completedAt) {
-    return Math.round((this.completedAt.getTime() - this.requestedAt.getTime()) / (1000 * 60 * 60)); // hours
+    return Math.round(
+      (this.completedAt.getTime() - this.requestedAt.getTime()) /
+        (1000 * 60 * 60),
+    ); // hours
   }
   return null;
 };
 
 // Method to check if payout is overdue
-PayoutSchema.methods.isOverdue = function(): boolean {
+PayoutSchema.methods.isOverdue = function (): boolean {
   if (!this.scheduledAt || this.status === 'completed') {
     return false;
   }
@@ -291,26 +294,30 @@ PayoutSchema.methods.isOverdue = function(): boolean {
 };
 
 // Method to get effective amount (what vendor receives)
-PayoutSchema.methods.getEffectiveAmount = function(): number {
+PayoutSchema.methods.getEffectiveAmount = function (): number {
   return this.netAmount;
 };
 
 // Static method to calculate total pending amount for vendor
-PayoutSchema.statics.getTotalPendingAmount = async function(vendorId: Types.ObjectId): Promise<number> {
+PayoutSchema.statics.getTotalPendingAmount = async function (
+  vendorId: Types.ObjectId,
+): Promise<number> {
   const result = await this.aggregate([
     {
       $match: {
         vendorId,
-        status: { $in: ['requested', 'pending_approval', 'approved', 'processing'] }
-      }
+        status: {
+          $in: ['requested', 'pending_approval', 'approved', 'processing'],
+        },
+      },
     },
     {
       $group: {
         _id: null,
-        totalAmount: { $sum: '$amount' }
-      }
-    }
+        totalAmount: { $sum: '$amount' },
+      },
+    },
   ]);
-  
+
   return result.length > 0 ? result[0].totalAmount : 0;
 };

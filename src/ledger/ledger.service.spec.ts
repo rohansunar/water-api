@@ -126,7 +126,9 @@ describe('LedgerService', () => {
       };
 
       // Mock the service's ledgerEntryModel to act as a constructor
-      service['ledgerEntryModel'] = jest.fn().mockImplementation(() => mockInstance);
+      service['ledgerEntryModel'] = jest
+        .fn()
+        .mockImplementation(() => mockInstance);
 
       const result = await service.createLedgerEntry(createDto);
 
@@ -150,9 +152,13 @@ describe('LedgerService', () => {
         description: 'Test sale',
       };
 
-      mockLedgerEntryModel.calculateBalance.mockRejectedValue(new Error('Database error'));
+      mockLedgerEntryModel.calculateBalance.mockRejectedValue(
+        new Error('Database error'),
+      );
 
-      await expect(service.createLedgerEntry(createDto)).rejects.toThrow(BadRequestException);
+      await expect(service.createLedgerEntry(createDto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -227,7 +233,10 @@ describe('LedgerService', () => {
 
       mockLedgerEntryModel.aggregate.mockResolvedValue(mockAnalyticsResult);
 
-      const result = await service.getVendorAnalytics(mockVendorId, analyticsDto);
+      const result = await service.getVendorAnalytics(
+        mockVendorId,
+        analyticsDto,
+      );
 
       expect(result).toBeDefined();
       expect(result.vendorId).toBe(mockVendorId);
@@ -244,7 +253,10 @@ describe('LedgerService', () => {
 
       mockLedgerEntryModel.aggregate.mockResolvedValue([]);
 
-      const result = await service.getVendorAnalytics(mockVendorId, analyticsDto);
+      const result = await service.getVendorAnalytics(
+        mockVendorId,
+        analyticsDto,
+      );
 
       expect(result).toBeDefined();
       expect(result.totalSales).toBe(0);
@@ -313,9 +325,9 @@ describe('LedgerService', () => {
         nextPayoutDate: new Date(),
       });
 
-      await expect(service.createPayout(mockVendorId, createDto)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.createPayout(mockVendorId, createDto),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

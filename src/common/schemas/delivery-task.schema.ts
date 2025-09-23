@@ -31,9 +31,17 @@ export class DeliveryTask {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   customerId: Types.ObjectId;
 
-  @Prop({ 
-    enum: ['assigned', 'accepted', 'picked_up', 'in_transit', 'delivered', 'failed', 'cancelled'], 
-    default: 'assigned' 
+  @Prop({
+    enum: [
+      'assigned',
+      'accepted',
+      'picked_up',
+      'in_transit',
+      'delivered',
+      'failed',
+      'cancelled',
+    ],
+    default: 'assigned',
   })
   status: string;
 
@@ -194,9 +202,9 @@ export class DeliveryTask {
   paidAt?: Date;
 
   // Priority and urgency
-  @Prop({ 
-    enum: ['low', 'normal', 'high', 'urgent'], 
-    default: 'normal' 
+  @Prop({
+    enum: ['low', 'normal', 'high', 'urgent'],
+    default: 'normal',
   })
   priority: string;
 
@@ -238,12 +246,12 @@ DeliveryTaskSchema.index({ status: 1, estimatedDeliveryTime: 1 });
 DeliveryTaskSchema.index({ driverId: 1, createdAt: -1 });
 
 // Pre-save middleware to generate OTP and update timing
-DeliveryTaskSchema.pre('save', function(next) {
+DeliveryTaskSchema.pre('save', function (next) {
   // Generate OTP when task is assigned
   if (this.isNew && !this.otp) {
     this.otp = Math.floor(100000 + Math.random() * 900000).toString();
   }
-  
+
   // Update timing based on status changes
   if (this.isModified('status')) {
     const now = new Date();
@@ -263,20 +271,22 @@ DeliveryTaskSchema.pre('save', function(next) {
         break;
     }
   }
-  
+
   next();
 });
 
 // Method to calculate delivery time
-DeliveryTaskSchema.methods.getDeliveryDuration = function(): number | null {
+DeliveryTaskSchema.methods.getDeliveryDuration = function (): number | null {
   if (this.assignedAt && this.deliveredAt) {
-    return Math.round((this.deliveredAt.getTime() - this.assignedAt.getTime()) / (1000 * 60)); // minutes
+    return Math.round(
+      (this.deliveredAt.getTime() - this.assignedAt.getTime()) / (1000 * 60),
+    ); // minutes
   }
   return null;
 };
 
 // Method to check if delivery is overdue
-DeliveryTaskSchema.methods.isOverdue = function(): boolean {
+DeliveryTaskSchema.methods.isOverdue = function (): boolean {
   if (!this.estimatedDeliveryTime || this.status === 'delivered') {
     return false;
   }
@@ -284,7 +294,7 @@ DeliveryTaskSchema.methods.isOverdue = function(): boolean {
 };
 
 // Method to get current location (latest tracking point)
-DeliveryTaskSchema.methods.getCurrentLocation = function(): any {
+DeliveryTaskSchema.methods.getCurrentLocation = function (): any {
   if (this.trackingHistory.length === 0) {
     return null;
   }
@@ -292,7 +302,12 @@ DeliveryTaskSchema.methods.getCurrentLocation = function(): any {
 };
 
 // Method to add tracking point
-DeliveryTaskSchema.methods.addTrackingPoint = function(longitude: number, latitude: number, speed?: number, heading?: number): void {
+DeliveryTaskSchema.methods.addTrackingPoint = function (
+  longitude: number,
+  latitude: number,
+  speed?: number,
+  heading?: number,
+): void {
   this.trackingHistory.push({
     location: {
       type: 'Point',

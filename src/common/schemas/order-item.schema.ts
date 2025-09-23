@@ -65,7 +65,7 @@ export class OrderItem {
         height: { type: Number },
       },
     },
-    required: false
+    required: false,
   })
   productSpecs: {
     capacity?: string;
@@ -81,9 +81,16 @@ export class OrderItem {
   };
 
   // Item status (for partial fulfillment)
-  @Prop({ 
-    enum: ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'], 
-    default: 'pending' 
+  @Prop({
+    enum: [
+      'pending',
+      'confirmed',
+      'preparing',
+      'ready',
+      'delivered',
+      'cancelled',
+    ],
+    default: 'pending',
   })
   status: string;
 
@@ -137,10 +144,10 @@ OrderItemSchema.index({ productId: 1, createdAt: -1 });
 OrderItemSchema.index({ orderId: 1, productId: 1 });
 
 // Pre-save middleware to calculate total price
-OrderItemSchema.pre('save', function(next) {
+OrderItemSchema.pre('save', function (next) {
   // Calculate total price before discount and tax
   const baseTotal = this.unitPrice * this.quantity;
-  
+
   // Apply discount
   let discountedTotal = baseTotal;
   if (this.discountPercentage > 0) {
@@ -150,41 +157,44 @@ OrderItemSchema.pre('save', function(next) {
     this.discountPercentage = (this.discountAmount / baseTotal) * 100;
     discountedTotal = baseTotal - this.discountAmount;
   }
-  
+
   // Apply tax
   if (this.taxPercentage > 0) {
     this.taxAmount = (discountedTotal * this.taxPercentage) / 100;
   }
-  
+
   // Set final total price
   this.totalPrice = discountedTotal + this.taxAmount;
-  
+
   next();
 });
 
 // Method to calculate net amount (after discount, before tax)
-OrderItemSchema.methods.getNetAmount = function(): number {
-  return (this.unitPrice * this.quantity) - this.discountAmount;
+OrderItemSchema.methods.getNetAmount = function (): number {
+  return this.unitPrice * this.quantity - this.discountAmount;
 };
 
 // Method to calculate gross amount (final amount including tax)
-OrderItemSchema.methods.getGrossAmount = function(): number {
+OrderItemSchema.methods.getGrossAmount = function (): number {
   return this.totalPrice;
 };
 
 // Method to check if item can be returned
-OrderItemSchema.methods.canBeReturned = function(): boolean {
+OrderItemSchema.methods.canBeReturned = function (): boolean {
   const nonReturnableStatuses = ['cancelled', 'pending'];
   const maxReturnDays = 7; // 7 days return policy
-  const daysSinceDelivery = (Date.now() - this.updatedAt.getTime()) / (1000 * 60 * 60 * 24);
-  
-  return !nonReturnableStatuses.includes(this.status) && 
-         daysSinceDelivery <= maxReturnDays &&
-         (this.returnedQuantity || 0) < this.deliveredQuantity;
+  const daysSinceDelivery =
+    (Date.now() - this.updatedAt.getTime()) / (1000 * 60 * 60 * 24);
+
+  return (
+    !nonReturnableStatuses.includes(this.status) &&
+    daysSinceDelivery <= maxReturnDays &&
+    (this.returnedQuantity || 0) < this.deliveredQuantity
+  );
 };
 
 // Method to get returnable quantity
-OrderItemSchema.methods.getReturnableQuantity = function(): number {
+OrderItemSchema.methods.getReturnableQuantity = function (): number {
   const delivered = this.deliveredQuantity || 0;
   const returned = this.returnedQuantity || 0;
   return Math.max(0, delivered - returned);

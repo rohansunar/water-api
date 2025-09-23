@@ -1,6 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { LedgerEntryType, LedgerEntryStatus } from '../interfaces/ledger.interface';
+import {
+  LedgerEntryType,
+  LedgerEntryStatus,
+} from '../interfaces/ledger.interface';
 
 export type LedgerEntryDocument = LedgerEntry & Document;
 
@@ -32,7 +35,7 @@ export class LedgerEntry {
   @Prop({
     required: true,
     enum: Object.values(LedgerEntryType),
-    index: true
+    index: true,
   })
   type: LedgerEntryType;
 
@@ -46,15 +49,15 @@ export class LedgerEntry {
   description: string;
 
   // Transaction categorization
-  @Prop({ 
-    enum: ['revenue', 'expense', 'liability', 'asset'], 
-    required: true 
+  @Prop({
+    enum: ['revenue', 'expense', 'liability', 'asset'],
+    required: true,
   })
   category: string;
 
-  @Prop({ 
-    enum: ['debit', 'credit'], 
-    required: true 
+  @Prop({
+    enum: ['debit', 'credit'],
+    required: true,
   })
   entryType: string;
 
@@ -62,9 +65,17 @@ export class LedgerEntry {
   @Prop({ maxlength: 255 })
   referenceId?: string; // External reference (invoice number, etc.)
 
-  @Prop({ 
-    enum: ['order', 'payment', 'refund', 'commission', 'fee', 'manual', 'system'], 
-    default: 'system' 
+  @Prop({
+    enum: [
+      'order',
+      'payment',
+      'refund',
+      'commission',
+      'fee',
+      'manual',
+      'system',
+    ],
+    default: 'system',
   })
   referenceType: string;
 
@@ -105,9 +116,9 @@ export class LedgerEntry {
   otherFees: number;
 
   // Settlement information
-  @Prop({ 
-    enum: ['pending', 'processing', 'settled', 'failed', 'disputed'], 
-    default: 'pending' 
+  @Prop({
+    enum: ['pending', 'processing', 'settled', 'failed', 'disputed'],
+    default: 'pending',
   })
   settlementStatus: string;
 
@@ -143,7 +154,7 @@ export class LedgerEntry {
   @Prop({
     enum: Object.values(LedgerEntryStatus),
     default: LedgerEntryStatus.PENDING,
-    index: true
+    index: true,
   })
   status: LedgerEntryStatus;
 
@@ -204,69 +215,79 @@ LedgerEntrySchema.index({ type: 1, settlementStatus: 1 });
 LedgerEntrySchema.index({ month: 1, year: 1, type: 1 });
 
 // Pre-save middleware to calculate financial period information
-LedgerEntrySchema.pre('save', function(next) {
+LedgerEntrySchema.pre('save', function (next) {
   if (this.isNew) {
     const date = this.createdAt || new Date();
-    
+
     // Set month and year
     this.month = date.getMonth() + 1;
     this.year = date.getFullYear();
-    
+
     // Calculate quarter
     this.quarter = Math.ceil(this.month / 3);
-    
+
     // Calculate financial year (April to March)
     const financialYearStart = this.month >= 4 ? this.year : this.year - 1;
     this.financialYear = `${financialYearStart}-${(financialYearStart + 1).toString().slice(-2)}`;
   }
-  
+
   next();
 });
 
 // Method to check if entry is a credit
-LedgerEntrySchema.methods.isCredit = function(): boolean {
+LedgerEntrySchema.methods.isCredit = function (): boolean {
   return this.entryType === 'credit' || this.amount > 0;
 };
 
 // Method to check if entry is a debit
-LedgerEntrySchema.methods.isDebit = function(): boolean {
+LedgerEntrySchema.methods.isDebit = function (): boolean {
   return this.entryType === 'debit' || this.amount < 0;
 };
 
 // Method to get absolute amount
-LedgerEntrySchema.methods.getAbsoluteAmount = function(): number {
+LedgerEntrySchema.methods.getAbsoluteAmount = function (): number {
   return Math.abs(this.amount);
 };
 
 // Method to get net amount (after all fees and taxes)
-LedgerEntrySchema.methods.getNetAmount = function(): number {
-  const fees = this.platformCommission + this.paymentGatewayFee + this.deliveryFee + this.otherFees;
+LedgerEntrySchema.methods.getNetAmount = function (): number {
+  const fees =
+    this.platformCommission +
+    this.paymentGatewayFee +
+    this.deliveryFee +
+    this.otherFees;
   return this.amount - fees - this.taxAmount;
 };
 
 // Method to check if entry can be disputed
-LedgerEntrySchema.methods.canBeDisputed = function(): boolean {
+LedgerEntrySchema.methods.canBeDisputed = function (): boolean {
   const disputeWindow = 30; // 30 days
-  const daysSinceCreation = (Date.now() - this.createdAt.getTime()) / (1000 * 60 * 60 * 24);
-  
-  return !this.isDisputed && 
-         this.status === 'approved' && 
-         daysSinceCreation <= disputeWindow;
+  const daysSinceCreation =
+    (Date.now() - this.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+
+  return (
+    !this.isDisputed &&
+    this.status === 'approved' &&
+    daysSinceCreation <= disputeWindow
+  );
 };
 
 // Method to check if entry is settled
-LedgerEntrySchema.methods.isSettled = function(): boolean {
+LedgerEntrySchema.methods.isSettled = function (): boolean {
   return this.settlementStatus === 'settled';
 };
 
 // Static method to calculate balance after entry
-LedgerEntrySchema.statics.calculateBalance = async function(vendorId: Types.ObjectId, amount: number): Promise<number> {
+LedgerEntrySchema.statics.calculateBalance = async function (
+  vendorId: Types.ObjectId,
+  amount: number,
+): Promise<number> {
   const lastEntry = await this.findOne(
     { vendorId },
     {},
-    { sort: { createdAt: -1 } }
+    { sort: { createdAt: -1 } },
   );
-  
+
   const currentBalance = lastEntry ? lastEntry.balanceAfter : 0;
   return currentBalance + amount;
 };

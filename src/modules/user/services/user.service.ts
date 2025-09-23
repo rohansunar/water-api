@@ -1,22 +1,50 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { BaseModuleService } from '../../../common/base/base-module.service';
 import { CustomLoggerService } from '../../../common/logger/logger.service';
 import { EventBusService } from '../../../common/events/event-bus.service';
-import { User, UserDocument, UserAddress, UserAddressDocument, UserRole } from '../entities/user.entity';
-import { IUserModuleService, UserCreatedEventData, UserUpdatedEventData, WalletBalanceUpdatedEventData } from '../interfaces/user-service.interface';
-import { CreateUserDto, UpdateUserDto, CreateAddressDto, UpdateAddressDto, UserProfileDto } from '../dto/user.dto';
-import { UserData, CreateUserData } from '../../../common/interfaces/module-communication.interface';
+import {
+  User,
+  UserDocument,
+  UserAddress,
+  UserAddressDocument,
+  UserRole,
+} from '../entities/user.entity';
+import {
+  IUserModuleService,
+  UserCreatedEventData,
+  UserUpdatedEventData,
+  WalletBalanceUpdatedEventData,
+} from '../interfaces/user-service.interface';
+import {
+  CreateUserDto,
+  UpdateUserDto,
+  CreateAddressDto,
+  UpdateAddressDto,
+  UserProfileDto,
+} from '../dto/user.dto';
+import {
+  UserData,
+  CreateUserData,
+} from '../../../common/interfaces/module-communication.interface';
 import { EventTypes } from '../../../common/events/event-bus.interface';
 
 @Injectable()
-export class UserService extends BaseModuleService implements IUserModuleService {
+export class UserService
+  extends BaseModuleService
+  implements IUserModuleService
+{
   constructor(
     protected readonly logger: CustomLoggerService,
     protected readonly eventBus: EventBusService,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    @InjectModel(UserAddress.name) private addressModel: Model<UserAddressDocument>,
+    @InjectModel(UserAddress.name)
+    private addressModel: Model<UserAddressDocument>,
   ) {
     super(logger, eventBus, 'user-module');
   }
@@ -24,7 +52,7 @@ export class UserService extends BaseModuleService implements IUserModuleService
   async findById(id: string): Promise<UserData | null> {
     return this.executeWithTracking('findById', async () => {
       this.validateRequired({ id }, ['id']);
-      
+
       const user = await this.userModel.findById(id).exec();
       return user ? this.mapToUserData(user) : null;
     });
@@ -75,14 +103,18 @@ export class UserService extends BaseModuleService implements IUserModuleService
   async createUser(userData: CreateUserData): Promise<UserData> {
     return this.executeWithTracking('createUser', async () => {
       this.validateRequired(userData, ['email', 'phone', 'role']);
-      
+
       // Check if user already exists
-      const existingUser = await this.userModel.findOne({
-        $or: [{ email: userData.email }, { phone: userData.phone }]
-      }).exec();
+      const existingUser = await this.userModel
+        .findOne({
+          $or: [{ email: userData.email }, { phone: userData.phone }],
+        })
+        .exec();
 
       if (existingUser) {
-        throw new BadRequestException('User with this email or phone already exists');
+        throw new BadRequestException(
+          'User with this email or phone already exists',
+        );
       }
 
       const user = new this.userModel({
@@ -93,7 +125,7 @@ export class UserService extends BaseModuleService implements IUserModuleService
       });
 
       const savedUser = await user.save();
-      
+
       // Publish event
       await this.publishEvent(EventTypes.USER_CREATED, {
         userId: savedUser._id.toString(),
@@ -107,10 +139,13 @@ export class UserService extends BaseModuleService implements IUserModuleService
     });
   }
 
-  async updateUser(id: string, updateData: Partial<UserData>): Promise<UserData> {
+  async updateUser(
+    id: string,
+    updateData: Partial<UserData>,
+  ): Promise<UserData> {
     return this.executeWithTracking('updateUser', async () => {
       this.validateRequired({ id }, ['id']);
-      
+
       const existingUser = await this.userModel.findById(id).exec();
       if (!existingUser) {
         throw new NotFoundException('User not found');
@@ -127,7 +162,7 @@ export class UserService extends BaseModuleService implements IUserModuleService
         .findByIdAndUpdate(
           id,
           { ...updateData, updatedAt: new Date() },
-          { new: true, runValidators: true }
+          { new: true, runValidators: true },
         )
         .exec();
 
@@ -156,16 +191,20 @@ export class UserService extends BaseModuleService implements IUserModuleService
       }
 
       // Soft delete by setting isActive to false
-      await this.userModel.findByIdAndUpdate(id, {
-        isActive: false,
-        updatedAt: new Date()
-      }).exec();
+      await this.userModel
+        .findByIdAndUpdate(id, {
+          isActive: false,
+          updatedAt: new Date(),
+        })
+        .exec();
 
       // Also delete user addresses
-      await this.addressModel.updateMany(
-        { userId: new Types.ObjectId(id) },
-        { isActive: false, updatedAt: new Date() }
-      ).exec();
+      await this.addressModel
+        .updateMany(
+          { userId: new Types.ObjectId(id) },
+          { isActive: false, updatedAt: new Date() },
+        )
+        .exec();
 
       // Publish event
       await this.publishEvent(EventTypes.USER_DELETED, {
@@ -186,7 +225,7 @@ export class UserService extends BaseModuleService implements IUserModuleService
   async create(userData: CreateUserDto): Promise<UserDocument> {
     return this.executeWithTracking('create', async () => {
       this.validateRequired(userData, ['phone']);
-      
+
       const user = new this.userModel({
         phone: userData.phone,
         name: userData.name,
@@ -198,7 +237,7 @@ export class UserService extends BaseModuleService implements IUserModuleService
       });
 
       const savedUser = await user.save();
-      
+
       // Publish event
       await this.publishEvent(EventTypes.USER_CREATED, {
         userId: savedUser._id.toString(),
@@ -215,7 +254,7 @@ export class UserService extends BaseModuleService implements IUserModuleService
   async update(id: string, updateData: UpdateUserDto): Promise<UserDocument> {
     return this.executeWithTracking('update', async () => {
       this.validateRequired({ id }, ['id']);
-      
+
       const existingUser = await this.userModel.findById(id).exec();
       if (!existingUser) {
         throw new NotFoundException('User not found');
@@ -225,7 +264,7 @@ export class UserService extends BaseModuleService implements IUserModuleService
         .findByIdAndUpdate(
           id,
           { ...updateData, updatedAt: new Date() },
-          { new: true, runValidators: true }
+          { new: true, runValidators: true },
         )
         .exec();
 
@@ -244,10 +283,12 @@ export class UserService extends BaseModuleService implements IUserModuleService
         throw new NotFoundException('User not found');
       }
 
-      const addresses = await this.addressModel.find({ 
-        userId: new Types.ObjectId(userId), 
-        isActive: true 
-      }).exec();
+      const addresses = await this.addressModel
+        .find({
+          userId: new Types.ObjectId(userId),
+          isActive: true,
+        })
+        .exec();
 
       return {
         id: user._id.toString(),
@@ -291,10 +332,14 @@ export class UserService extends BaseModuleService implements IUserModuleService
     });
   }
 
-  async updateWalletBalance(userId: string, amount: number, description?: string): Promise<UserDocument> {
+  async updateWalletBalance(
+    userId: string,
+    amount: number,
+    description?: string,
+  ): Promise<UserDocument> {
     return this.executeWithTracking('updateWalletBalance', async () => {
       this.validateRequired({ userId, amount }, ['userId', 'amount']);
-      
+
       const user = await this.userModel.findById(userId).exec();
       if (!user) {
         throw new NotFoundException('User not found');
@@ -319,15 +364,21 @@ export class UserService extends BaseModuleService implements IUserModuleService
     });
   }
 
-  async updateMonthlyPaymentMode(userId: string, monthlyPaymentMode: boolean): Promise<UserDocument> {
+  async updateMonthlyPaymentMode(
+    userId: string,
+    monthlyPaymentMode: boolean,
+  ): Promise<UserDocument> {
     return this.executeWithTracking('updateMonthlyPaymentMode', async () => {
-      this.validateRequired({ userId, monthlyPaymentMode }, ['userId', 'monthlyPaymentMode']);
-      
+      this.validateRequired({ userId, monthlyPaymentMode }, [
+        'userId',
+        'monthlyPaymentMode',
+      ]);
+
       const updatedUser = await this.userModel
         .findByIdAndUpdate(
           userId,
           { monthlyPaymentMode, updatedAt: new Date() },
-          { new: true, runValidators: true }
+          { new: true, runValidators: true },
         )
         .exec();
 
@@ -353,7 +404,10 @@ export class UserService extends BaseModuleService implements IUserModuleService
   }
 
   // Address management methods
-  async createAddress(userId: string, addressData: CreateAddressDto): Promise<UserAddressDocument> {
+  async createAddress(
+    userId: string,
+    addressData: CreateAddressDto,
+  ): Promise<UserAddressDocument> {
     return this.executeWithTracking('createAddress', async () => {
       this.validateRequired({ userId }, ['userId']);
       this.validateRequired(addressData, ['line1', 'city', 'state', 'pincode']);
@@ -390,20 +444,28 @@ export class UserService extends BaseModuleService implements IUserModuleService
     return this.executeWithTracking('getUserAddresses', async () => {
       this.validateRequired({ userId }, ['userId']);
 
-      return await this.addressModel.find({
-        userId: new Types.ObjectId(userId),
-        isActive: true
-      }).exec();
+      return await this.addressModel
+        .find({
+          userId: new Types.ObjectId(userId),
+          isActive: true,
+        })
+        .exec();
     });
   }
 
-  async updateAddress(addressId: string, updateData: UpdateAddressDto): Promise<UserAddressDocument> {
+  async updateAddress(
+    addressId: string,
+    updateData: UpdateAddressDto,
+  ): Promise<UserAddressDocument> {
     return this.executeWithTracking('updateAddress', async () => {
       this.validateRequired({ addressId }, ['addressId']);
 
       const updateFields: any = { ...updateData, updatedAt: new Date() };
 
-      if (updateData.latitude !== undefined || updateData.longitude !== undefined) {
+      if (
+        updateData.latitude !== undefined ||
+        updateData.longitude !== undefined
+      ) {
         updateFields.location = {
           type: 'Point',
           coordinates: [updateData.longitude || 0, updateData.latitude || 0],
@@ -411,7 +473,10 @@ export class UserService extends BaseModuleService implements IUserModuleService
       }
 
       const updatedAddress = await this.addressModel
-        .findByIdAndUpdate(addressId, updateFields, { new: true, runValidators: true })
+        .findByIdAndUpdate(addressId, updateFields, {
+          new: true,
+          runValidators: true,
+        })
         .exec();
 
       if (!updatedAddress) {
@@ -432,10 +497,12 @@ export class UserService extends BaseModuleService implements IUserModuleService
       }
 
       // Soft delete
-      await this.addressModel.findByIdAndUpdate(addressId, {
-        isActive: false,
-        updatedAt: new Date()
-      }).exec();
+      await this.addressModel
+        .findByIdAndUpdate(addressId, {
+          isActive: false,
+          updatedAt: new Date(),
+        })
+        .exec();
 
       // Publish event
       await this.publishEvent('address.deleted', {
@@ -451,17 +518,21 @@ export class UserService extends BaseModuleService implements IUserModuleService
       this.validateRequired({ userId, addressId }, ['userId', 'addressId']);
 
       // Remove default from all user addresses
-      await this.addressModel.updateMany(
-        { userId: new Types.ObjectId(userId) },
-        { isDefault: false, updatedAt: new Date() }
-      ).exec();
+      await this.addressModel
+        .updateMany(
+          { userId: new Types.ObjectId(userId) },
+          { isDefault: false, updatedAt: new Date() },
+        )
+        .exec();
 
       // Set new default
-      const updatedAddress = await this.addressModel.findByIdAndUpdate(
-        addressId,
-        { isDefault: true, updatedAt: new Date() },
-        { new: true }
-      ).exec();
+      const updatedAddress = await this.addressModel
+        .findByIdAndUpdate(
+          addressId,
+          { isDefault: true, updatedAt: new Date() },
+          { new: true },
+        )
+        .exec();
 
       if (!updatedAddress) {
         throw new NotFoundException('Address not found');
@@ -482,7 +553,10 @@ export class UserService extends BaseModuleService implements IUserModuleService
     });
   }
 
-  async searchUsers(query: string, limit: number = 10): Promise<UserDocument[]> {
+  async searchUsers(
+    query: string,
+    limit: number = 10,
+  ): Promise<UserDocument[]> {
     return this.executeWithTracking('searchUsers', async () => {
       const searchRegex = new RegExp(query, 'i');
       return await this.userModel
@@ -529,22 +603,32 @@ export class UserService extends BaseModuleService implements IUserModuleService
     recentSignups: number;
   }> {
     return this.executeWithTracking('getUserStats', async () => {
-      const [totalUsers, activeUsers, usersByRole, recentSignups] = await Promise.all([
-        this.userModel.countDocuments().exec(),
-        this.userModel.countDocuments({ isActive: true }).exec(),
-        this.userModel.aggregate([
-          { $group: { _id: '$role', count: { $sum: 1 } } },
-          { $project: { role: '$_id', count: 1, _id: 0 } },
-        ]).exec(),
-        this.userModel.countDocuments({
-          createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-        }).exec(),
-      ]);
+      const [totalUsers, activeUsers, usersByRole, recentSignups] =
+        await Promise.all([
+          this.userModel.countDocuments().exec(),
+          this.userModel.countDocuments({ isActive: true }).exec(),
+          this.userModel
+            .aggregate([
+              { $group: { _id: '$role', count: { $sum: 1 } } },
+              { $project: { role: '$_id', count: 1, _id: 0 } },
+            ])
+            .exec(),
+          this.userModel
+            .countDocuments({
+              createdAt: {
+                $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+              },
+            })
+            .exec(),
+        ]);
 
-      const roleStats = usersByRole.reduce((acc, item) => {
-        acc[item.role] = item.count;
-        return acc;
-      }, {} as Record<string, number>);
+      const roleStats = usersByRole.reduce(
+        (acc, item) => {
+          acc[item.role] = item.count;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
 
       return {
         totalUsers,
@@ -580,7 +664,9 @@ export class UserService extends BaseModuleService implements IUserModuleService
       ];
 
       for (const userData of testUsers) {
-        const existingUser = await this.userModel.findOne({ phone: userData.phone }).exec();
+        const existingUser = await this.userModel
+          .findOne({ phone: userData.phone })
+          .exec();
         if (!existingUser) {
           await this.create(userData as CreateUserDto);
         }
@@ -594,9 +680,14 @@ export class UserService extends BaseModuleService implements IUserModuleService
       await this.userModel.deleteMany({ phone: { $in: testPhones } }).exec();
 
       // Also clear test addresses
-      const testUsers = await this.userModel.find({ phone: { $in: testPhones } }).select('_id').exec();
-      const testUserIds = testUsers.map(user => user._id);
-      await this.addressModel.deleteMany({ userId: { $in: testUserIds } }).exec();
+      const testUsers = await this.userModel
+        .find({ phone: { $in: testPhones } })
+        .select('_id')
+        .exec();
+      const testUserIds = testUsers.map((user) => user._id);
+      await this.addressModel
+        .deleteMany({ userId: { $in: testUserIds } })
+        .exec();
     });
   }
 

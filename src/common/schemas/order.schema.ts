@@ -73,7 +73,7 @@ export class Order {
   // Order type and source
   @Prop({
     enum: ['one_time', 'subscription'],
-    default: 'one_time'
+    default: 'one_time',
   })
   orderType: string;
 
@@ -82,7 +82,7 @@ export class Order {
 
   @Prop({
     enum: ['web', 'mobile', 'phone', 'admin'],
-    default: 'web'
+    default: 'web',
   })
   orderSource: string;
 
@@ -188,7 +188,7 @@ OrderSchema.index({ status: 1, createdAt: -1 });
 OrderSchema.index({ orderType: 1, status: 1 });
 
 // Pre-save middleware to update status history
-OrderSchema.pre('save', function(next) {
+OrderSchema.pre('save', function (next) {
   if (this.isModified('status') && !this.isNew) {
     this.statusHistory.push({
       status: this.status,
@@ -200,12 +200,14 @@ OrderSchema.pre('save', function(next) {
 });
 
 // Method to calculate final amount
-OrderSchema.methods.calculateFinalAmount = function(): number {
-  return this.totalAmount + this.taxAmount + this.deliveryFee - this.discountAmount;
+OrderSchema.methods.calculateFinalAmount = function (): number {
+  return (
+    this.totalAmount + this.taxAmount + this.deliveryFee - this.discountAmount
+  );
 };
 
 // Method to check if order can be cancelled
-OrderSchema.methods.canBeCancelled = function(): boolean {
+OrderSchema.methods.canBeCancelled = function (): boolean {
   const nonCancellableStatuses = [
     OrderStatus.DELIVERED,
     OrderStatus.CANCELLED,
@@ -215,7 +217,7 @@ OrderSchema.methods.canBeCancelled = function(): boolean {
 };
 
 // Method to check if order is in progress
-OrderSchema.methods.isInProgress = function(): boolean {
+OrderSchema.methods.isInProgress = function (): boolean {
   const inProgressStatuses = [
     OrderStatus.CONFIRMED,
     OrderStatus.PREPARING,

@@ -115,10 +115,16 @@ export interface CreateOrderData {
 // Ledger module interfaces
 export interface ILedgerService extends IModuleService {
   createLedgerEntry(entryData: CreateLedgerEntryData): Promise<LedgerEntryData>;
-  getVendorLedger(vendorId: string, filters?: LedgerFilters): Promise<LedgerEntryData[]>;
+  getVendorLedger(
+    vendorId: string,
+    filters?: LedgerFilters,
+  ): Promise<LedgerEntryData[]>;
   getVendorBalance(vendorId: string): Promise<number>;
   createPayout(payoutData: CreatePayoutData): Promise<PayoutData>;
-  getVendorAnalytics(vendorId: string, period?: string): Promise<VendorAnalyticsData>;
+  getVendorAnalytics(
+    vendorId: string,
+    period?: string,
+  ): Promise<VendorAnalyticsData>;
 }
 
 export interface LedgerEntryData {
@@ -180,7 +186,11 @@ export interface VendorAnalyticsData {
 export interface IWalletService extends IModuleService {
   getWallet(userId: string): Promise<WalletData>;
   topupWallet(userId: string, amount: number): Promise<WalletTransactionData>;
-  debitWallet(userId: string, amount: number, reference: string): Promise<WalletTransactionData>;
+  debitWallet(
+    userId: string,
+    amount: number,
+    reference: string,
+  ): Promise<WalletTransactionData>;
   getBalance(userId: string): Promise<number>;
   validateBalance(userId: string, amount: number): Promise<boolean>;
 }
@@ -211,7 +221,10 @@ export interface IRiderService extends IModuleService {
   findByUserId(userId: string): Promise<RiderData | null>;
   findAvailableRiders(location: string): Promise<RiderData[]>;
   assignOrder(riderId: string, orderId: string): Promise<void>;
-  updateLocation(riderId: string, location: { lat: number; lng: number }): Promise<void>;
+  updateLocation(
+    riderId: string,
+    location: { lat: number; lng: number },
+  ): Promise<void>;
 }
 
 export interface RiderData {
@@ -229,7 +242,9 @@ export interface RiderData {
 export interface IAuthService extends IModuleService {
   validateToken(token: string): Promise<TokenValidationResult>;
   generateToken(userId: string, role: string): Promise<string>;
-  refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }>;
+  refreshToken(
+    refreshToken: string,
+  ): Promise<{ accessToken: string; refreshToken: string }>;
   revokeToken(token: string): Promise<void>;
 }
 

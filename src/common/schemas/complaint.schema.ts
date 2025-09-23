@@ -28,9 +28,17 @@ export class Complaint {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   vendorId?: Types.ObjectId;
 
-  @Prop({ 
+  @Prop({
     required: true,
-    enum: ['delivery_issue', 'product_quality', 'payment_issue', 'service_issue', 'billing_issue', 'app_issue', 'other'],
+    enum: [
+      'delivery_issue',
+      'product_quality',
+      'payment_issue',
+      'service_issue',
+      'billing_issue',
+      'app_issue',
+      'other',
+    ],
   })
   type: string;
 
@@ -40,14 +48,21 @@ export class Complaint {
   @Prop({ required: true, maxlength: 2000 })
   message: string;
 
-  @Prop({ 
+  @Prop({
     required: true,
-    enum: ['open', 'in_progress', 'resolved', 'closed', 'escalated', 'rejected'],
+    enum: [
+      'open',
+      'in_progress',
+      'resolved',
+      'closed',
+      'escalated',
+      'rejected',
+    ],
     default: 'open',
   })
   status: string;
 
-  @Prop({ 
+  @Prop({
     required: true,
     enum: ['low', 'medium', 'high', 'urgent'],
     default: 'medium',
@@ -131,7 +146,7 @@ export class Complaint {
   resolutionTime?: number; // in minutes
 
   // Communication channel
-  @Prop({ 
+  @Prop({
     enum: ['web', 'mobile', 'phone', 'email', 'chat', 'social_media'],
     default: 'web',
   })
@@ -165,7 +180,7 @@ export class Complaint {
   @Prop({ default: 0, min: 0 })
   compensationAmount: number;
 
-  @Prop({ 
+  @Prop({
     enum: ['none', 'refund', 'credit', 'discount', 'replacement', 'other'],
     default: 'none',
   })
@@ -227,8 +242,14 @@ export class ComplaintResponse {
   @Prop({ default: false })
   isInternal: boolean; // Internal communication not visible to customer
 
-  @Prop({ 
-    enum: ['response', 'status_update', 'escalation', 'resolution', 'follow_up'],
+  @Prop({
+    enum: [
+      'response',
+      'status_update',
+      'escalation',
+      'resolution',
+      'follow_up',
+    ],
     default: 'response',
   })
   responseType: string;
@@ -252,7 +273,8 @@ export class ComplaintResponse {
   updatedAt: Date;
 }
 
-export const ComplaintResponseSchema = SchemaFactory.createForClass(ComplaintResponse);
+export const ComplaintResponseSchema =
+  SchemaFactory.createForClass(ComplaintResponse);
 
 // Create indexes for Complaint
 ComplaintSchema.index({ userId: 1 });
@@ -288,9 +310,9 @@ ComplaintResponseSchema.index({ complaintId: 1, createdAt: -1 });
 ComplaintResponseSchema.index({ complaintId: 1, isInternal: 1 });
 
 // Pre-save middleware for Complaint to calculate SLA and response times
-ComplaintSchema.pre('save', function(next) {
+ComplaintSchema.pre('save', function (next) {
   const now = new Date();
-  
+
   // Set SLA deadline based on priority (if not already set)
   if (this.isNew && !this.slaDeadline) {
     const slaHours = {
@@ -299,46 +321,61 @@ ComplaintSchema.pre('save', function(next) {
       medium: 24,
       low: 72,
     };
-    
-    this.slaDeadline = new Date(now.getTime() + (slaHours[this.priority] * 60 * 60 * 1000));
+
+    this.slaDeadline = new Date(
+      now.getTime() + slaHours[this.priority] * 60 * 60 * 1000,
+    );
   }
-  
+
   // Check for SLA breach
-  if (this.slaDeadline && now > this.slaDeadline && this.status !== 'resolved' && this.status !== 'closed') {
+  if (
+    this.slaDeadline &&
+    now > this.slaDeadline &&
+    this.status !== 'resolved' &&
+    this.status !== 'closed'
+  ) {
     this.isSlaBreached = true;
     if (!this.slaBreachedAt) {
       this.slaBreachedAt = now;
     }
   }
-  
+
   // Calculate resolution time when resolved
-  if (this.isModified('status') && this.status === 'resolved' && !this.resolutionTime) {
+  if (
+    this.isModified('status') &&
+    this.status === 'resolved' &&
+    !this.resolutionTime
+  ) {
     this.resolvedAt = now;
-    this.resolutionTime = Math.round((now.getTime() - this.createdAt.getTime()) / (1000 * 60)); // minutes
+    this.resolutionTime = Math.round(
+      (now.getTime() - this.createdAt.getTime()) / (1000 * 60),
+    ); // minutes
   }
-  
+
   next();
 });
 
 // Complaint methods
-ComplaintSchema.methods.isOpen = function(): boolean {
+ComplaintSchema.methods.isOpen = function (): boolean {
   return ['open', 'in_progress', 'escalated'].includes(this.status);
 };
 
-ComplaintSchema.methods.canBeEscalated = function(): boolean {
+ComplaintSchema.methods.canBeEscalated = function (): boolean {
   return this.isOpen() && this.escalationLevel < 3; // Max 3 escalation levels
 };
 
-ComplaintSchema.methods.isOverdue = function(): boolean {
+ComplaintSchema.methods.isOverdue = function (): boolean {
   return this.slaDeadline ? new Date() > this.slaDeadline : false;
 };
 
-ComplaintSchema.methods.getAgeInHours = function(): number {
+ComplaintSchema.methods.getAgeInHours = function (): number {
   return Math.round((Date.now() - this.createdAt.getTime()) / (1000 * 60 * 60));
 };
 
-ComplaintSchema.methods.requiresUrgentAttention = function(): boolean {
-  return this.priority === 'urgent' || 
-         this.isSlaBreached || 
-         (this.escalationLevel > 0 && this.isOpen());
+ComplaintSchema.methods.requiresUrgentAttention = function (): boolean {
+  return (
+    this.priority === 'urgent' ||
+    this.isSlaBreached ||
+    (this.escalationLevel > 0 && this.isOpen())
+  );
 };

@@ -1,14 +1,19 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { CustomLoggerService } from '../logger/logger.service';
 import { EventBusService } from '../events/event-bus.service';
-import { IModuleService, ModuleHealthStatus } from '../interfaces/module-communication.interface';
+import {
+  IModuleService,
+  ModuleHealthStatus,
+} from '../interfaces/module-communication.interface';
 
 /**
  * Base Module Service
  * Provides common functionality for all module services
  */
 @Injectable()
-export abstract class BaseModuleService implements IModuleService, OnModuleInit, OnModuleDestroy {
+export abstract class BaseModuleService
+  implements IModuleService, OnModuleInit, OnModuleDestroy
+{
   protected readonly startTime = Date.now();
   protected requestCount = 0;
   protected errorCount = 0;
@@ -18,7 +23,7 @@ export abstract class BaseModuleService implements IModuleService, OnModuleInit,
   constructor(
     protected readonly logger: CustomLoggerService,
     protected readonly eventBus: EventBusService,
-    public readonly moduleName: string
+    public readonly moduleName: string,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -28,8 +33,8 @@ export abstract class BaseModuleService implements IModuleService, OnModuleInit,
 
   async onModuleDestroy(): Promise<void> {
     // Clean up timers and intervals
-    this.timers.forEach(timer => clearTimeout(timer));
-    this.intervals.forEach(interval => clearInterval(interval));
+    this.timers.forEach((timer) => clearTimeout(timer));
+    this.intervals.forEach((interval) => clearInterval(interval));
     this.timers.clear();
     this.intervals.clear();
 
@@ -54,11 +59,15 @@ export abstract class BaseModuleService implements IModuleService, OnModuleInit,
   /**
    * Health check implementation
    */
-  async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; details?: any }> {
+  async healthCheck(): Promise<{
+    status: 'healthy' | 'unhealthy';
+    details?: any;
+  }> {
     try {
       const memoryUsage = process.memoryUsage();
       const uptime = Date.now() - this.startTime;
-      const errorRate = this.requestCount > 0 ? (this.errorCount / this.requestCount) * 100 : 0;
+      const errorRate =
+        this.requestCount > 0 ? (this.errorCount / this.requestCount) * 100 : 0;
 
       const healthStatus: ModuleHealthStatus = {
         module: this.moduleName,
@@ -84,7 +93,11 @@ export abstract class BaseModuleService implements IModuleService, OnModuleInit,
         details: healthStatus,
       };
     } catch (error) {
-      this.logger.error(`Health check failed for ${this.moduleName}`, error.stack, this.moduleName);
+      this.logger.error(
+        `Health check failed for ${this.moduleName}`,
+        error.stack,
+        this.moduleName,
+      );
       return {
         status: 'unhealthy',
         details: { error: error.message },
@@ -111,38 +124,47 @@ export abstract class BaseModuleService implements IModuleService, OnModuleInit,
   protected async executeWithTracking<T>(
     operation: string,
     fn: () => Promise<T>,
-    context?: { userId?: string; requestId?: string }
+    context?: { userId?: string; requestId?: string },
   ): Promise<T> {
     const startTime = Date.now();
     this.requestCount++;
 
     try {
-      this.logger.logModuleAction(this.moduleName, `Starting ${operation}`, undefined, context);
-      
+      this.logger.logModuleAction(
+        this.moduleName,
+        `Starting ${operation}`,
+        undefined,
+        context,
+      );
+
       const result = await fn();
-      
+
       const duration = Date.now() - startTime;
-      this.logger.logPerformance(`${this.moduleName}.${operation}`, duration, context);
-      
+      this.logger.logPerformance(
+        `${this.moduleName}.${operation}`,
+        duration,
+        context,
+      );
+
       return result;
     } catch (error) {
       this.errorCount++;
       const duration = Date.now() - startTime;
-      
+
       this.logger.logApiError(
         operation,
         'INTERNAL',
         500,
         error,
         context?.userId,
-        context?.requestId
+        context?.requestId,
       );
-      
+
       this.logger.logPerformance(`${this.moduleName}.${operation}`, duration, {
         ...context,
         error: true,
       });
-      
+
       throw error;
     }
   }
@@ -150,7 +172,11 @@ export abstract class BaseModuleService implements IModuleService, OnModuleInit,
   /**
    * Publish event with error handling
    */
-  protected async publishEvent(eventType: string, eventData: any, correlationId?: string): Promise<void> {
+  protected async publishEvent(
+    eventType: string,
+    eventData: any,
+    correlationId?: string,
+  ): Promise<void> {
     try {
       await this.eventBus.publish({
         eventId: `${eventType}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -169,7 +195,7 @@ export abstract class BaseModuleService implements IModuleService, OnModuleInit,
       this.logger.error(
         `Failed to publish event: ${eventType}`,
         error.stack,
-        this.moduleName
+        this.moduleName,
       );
       // Don't rethrow - event publishing should not break business logic
     }
@@ -183,7 +209,7 @@ export abstract class BaseModuleService implements IModuleService, OnModuleInit,
       this.timers.delete(timeout);
       callback();
     }, delay);
-    
+
     this.timers.add(timeout);
     return timeout;
   }
@@ -191,7 +217,10 @@ export abstract class BaseModuleService implements IModuleService, OnModuleInit,
   /**
    * Create a managed interval that will be cleaned up on module destroy
    */
-  protected createInterval(callback: () => void, delay: number): NodeJS.Timeout {
+  protected createInterval(
+    callback: () => void,
+    delay: number,
+  ): NodeJS.Timeout {
     const interval = setInterval(callback, delay);
     this.intervals.add(interval);
     return interval;
@@ -200,9 +229,15 @@ export abstract class BaseModuleService implements IModuleService, OnModuleInit,
   /**
    * Validate required parameters
    */
-  protected validateRequired(params: Record<string, any>, requiredFields: string[]): void {
-    const missingFields = requiredFields.filter(field => 
-      params[field] === undefined || params[field] === null || params[field] === ''
+  protected validateRequired(
+    params: Record<string, any>,
+    requiredFields: string[],
+  ): void {
+    const missingFields = requiredFields.filter(
+      (field) =>
+        params[field] === undefined ||
+        params[field] === null ||
+        params[field] === '',
     );
 
     if (missingFields.length > 0) {
@@ -226,7 +261,8 @@ export abstract class BaseModuleService implements IModuleService, OnModuleInit,
       uptime: Date.now() - this.startTime,
       requestCount: this.requestCount,
       errorCount: this.errorCount,
-      errorRate: this.requestCount > 0 ? (this.errorCount / this.requestCount) * 100 : 0,
+      errorRate:
+        this.requestCount > 0 ? (this.errorCount / this.requestCount) * 100 : 0,
       memoryUsage: process.memoryUsage(),
     };
   }

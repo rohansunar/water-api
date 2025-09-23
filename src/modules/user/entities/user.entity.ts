@@ -34,7 +34,12 @@ export class User {
   @Prop({ required: false, unique: true, sparse: true, index: true })
   email?: string;
 
-  @Prop({ type: String, enum: UserRole, default: UserRole.CUSTOMER, index: true })
+  @Prop({
+    type: String,
+    enum: UserRole,
+    default: UserRole.CUSTOMER,
+    index: true,
+  })
   role: UserRole;
 
   @Prop({ default: 0 })

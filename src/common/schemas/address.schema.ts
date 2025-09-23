@@ -95,39 +95,44 @@ AddressSchema.index({ userId: 1, label: 1 });
 AddressSchema.index({ pincode: 1, city: 1 });
 
 // Pre-save middleware to ensure only one default address per user
-AddressSchema.pre('save', async function(next) {
+AddressSchema.pre('save', async function (next) {
   if (this.isDefault && this.isModified('isDefault')) {
     // Remove default flag from other addresses of the same user
     await (this.constructor as any).updateMany(
-      { 
-        userId: this.userId, 
+      {
+        userId: this.userId,
         _id: { $ne: this._id },
-        isDefault: true 
+        isDefault: true,
       },
-      { $set: { isDefault: false } }
+      { $set: { isDefault: false } },
     );
   }
   next();
 });
 
 // Virtual for getting latitude and longitude separately
-AddressSchema.virtual('latitude').get(function() {
+AddressSchema.virtual('latitude').get(function () {
   return this.location?.coordinates[1];
 });
 
-AddressSchema.virtual('longitude').get(function() {
+AddressSchema.virtual('longitude').get(function () {
   return this.location?.coordinates[0];
 });
 
 // Method to calculate distance from another point
-AddressSchema.methods.distanceFrom = function(longitude: number, latitude: number): number {
+AddressSchema.methods.distanceFrom = function (
+  longitude: number,
+  latitude: number,
+): number {
   const R = 6371; // Earth's radius in kilometers
-  const dLat = (latitude - this.location.coordinates[1]) * Math.PI / 180;
-  const dLon = (longitude - this.location.coordinates[0]) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(this.location.coordinates[1] * Math.PI / 180) * Math.cos(latitude * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const dLat = ((latitude - this.location.coordinates[1]) * Math.PI) / 180;
+  const dLon = ((longitude - this.location.coordinates[0]) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((this.location.coordinates[1] * Math.PI) / 180) *
+      Math.cos((latitude * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c; // Distance in kilometers
 };

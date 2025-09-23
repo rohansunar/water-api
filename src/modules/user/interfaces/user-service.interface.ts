@@ -1,6 +1,16 @@
-import { IUserService, UserData, CreateUserData } from '../../../common/interfaces/module-communication.interface';
+import {
+  IUserService,
+  UserData,
+  CreateUserData,
+} from '../../../common/interfaces/module-communication.interface';
 import { UserDocument, UserAddressDocument } from '../entities/user.entity';
-import { CreateUserDto, UpdateUserDto, CreateAddressDto, UpdateAddressDto, UserProfileDto } from '../dto/user.dto';
+import {
+  CreateUserDto,
+  UpdateUserDto,
+  CreateAddressDto,
+  UpdateAddressDto,
+  UserProfileDto,
+} from '../dto/user.dto';
 
 /**
  * Extended User Service Interface
@@ -12,13 +22,26 @@ export interface IUserModuleService extends IUserService {
   update(id: string, updateData: UpdateUserDto): Promise<UserDocument>;
   delete(id: string): Promise<void>;
   getUserProfile(userId: string): Promise<UserProfileDto>;
-  updateWalletBalance(userId: string, amount: number, description?: string): Promise<UserDocument>;
-  updateMonthlyPaymentMode(userId: string, monthlyPaymentMode: boolean): Promise<UserDocument>;
+  updateWalletBalance(
+    userId: string,
+    amount: number,
+    description?: string,
+  ): Promise<UserDocument>;
+  updateMonthlyPaymentMode(
+    userId: string,
+    monthlyPaymentMode: boolean,
+  ): Promise<UserDocument>;
 
   // Address management
-  createAddress(userId: string, addressData: CreateAddressDto): Promise<UserAddressDocument>;
+  createAddress(
+    userId: string,
+    addressData: CreateAddressDto,
+  ): Promise<UserAddressDocument>;
   getUserAddresses(userId: string): Promise<UserAddressDocument[]>;
-  updateAddress(addressId: string, updateData: UpdateAddressDto): Promise<UserAddressDocument>;
+  updateAddress(
+    addressId: string,
+    updateData: UpdateAddressDto,
+  ): Promise<UserAddressDocument>;
   deleteAddress(addressId: string): Promise<void>;
   setDefaultAddress(userId: string, addressId: string): Promise<void>;
 

@@ -92,7 +92,8 @@ export class OrderService {
         paymentMethod: createOrderDto.payment_method,
         paymentStatus: PaymentStatus.PENDING,
         deliveryAddress:
-          createOrderDto.delivery_address || this.getDefaultAddress(userProfile),
+          createOrderDto.delivery_address ||
+          this.getDefaultAddress(userProfile),
         specialInstructions: createOrderDto.special_instructions,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -304,7 +305,9 @@ export class OrderService {
 
   private getDefaultAddress(userProfile: any): any {
     // Try to find default address from user's addresses
-    const defaultAddress = userProfile.addresses?.find((addr: any) => addr.isDefault);
+    const defaultAddress = userProfile.addresses?.find(
+      (addr: any) => addr.isDefault,
+    );
     if (defaultAddress) {
       return {
         street: defaultAddress.street,

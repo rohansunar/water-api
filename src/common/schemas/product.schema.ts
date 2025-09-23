@@ -79,7 +79,7 @@ export class Product {
       color: { type: String, maxlength: 50 },
       warranty: { type: String, maxlength: 100 },
     },
-    required: false
+    required: false,
   })
   specifications: {
     weight?: number;
@@ -100,12 +100,14 @@ export class Product {
       discountPercentage: { type: Number, min: 0, max: 100, default: 0 },
       discountStartDate: { type: Date },
       discountEndDate: { type: Date },
-      bulkPricing: [{
-        minQuantity: { type: Number, min: 1 },
-        price: { type: Number, min: 0 },
-      }],
+      bulkPricing: [
+        {
+          minQuantity: { type: Number, min: 1 },
+          price: { type: Number, min: 0 },
+        },
+      ],
     },
-    required: false
+    required: false,
   })
   pricing: {
     discountPercentage: number;
@@ -126,7 +128,7 @@ export class Product {
       lastRestockedAt: { type: Date },
       stockLocation: { type: String, maxlength: 100 },
     },
-    required: false
+    required: false,
   })
   inventory: {
     lowStockThreshold: number;
@@ -165,7 +167,7 @@ export class Product {
   // Product status and lifecycle
   @Prop({
     enum: ['draft', 'active', 'inactive', 'discontinued', 'out_of_stock'],
-    default: 'active'
+    default: 'active',
   })
   status: string;
 
@@ -212,11 +214,11 @@ ProductSchema.index({
   name: 'text',
   description: 'text',
   tags: 'text',
-  searchKeywords: 'text'
+  searchKeywords: 'text',
 });
 
 // Pre-save middleware to generate SKU if not provided
-ProductSchema.pre('save', function(next) {
+ProductSchema.pre('save', function (next) {
   if (this.isNew && !this.sku) {
     // Generate SKU: VENDOR_ID + CATEGORY + TIMESTAMP
     const vendorPrefix = this.vendorId.toString().slice(-4).toUpperCase();
@@ -228,8 +230,10 @@ ProductSchema.pre('save', function(next) {
   // Update pricing based on discount
   if (this.pricing?.discountPercentage > 0) {
     const now = new Date();
-    const discountActive = (!this.pricing.discountStartDate || now >= this.pricing.discountStartDate) &&
-                          (!this.pricing.discountEndDate || now <= this.pricing.discountEndDate);
+    const discountActive =
+      (!this.pricing.discountStartDate ||
+        now >= this.pricing.discountStartDate) &&
+      (!this.pricing.discountEndDate || now <= this.pricing.discountEndDate);
 
     if (!discountActive) {
       this.pricing.discountPercentage = 0;
@@ -240,12 +244,14 @@ ProductSchema.pre('save', function(next) {
 });
 
 // Method to check if product is in stock
-ProductSchema.methods.isInStock = function(quantity: number = 1): boolean {
+ProductSchema.methods.isInStock = function (quantity: number = 1): boolean {
   return this.stock >= quantity && this.isAvailable && this.status === 'active';
 };
 
 // Method to get effective price (considering discounts and bulk pricing)
-ProductSchema.methods.getEffectivePrice = function(quantity: number = 1): number {
+ProductSchema.methods.getEffectivePrice = function (
+  quantity: number = 1,
+): number {
   let effectivePrice = this.price;
 
   // Check for bulk pricing
@@ -262,11 +268,14 @@ ProductSchema.methods.getEffectivePrice = function(quantity: number = 1): number
   // Apply discount if active
   if (this.pricing?.discountPercentage > 0) {
     const now = new Date();
-    const discountActive = (!this.pricing.discountStartDate || now >= this.pricing.discountStartDate) &&
-                          (!this.pricing.discountEndDate || now <= this.pricing.discountEndDate);
+    const discountActive =
+      (!this.pricing.discountStartDate ||
+        now >= this.pricing.discountStartDate) &&
+      (!this.pricing.discountEndDate || now <= this.pricing.discountEndDate);
 
     if (discountActive) {
-      effectivePrice = effectivePrice * (1 - this.pricing.discountPercentage / 100);
+      effectivePrice =
+        effectivePrice * (1 - this.pricing.discountPercentage / 100);
     }
   }
 
@@ -274,12 +283,15 @@ ProductSchema.methods.getEffectivePrice = function(quantity: number = 1): number
 };
 
 // Method to check if product is available in a specific area
-ProductSchema.methods.isAvailableInArea = function(pincode: string): boolean {
+ProductSchema.methods.isAvailableInArea = function (pincode: string): boolean {
   return this.areaPincodes.length === 0 || this.areaPincodes.includes(pincode);
 };
 
 // Method to update stock
-ProductSchema.methods.updateStock = function(quantity: number, operation: 'add' | 'subtract' = 'subtract'): void {
+ProductSchema.methods.updateStock = function (
+  quantity: number,
+  operation: 'add' | 'subtract' = 'subtract',
+): void {
   if (operation === 'add') {
     this.stock += quantity;
   } else {

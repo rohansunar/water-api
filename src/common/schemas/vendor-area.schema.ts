@@ -157,16 +157,24 @@ VendorAreaSchema.index({ pincode: 1, isActive: 1 });
 VendorAreaSchema.index({ isActive: 1, priority: -1 });
 
 // Method to check if a point is within the service area
-VendorAreaSchema.methods.containsPoint = function(longitude: number, latitude: number): boolean {
+VendorAreaSchema.methods.containsPoint = function (
+  longitude: number,
+  latitude: number,
+): boolean {
   // This would typically use MongoDB's $geoWithin operator in a query
   // For now, we'll implement a basic point-in-polygon algorithm
   const point = [longitude, latitude];
   const polygon = this.polygon.coordinates[0]; // Exterior ring
-  
+
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    if (((polygon[i][1] > point[1]) !== (polygon[j][1] > point[1])) &&
-        (point[0] < (polygon[j][0] - polygon[i][0]) * (point[1] - polygon[i][1]) / (polygon[j][1] - polygon[i][1]) + polygon[i][0])) {
+    if (
+      polygon[i][1] > point[1] !== polygon[j][1] > point[1] &&
+      point[0] <
+        ((polygon[j][0] - polygon[i][0]) * (point[1] - polygon[i][1])) /
+          (polygon[j][1] - polygon[i][1]) +
+          polygon[i][0]
+    ) {
       inside = !inside;
     }
   }
@@ -174,21 +182,27 @@ VendorAreaSchema.methods.containsPoint = function(longitude: number, latitude: n
 };
 
 // Method to check if delivery is available on a specific day
-VendorAreaSchema.methods.isAvailableOnDay = function(dayName: string): boolean {
+VendorAreaSchema.methods.isAvailableOnDay = function (
+  dayName: string,
+): boolean {
   return this.serviceAvailability[dayName.toLowerCase()] || false;
 };
 
 // Method to get available delivery slots for a specific day
-VendorAreaSchema.methods.getAvailableSlots = function(dayName: string): Array<any> {
+VendorAreaSchema.methods.getAvailableSlots = function (
+  dayName: string,
+): Array<any> {
   if (!this.isAvailableOnDay(dayName)) {
     return [];
   }
-  
-  return this.deliverySlots.filter(slot => slot.isActive);
+
+  return this.deliverySlots.filter((slot) => slot.isActive);
 };
 
 // Method to calculate delivery fee based on order value
-VendorAreaSchema.methods.calculateDeliveryFee = function(orderValue: number): number {
+VendorAreaSchema.methods.calculateDeliveryFee = function (
+  orderValue: number,
+): number {
   if (orderValue >= this.minimumOrderValue) {
     return this.deliveryFee;
   }

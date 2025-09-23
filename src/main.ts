@@ -4,6 +4,7 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { UserService } from './modules/user/services/user.service';
 import { CustomLoggerService } from './common/logger/logger.service';
@@ -75,6 +76,57 @@ async function bootstrap() {
     }),
   );
 
+  // Swagger/OpenAPI Documentation Setup
+  const config = new DocumentBuilder()
+    .setTitle('Water Jar Delivery Platform API')
+    .setDescription(
+      'Comprehensive API for the Water Jar Delivery Platform. This API provides endpoints for user authentication, order management, delivery tracking, vendor operations, and administrative functions. The platform supports customers, vendors, delivery riders, and administrators with role-based access control.',
+    )
+    .setVersion('4.0.0')
+    .setContact(
+      'Water Jar Delivery Team',
+      'https://waterjardelivery.com',
+      'support@waterjardelivery.com',
+    )
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
+    .addTag('Authentication', 'User authentication and OTP verification')
+    .addTag('Users', 'User profile and address management')
+    .addTag('Riders', 'Delivery rider operations and order management')
+    .addTag('Vendors', 'Vendor operations and product management')
+    .addTag('Orders', 'Order creation, tracking, and management')
+    .addTag('Products', 'Product catalog and inventory')
+    .addTag('Subscriptions', 'Subscription management and recurring orders')
+    .addTag('Wallet', 'Wallet operations and balance management')
+    .addTag('Complaints', 'Customer complaint management')
+    .addTag('Admin', 'Administrative operations and reporting')
+    .addTag('Health', 'System health and status checks')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      tagsSorter: 'alpha',
+      operationsSorter: 'alpha',
+    },
+    customSiteTitle: 'Water Jar Delivery API Documentation',
+    customfavIcon: '/favicon.ico',
+    customCss: `
+      .swagger-ui .topbar { display: none }
+      .swagger-ui .info .title { color: #2c5aa0 }
+    `,
+  });
+
   // Seed test data for development
   const userService = app.get(UserService);
   await userService.seedTestData();
@@ -102,5 +154,8 @@ async function bootstrap() {
     `🚀 Water Jar Delivery API is running on: http://localhost:${port}`,
   );
   logger.log(`📋 Health check available at: http://localhost:${port}/health`);
+  logger.log(
+    `📚 API Documentation available at: http://localhost:${port}/docs`,
+  );
 }
 bootstrap();
