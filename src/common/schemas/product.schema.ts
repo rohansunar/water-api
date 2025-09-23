@@ -67,16 +67,19 @@ export class Product {
   images: string[];
 
   @Prop({
-    weight: { type: Number, min: 0 },
-    dimensions: {
-      length: { type: Number, min: 0 },
-      width: { type: Number, min: 0 },
-      height: { type: Number, min: 0 },
+    type: {
+      weight: { type: Number, min: 0 },
+      dimensions: {
+        length: { type: Number, min: 0 },
+        width: { type: Number, min: 0 },
+        height: { type: Number, min: 0 },
+      },
+      material: { type: String, maxlength: 100 },
+      brand: { type: String, maxlength: 100 },
+      color: { type: String, maxlength: 50 },
+      warranty: { type: String, maxlength: 100 },
     },
-    material: { type: String, maxlength: 100 },
-    brand: { type: String, maxlength: 100 },
-    color: { type: String, maxlength: 50 },
-    warranty: { type: String, maxlength: 100 },
+    required: false
   })
   specifications: {
     weight?: number;
@@ -93,13 +96,16 @@ export class Product {
 
   // Pricing and discounts
   @Prop({
-    discountPercentage: { type: Number, min: 0, max: 100, default: 0 },
-    discountStartDate: { type: Date },
-    discountEndDate: { type: Date },
-    bulkPricing: [{
-      minQuantity: { type: Number, min: 1 },
-      price: { type: Number, min: 0 },
-    }],
+    type: {
+      discountPercentage: { type: Number, min: 0, max: 100, default: 0 },
+      discountStartDate: { type: Date },
+      discountEndDate: { type: Date },
+      bulkPricing: [{
+        minQuantity: { type: Number, min: 1 },
+        price: { type: Number, min: 0 },
+      }],
+    },
+    required: false
   })
   pricing: {
     discountPercentage: number;
@@ -113,11 +119,14 @@ export class Product {
 
   // Inventory management
   @Prop({
-    lowStockThreshold: { type: Number, default: 10, min: 0 },
-    reorderLevel: { type: Number, default: 20, min: 0 },
-    maxStockLevel: { type: Number, default: 1000, min: 0 },
-    lastRestockedAt: { type: Date },
-    stockLocation: { type: String, maxlength: 100 },
+    type: {
+      lowStockThreshold: { type: Number, default: 10, min: 0 },
+      reorderLevel: { type: Number, default: 20, min: 0 },
+      maxStockLevel: { type: Number, default: 1000, min: 0 },
+      lastRestockedAt: { type: Date },
+      stockLocation: { type: String, maxlength: 100 },
+    },
+    required: false
   })
   inventory: {
     lowStockThreshold: number;

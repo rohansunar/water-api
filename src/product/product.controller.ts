@@ -11,7 +11,7 @@ import { ProductService } from './product.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ProductResponseDto } from '../common/dto/product.dto';
 
-@Controller('api')
+@Controller()
 @UseGuards(JwtAuthGuard)
 export class ProductController {
   private readonly logger = new Logger(ProductController.name);

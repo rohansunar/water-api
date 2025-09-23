@@ -5,6 +5,90 @@ All notable changes to the Water Jar Delivery API project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2025-09-13
+
+### 🚀 Major Changes
+
+#### New Ledger System
+- **BREAKING CHANGE**: Replaced monthly-ledger module with comprehensive ledger system
+- Implemented vendor financial transaction tracking with ledger entries
+- Added vendor analytics with sales, revenue, and commission tracking
+- Introduced payout management system for vendor settlements
+- Enhanced financial reporting with detailed breakdowns
+
+#### API Route Changes
+- **BREAKING CHANGE**: Removed `/api` prefix from all endpoint routes
+- Updated all controller routes to follow new API specification
+- Maintained backward compatibility for authentication and core functionality
+
+### ✨ New Features
+
+#### Ledger Management
+- **Ledger Entries**: Track all vendor financial transactions (sales, refunds, commissions, payouts)
+- **Analytics Dashboard**: Comprehensive vendor analytics with period-based reporting
+- **Payout System**: Automated payout requests with bank transfer and UPI support
+- **Financial Summary**: Real-time balance tracking and settlement information
+
+#### Enhanced API Endpoints
+- `GET /vendors/me/ledger` - Get vendor ledger entries with pagination and filtering
+- `POST /vendors/me/ledger` - Create ledger entries (admin/system use)
+- `GET /vendors/me/analytics` - Get vendor analytics for specified periods
+- `GET /vendors/me/ledger/summary` - Get comprehensive financial summary
+- `GET /vendors/me/payouts` - Get payout history with status filtering
+- `POST /vendors/me/payouts` - Request new payout with payment method details
+- `GET /admin/vendors/:vendorId/ledger` - Admin access to any vendor's ledger
+- `GET /admin/vendors/:vendorId/analytics` - Admin access to vendor analytics
+- `POST /admin/ledger-entries` - Admin ledger entry creation
+
+### 🔧 Technical Improvements
+
+#### Database Schema Enhancements
+- Enhanced LedgerEntry schema with comprehensive financial tracking
+- Updated Payout schema with multiple payment methods and status tracking
+- Added proper indexing for performance optimization
+- Implemented automatic balance calculation and financial period tracking
+
+#### Service Architecture
+- Implemented microservices-compliant ledger service
+- Added comprehensive error handling and validation
+- Enhanced logging with business event tracking
+- Optimized database queries with aggregation pipelines
+
+#### Testing Coverage
+- Added comprehensive unit tests for ledger service and controllers
+- Implemented integration tests for database operations
+- Created end-to-end tests for complete ledger workflows
+- Enhanced test coverage for financial calculations and edge cases
+
+### 🗑️ Removed Features
+- **BREAKING CHANGE**: Removed old monthly-ledger module and related endpoints
+- Deprecated monthly billing system in favor of comprehensive ledger tracking
+- Removed legacy monthly payment mode functionality
+
+### 📚 Documentation Updates
+- Updated API documentation with new ledger endpoints
+- Enhanced endpoint documentation with request/response examples
+- Updated base URL documentation (removed /api prefix)
+- Added comprehensive ledger system documentation
+
+### 🔒 Security & Compliance
+- Maintained role-based access control for all ledger operations
+- Enhanced audit trail for financial transactions
+- Implemented proper validation for financial data
+- Added secure payout request handling with bank details validation
+
+### 🐛 Bug Fixes
+- Fixed route prefix inconsistencies across all controllers
+- Resolved authentication issues with new endpoint structure
+- Enhanced error handling for financial operations
+- Improved validation for monetary amounts and calculations
+
+### ⚡ Performance Improvements
+- Optimized database queries with proper indexing
+- Enhanced pagination for large datasets
+- Improved aggregation queries for analytics calculations
+- Reduced response times for financial summary operations
+
 ## [2.0.0] - 2024-12-19
 
 ### 🚀 Major Release - Enhanced Database Architecture & Comprehensive Schema Implementation
@@ -373,10 +457,10 @@ This is a major release that introduces comprehensive database schema enhancemen
 - **Payment Integration**: Secure payment processing with multiple methods
 - **Balance Validation**: Insufficient funds checking and validation
 
-#### Delivery Agent Module
-- **Agent Dashboard**: Delivery agent interface for order management
+#### Delivery Rider Module
+- **Rider Dashboard**: Delivery rider interface for order management
 - **Location Tracking**: Real-time location updates and tracking
-- **Order Assignment**: Intelligent order assignment to available agents
+- **Order Assignment**: Intelligent order assignment to available riders
 - **Status Updates**: Real-time delivery status updates
 - **Route Optimization**: Basic route planning and optimization
 
@@ -492,10 +576,10 @@ This is a major release that introduces comprehensive database schema enhancemen
 - `POST /api/vendor/products` - Add new product
 - `GET /api/vendor/orders` - Get vendor orders
 
-#### Delivery Agent
-- `GET /api/agent/orders` - Get assigned orders
-- `PUT /api/agent/orders/:id/status` - Update order status
-- `POST /api/agent/location` - Update agent location
+#### Delivery Rider
+- `GET /api/rider/orders` - Get assigned orders
+- `PUT /api/rider/orders/:id/status` - Update order status
+- `POST /api/rider/location` - Update rider location
 
 ### Configuration
 

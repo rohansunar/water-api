@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { CustomLoggerService } from '../logger/logger.service';
 
 @Injectable()
@@ -14,8 +14,8 @@ export class LoggingInterceptor implements NestInterceptor {
   constructor(private readonly logger: CustomLoggerService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const request = context.switchToHttp().getRequest<Request>();
-    const response = context.switchToHttp().getResponse<Response>();
+    const request = context.switchToHttp().getRequest<FastifyRequest>();
+    const response = context.switchToHttp().getResponse<FastifyReply>();
     const startTime = Date.now();
 
     const { method, url, headers } = request;
@@ -25,7 +25,7 @@ export class LoggingInterceptor implements NestInterceptor {
       tap(() => {
         const endTime = Date.now();
         const responseTime = endTime - startTime;
-        const { statusCode } = response;
+        const statusCode = response.statusCode;
 
         // Log HTTP request
         this.logger.logHttpRequest(

@@ -14,7 +14,7 @@ import {
 } from '../common/dto/auth.dto';
 import { Public } from './decorators/public.decorator';
 
-@Controller('api/auth')
+@Controller('auth')
 @Public()
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);

@@ -31,7 +31,7 @@ export interface VendorExtension {
   };
 }
 
-export interface AgentExtension {
+export interface RiderExtension {
   licenseNumber?: string;
   vehicleType?: string;
   shift: {
@@ -171,7 +171,7 @@ export class User {
       },
     },
   })
-  agentExtension?: AgentExtension;
+  riderExtension?: RiderExtension;
 
   @Prop({
     type: {
@@ -242,8 +242,8 @@ UserSchema.index({ createdAt: -1 });
 // Role-specific indexes
 UserSchema.index({ 'vendorExtension.kycStatus': 1 });
 UserSchema.index({ 'vendorExtension.rating': -1 });
-UserSchema.index({ 'agentExtension.status': 1 });
-UserSchema.index({ 'agentExtension.currentLocation.latitude': 1, 'agentExtension.currentLocation.longitude': 1 });
+UserSchema.index({ 'riderExtension.status': 1 });
+UserSchema.index({ 'riderExtension.currentLocation.latitude': 1, 'riderExtension.currentLocation.longitude': 1 });
 
 // Pre-save middleware to initialize role extensions
 UserSchema.pre('save', function(next) {
@@ -278,9 +278,9 @@ UserSchema.pre('save', function(next) {
           };
         }
         break;
-      case UserRole.DELIVERY_AGENT:
-        if (!this.agentExtension) {
-          this.agentExtension = {
+      case UserRole.DELIVERY_RIDER:
+        if (!this.riderExtension) {
+          this.riderExtension = {
             shift: {
               startTime: '09:00',
               endTime: '18:00',

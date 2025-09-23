@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ComplaintService } from './complaint.service';
-import { UserService } from '../user/user.service';
+import { UserService } from '../modules/user/services/user.service';
 import { CustomLoggerService } from '../common/logger/logger.service';
 
 describe('ComplaintService', () => {

@@ -5,7 +5,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../common/interfaces/user.interface';
 import { TopupWalletDto, WalletResponseDto } from '../common/dto/wallet.dto';
 
-@Controller('api/wallet')
+@Controller('wallet')
 @UseGuards(JwtAuthGuard)
 export class WalletController {
   private readonly logger = new Logger(WalletController.name);

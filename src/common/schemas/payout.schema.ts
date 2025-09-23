@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { PayoutStatus, PayoutMethod } from '../interfaces/ledger.interface';
 
 export type PayoutDocument = Payout & Document;
 
@@ -22,29 +23,33 @@ export class Payout {
   @Prop({ required: true, min: 0 })
   amount: number;
 
-  @Prop({ 
+  @Prop({
     required: true,
-    enum: ['requested', 'pending_approval', 'approved', 'processing', 'completed', 'failed', 'cancelled'],
-    default: 'requested',
+    enum: Object.values(PayoutStatus),
+    default: PayoutStatus.PENDING,
+    index: true
   })
-  status: string;
+  status: PayoutStatus;
 
   // Payout method and details
-  @Prop({ 
+  @Prop({
     required: true,
-    enum: ['bank_transfer', 'upi', 'wallet', 'cheque'],
-    default: 'bank_transfer',
+    enum: Object.values(PayoutMethod),
+    default: PayoutMethod.BANK_TRANSFER,
   })
-  method: string;
+  method: PayoutMethod;
 
   @Prop({
-    bankAccountNumber: { type: String, maxlength: 20 },
-    ifscCode: { type: String, maxlength: 11 },
-    bankName: { type: String, maxlength: 100 },
-    accountHolderName: { type: String, maxlength: 100 },
-    upiId: { type: String, maxlength: 100 },
-    walletId: { type: String, maxlength: 100 },
-    chequeNumber: { type: String, maxlength: 20 },
+    type: {
+      bankAccountNumber: { type: String, maxlength: 20 },
+      ifscCode: { type: String, maxlength: 11 },
+      bankName: { type: String, maxlength: 100 },
+      accountHolderName: { type: String, maxlength: 100 },
+      upiId: { type: String, maxlength: 100 },
+      walletId: { type: String, maxlength: 100 },
+      chequeNumber: { type: String, maxlength: 20 },
+    },
+    required: false
   })
   payoutDetails?: {
     bankAccountNumber?: string;
@@ -240,19 +245,16 @@ PayoutSchema.pre('save', function(next) {
   if (this.isModified('status')) {
     const now = new Date();
     switch (this.status) {
-      case 'requested':
+      case PayoutStatus.PENDING:
         this.requestedAt = now;
         break;
-      case 'approved':
+      case PayoutStatus.PROCESSING:
         this.approvedAt = now;
         break;
-      case 'processing':
-        this.initiatedAt = now;
-        break;
-      case 'completed':
+      case PayoutStatus.COMPLETED:
         this.completedAt = now;
         break;
-      case 'failed':
+      case PayoutStatus.FAILED:
         this.failedAt = now;
         break;
     }

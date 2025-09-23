@@ -21,9 +21,9 @@ import {
   UserManagementDto,
   VendorApprovalDto,
 } from './admin.service';
-import { MonthlyBillingSummaryDto } from '../common/dto/monthly-ledger.dto';
+import { LedgerSummaryResponseDto } from '../common/dto/ledger.dto';
 
-@Controller('api/admin')
+@Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 export class AdminController {
@@ -97,7 +97,7 @@ export class AdminController {
     @CurrentUser() user: User,
     @Query('month') month?: string,
     @Query('year') year?: string,
-  ): Promise<MonthlyBillingSummaryDto[]> {
+  ): Promise<LedgerSummaryResponseDto[]> {
     this.logger.log(
       `Admin ${user.id} accessing monthly payment monitoring for ${month}/${year}`,
     );

@@ -6,7 +6,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { ValidationError } from 'class-validator';
 import { CustomLoggerService } from '../logger/logger.service';
 
@@ -18,8 +18,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const reply = ctx.getResponse();
+    const request = ctx.getRequest();
 
     let status: number;
     let message: string | string[];
@@ -104,7 +104,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
       errorResponse['requestId'] = requestId;
     }
 
-    response.status(status).json(errorResponse);
+    // Use NestJS response methods for compatibility with both Express and Fastify
+    reply.status(status).send(errorResponse);
   }
 
   private formatErrorMessage(

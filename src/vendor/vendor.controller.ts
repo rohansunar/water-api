@@ -24,7 +24,7 @@ import {
   UpdateOrderStatusDto,
 } from '../common/dto/order.dto';
 
-@Controller('api/vendor')
+@Controller('vendors')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.VENDOR)
 export class VendorController {

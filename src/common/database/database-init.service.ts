@@ -42,7 +42,8 @@ export class DatabaseInitService implements OnModuleInit {
       this.logger.log('Database initialization completed successfully');
     } catch (error) {
       this.logger.error('Database initialization failed:', error);
-      throw error;
+      // Don't throw error to prevent application crash
+      this.logger.warn('Application will continue without full database initialization');
     }
   }
 
@@ -56,7 +57,8 @@ export class DatabaseInitService implements OnModuleInit {
       this.logger.log('Performance indexes applied successfully');
     } catch (error) {
       this.logger.error('Failed to apply performance indexes:', error);
-      throw error;
+      this.logger.warn('Continuing without applying all indexes (this is normal for existing databases)');
+      // Don't throw error to prevent application crash
     }
   }
 

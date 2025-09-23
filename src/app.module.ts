@@ -6,17 +6,18 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
-import { UserModule } from './user/user.module';
+import { UserModule } from './modules/user/user.module';
 import { ProductModule } from './product/product.module';
 import { VendorModule } from './vendor/vendor.module';
 import { OrderModule } from './order/order.module';
 import { SubscriptionModule } from './subscription/subscription.module';
-import { AgentModule } from './agent/agent.module';
+import { RiderModule } from './rider/rider.module';
 import { WalletModule } from './wallet/wallet.module';
 import { ComplaintModule } from './complaint/complaint.module';
-import { MonthlyLedgerModule } from './monthly-ledger/monthly-ledger.module';
+import { LedgerModule } from './ledger/ledger.module';
 import { AdminModule } from './admin/admin.module';
 import { LoggerModule } from './common/logger/logger.module';
+import { EventBusModule } from './common/events/event-bus.module';
 import { CustomLoggerService } from './common/logger/logger.service';
 import { DatabaseInitService } from './common/database/database-init.service';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
@@ -41,18 +42,19 @@ import { SecurityMiddleware } from './common/middleware/security.middleware';
         limit: 100, // 100 requests per minute
       },
     ]),
+    EventBusModule,
+    LoggerModule,
     AuthModule,
     UserModule,
     VendorModule,
     ProductModule,
     OrderModule,
     SubscriptionModule,
-    AgentModule,
+    RiderModule,
     WalletModule,
     ComplaintModule,
-    MonthlyLedgerModule,
+    LedgerModule,
     AdminModule,
-    LoggerModule,
   ],
   controllers: [AppController],
   providers: [

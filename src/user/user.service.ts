@@ -241,7 +241,7 @@ export class UserService {
         {
           phone: '7777777777',
           name: 'Test Agent',
-          role: UserRole.DELIVERY_AGENT,
+          role: UserRole.DELIVERY_RIDER,
           walletBalance: 200,
         },
       ];

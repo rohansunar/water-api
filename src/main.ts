@@ -1,19 +1,26 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { AppModule } from './app.module';
-import { UserService } from './user/user.service';
+import { UserService } from './modules/user/services/user.service';
 import { CustomLoggerService } from './common/logger/logger.service';
-import helmet from 'helmet';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
-  const app = await NestFactory.create(AppModule, {
-    logger: new CustomLoggerService(),
-  });
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter(),
+    {
+      logger: new CustomLoggerService(),
+    },
+  );
 
-  // Enable CORS with comprehensive configuration
-  app.enableCors({
+  // Enable CORS with comprehensive configuration for Fastify
+  await app.register(import('@fastify/cors'), {
     origin: [
       'http://localhost:3000',
       'http://localhost:3001',
@@ -33,30 +40,28 @@ async function bootstrap() {
     maxAge: 86400, // 24 hours
   });
 
-  // Security headers with comprehensive configuration
-  app.use(
-    helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-          scriptSrc: ["'self'"],
-          imgSrc: ["'self'", 'data:', 'https:'],
-          connectSrc: ["'self'"],
-          fontSrc: ["'self'"],
-          objectSrc: ["'none'"],
-          mediaSrc: ["'self'"],
-          frameSrc: ["'none'"],
-        },
+  // Security headers with comprehensive configuration for Fastify
+  await app.register(import('@fastify/helmet'), {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
       },
-      crossOriginEmbedderPolicy: false,
-      hsts: {
-        maxAge: 31536000,
-        includeSubDomains: true,
-        preload: true,
-      },
-    }),
-  );
+    },
+    crossOriginEmbedderPolicy: false,
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    },
+  });
 
   // Global validation pipe
   app.useGlobalPipes(
@@ -82,21 +87,20 @@ async function bootstrap() {
   const productService = app.get(ProductService);
   await productService.seedTestData();
 
-  const { AgentService } = await import('./agent/agent.service');
-  const agentService = app.get(AgentService);
-  await agentService.seedTestData();
+  const { RiderService } = await import('./rider/rider.service');
+  const riderService = app.get(RiderService);
+  await riderService.seedTestData();
 
   const { ComplaintService } = await import('./complaint/complaint.service');
   const complaintService = app.get(ComplaintService);
   await complaintService.seedTestData();
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 4242;
   await app.listen(port);
 
   logger.log(
     `🚀 Water Jar Delivery API is running on: http://localhost:${port}`,
   );
   logger.log(`📋 Health check available at: http://localhost:${port}/health`);
-  logger.log(`🔐 Auth endpoints: http://localhost:${port}/api/auth/login`);
 }
 bootstrap();

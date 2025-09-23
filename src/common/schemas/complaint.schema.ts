@@ -212,9 +212,9 @@ export class ComplaintResponse {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   responderId: Types.ObjectId;
 
-  @Prop({ 
+  @Prop({
     required: true,
-    enum: ['customer_support', 'vendor', 'delivery_agent', 'admin', 'system'],
+    enum: ['customer_support', 'vendor', 'delivery_rider', 'admin', 'system'],
   })
   responderType: string;
 

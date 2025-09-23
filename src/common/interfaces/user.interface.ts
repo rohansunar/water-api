@@ -31,7 +31,7 @@ export interface Address {
 export enum UserRole {
   CUSTOMER = 'customer',
   VENDOR = 'vendor',
-  DELIVERY_AGENT = 'delivery_agent',
+  DELIVERY_RIDER = 'delivery_rider',
   ADMIN = 'admin',
 }
 

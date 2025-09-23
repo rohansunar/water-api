@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { OrderService } from './order.service';
-import { UserService } from '../user/user.service';
+import { UserService } from '../modules/user/services/user.service';
 import { ProductService } from '../product/product.service';
 import { CustomLoggerService } from '../common/logger/logger.service';
 

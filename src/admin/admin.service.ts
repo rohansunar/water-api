@@ -4,11 +4,11 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { UserService } from '../user/user.service';
+import { UserService } from '../modules/user/services/user.service';
 import { VendorService } from '../vendor/vendor.service';
-import { MonthlyLedgerService } from '../monthly-ledger/monthly-ledger.service';
+import { LedgerService } from '../ledger/ledger.service';
 import { User, UserRole } from '../common/interfaces/user.interface';
-import { MonthlyBillingSummaryDto } from '../common/dto/monthly-ledger.dto';
+import { LedgerSummaryResponseDto } from '../common/dto/ledger.dto';
 import { CustomLoggerService } from '../common/logger/logger.service';
 
 export interface AdminDashboardStats {
@@ -53,7 +53,7 @@ export class AdminService {
   constructor(
     private readonly userService: UserService,
     private readonly vendorService: VendorService,
-    private readonly monthlyLedgerService: MonthlyLedgerService,
+    private readonly ledgerService: LedgerService,
     private readonly customLogger: CustomLoggerService,
   ) {}
 
@@ -64,14 +64,9 @@ export class AdminService {
       const currentMonth = new Date().getMonth() + 1;
       const currentYear = new Date().getFullYear();
 
-      const pendingDues = await this.monthlyLedgerService.getPendingDues(
-        currentMonth,
-        currentYear,
-      );
-      const totalPendingDues = pendingDues.reduce(
-        (sum, due) => sum + due.pendingAmount,
-        0,
-      );
+      // For now, we'll simulate pending dues data
+      // In a real implementation, this would aggregate from all vendors
+      const totalPendingDues = 0; // TODO: Implement with new ledger system
 
       const stats: AdminDashboardStats = {
         totalUsers: 150, // Simulated data
@@ -125,7 +120,7 @@ export class AdminService {
           id: '3',
           phone: '7777777777',
           name: 'Test Agent',
-          role: UserRole.DELIVERY_AGENT,
+          role: UserRole.DELIVERY_RIDER,
           isActive: true,
           monthlyPaymentMode: false,
           walletBalance: 200,
@@ -268,16 +263,14 @@ export class AdminService {
   async getMonthlyPaymentMonitoring(
     month?: number,
     year?: number,
-  ): Promise<MonthlyBillingSummaryDto[]> {
+  ): Promise<LedgerSummaryResponseDto[]> {
     try {
       const currentDate = new Date();
       const targetMonth = month || currentDate.getMonth() + 1;
       const targetYear = year || currentDate.getFullYear();
 
-      const pendingDues = await this.monthlyLedgerService.getPendingDues(
-        targetMonth,
-        targetYear,
-      );
+      // TODO: Implement with new ledger system
+      const pendingDues: any[] = [];
 
       this.logger.log(
         `Retrieved monthly payment monitoring for ${targetMonth}/${targetYear}: ${pendingDues.length} entries`,

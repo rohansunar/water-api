@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { AdminService } from './admin.service';
-import { UserService } from '../user/user.service';
+import { UserService } from '../modules/user/services/user.service';
 import { VendorService } from '../vendor/vendor.service';
 import { MonthlyLedgerService } from '../monthly-ledger/monthly-ledger.service';
 import { CustomLoggerService } from '../common/logger/logger.service';

@@ -1,7 +1,7 @@
 {
   "name": "water-jar-delivery-api",
   "private": true,
-  "version": "2.0.0",
+  "version": "4.0.0",
   "description": "Backend API for Water Jar Delivery Platform - On-demand and subscription-based water jar delivery service",
   "license": "MIT",
   "scripts": {
@@ -17,6 +17,11 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/jest/bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:controllers": "jest --testPathPattern=\".*\\.controller\\.spec\\.ts$\"",
+    "test:database": "jest --testPathPattern=\".*\\.(database|db|repository)\\.spec\\.ts$\"",
+    "test:modules": "jest --testPathPattern=\"src/modules/.*\\.spec\\.ts$\"",
+    "test:integration": "jest --testPathPattern=\"test/integration/.*\\.spec\\.ts$\"",
+    "test:all": "npm run test && npm run test:e2e && npm run test:integration",
     "migrate": "ts-node scripts/migrate-database.ts",
     "migrate:rollback": "ts-node scripts/rollback-migration.ts"
   },
@@ -25,6 +30,8 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@fastify/cors": "^11.1.0",
+    "@fastify/helmet": "^13.0.1",
     "@nestjs/common": "^11.0.17",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -32,7 +39,7 @@
     "@nestjs/mapped-types": "^2.1.0",
     "@nestjs/mongoose": "^11.0.3",
     "@nestjs/passport": "^11.0.5",
-    "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/platform-fastify": "^11.1.6",
     "@nestjs/throttler": "^6.4.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",

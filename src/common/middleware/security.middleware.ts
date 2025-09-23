@@ -1,13 +1,13 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { CustomLoggerService } from '../logger/logger.service';
 
 @Injectable()
 export class SecurityMiddleware implements NestMiddleware {
   constructor(private readonly logger: CustomLoggerService) {}
 
-  use(req: Request, res: Response, next: NextFunction) {
-    const ip = req.ip || req.connection.remoteAddress;
+  use(req: any, res: any, next: () => void) {
+    const ip = req.ip || req.socket.remoteAddress;
     const userAgent = req.headers['user-agent'];
     const method = req.method;
     const url = req.url;
@@ -15,20 +15,25 @@ export class SecurityMiddleware implements NestMiddleware {
     // Log suspicious activity
     this.detectSuspiciousActivity(req, ip, userAgent);
 
-    // Add security headers
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-
-    // Remove server information
-    res.removeHeader('X-Powered-By');
+    // Add security headers - use setHeader for NestJS + Fastify compatibility
+    if (res.setHeader) {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+      res.setHeader('X-XSS-Protection', '1; mode=block');
+      res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+      res.setHeader('X-Powered-By', ''); // Remove server information
+    } else if (res.header) {
+      res.header('X-Content-Type-Options', 'nosniff');
+      res.header('X-Frame-Options', 'DENY');
+      res.header('X-XSS-Protection', '1; mode=block');
+      res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    }
 
     next();
   }
 
   private detectSuspiciousActivity(
-    req: Request,
+    req: FastifyRequest,
     ip: string,
     userAgent: string,
   ) {
@@ -41,7 +46,7 @@ export class SecurityMiddleware implements NestMiddleware {
     ];
 
     const requestBody = JSON.stringify(req.body || {});
-    const queryString = JSON.stringify(req.query || {});
+    const queryString = JSON.stringify((req as any).query || {});
     const fullContent = `${requestBody} ${queryString} ${req.url}`;
 
     for (const pattern of suspiciousPatterns) {
@@ -53,7 +58,7 @@ export class SecurityMiddleware implements NestMiddleware {
             url: req.url,
             method: req.method,
             body: req.body,
-            query: req.query,
+            query: (req as any).query,
           },
           ip,
           userAgent,

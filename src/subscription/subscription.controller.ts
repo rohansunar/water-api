@@ -18,7 +18,7 @@ import {
   SubscriptionResponseDto,
 } from '../common/dto/subscription.dto';
 
-@Controller('api/subscriptions')
+@Controller('subscriptions')
 @UseGuards(JwtAuthGuard)
 export class SubscriptionController {
   private readonly logger = new Logger(SubscriptionController.name);

@@ -109,11 +109,14 @@ export class Payment {
 
   // Customer payment details (masked/tokenized)
   @Prop({
-    cardLast4: { type: String, maxlength: 4 },
-    cardType: { type: String, maxlength: 20 },
-    bankName: { type: String, maxlength: 100 },
-    upiId: { type: String, maxlength: 100 },
-    walletProvider: { type: String, maxlength: 50 },
+    type: {
+      cardLast4: { type: String, maxlength: 4 },
+      cardType: { type: String, maxlength: 20 },
+      bankName: { type: String, maxlength: 100 },
+      upiId: { type: String, maxlength: 100 },
+      walletProvider: { type: String, maxlength: 50 },
+    },
+    required: false
   })
   paymentDetails?: {
     cardLast4?: string;

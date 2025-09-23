@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { LedgerEntryType, LedgerEntryStatus } from '../interfaces/ledger.interface';
 
 export type LedgerEntryDocument = LedgerEntry & Document;
 
@@ -22,14 +23,18 @@ export class LedgerEntry {
   @Prop({ type: Types.ObjectId, ref: 'Order' })
   orderId?: Types.ObjectId;
 
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+  userId: Types.ObjectId;
+
   @Prop({ type: Types.ObjectId, ref: 'Payment' })
   paymentId?: Types.ObjectId;
 
-  @Prop({ 
+  @Prop({
     required: true,
-    enum: ['sale', 'refund', 'commission', 'fee', 'penalty', 'bonus', 'adjustment', 'payout'],
+    enum: Object.values(LedgerEntryType),
+    index: true
   })
-  type: string;
+  type: LedgerEntryType;
 
   @Prop({ required: true })
   amount: number; // Can be positive or negative
@@ -135,11 +140,12 @@ export class LedgerEntry {
   @Prop()
   approvedAt?: Date;
 
-  @Prop({ 
-    enum: ['draft', 'pending_approval', 'approved', 'rejected'], 
-    default: 'approved' 
+  @Prop({
+    enum: Object.values(LedgerEntryStatus),
+    default: LedgerEntryStatus.PENDING,
+    index: true
   })
-  status: string;
+  status: LedgerEntryStatus;
 
   @Prop({ maxlength: 500 })
   notes?: string;

@@ -8,13 +8,15 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { UserService } from '../user/user.service';
+import { UserService } from '../modules/user/services/user.service';
 import {
   LoginDto,
   VerifyOtpDto,
   AuthResponseDto,
+  UserProfileDto,
 } from '../common/dto/auth.dto';
-import { User, UserRole } from '../common/interfaces/user.interface';
+import { User, UserRole } from '../modules/user/entities/user.entity';
+import { CreateUserDto } from '../modules/user/dto/user.dto';
 
 @Injectable()
 export class AuthService implements OnModuleInit, OnModuleDestroy {
@@ -116,15 +118,15 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
       this.otpStore.delete(phone);
 
       // Find or create user
-      let user = await this.userService.findByPhone(phone);
+      let user = await this.userService.findByPhoneDocument(phone);
       if (!user) {
-        user = await this.userService.create({
+        const createUserDto: CreateUserDto = {
           phone,
           role: UserRole.CUSTOMER,
           isActive: true,
           walletBalance: 0,
-          addresses: [],
-        });
+        };
+        user = await this.userService.create(createUserDto);
       }
 
       // Generate JWT token
@@ -133,9 +135,36 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
 
       this.logger.log(`User ${user.id} authenticated successfully`);
 
+      const userProfile = await this.userService.getUserProfile(user.id);
+
+      // Convert to auth DTO format
+      const authUserProfile: UserProfileDto = {
+        id: userProfile.id,
+        phone: userProfile.phone,
+        name: userProfile.name,
+        email: userProfile.email,
+        role: userProfile.role,
+        walletBalance: userProfile.walletBalance,
+        isActive: userProfile.isActive,
+        monthlyPaymentMode: userProfile.monthlyPaymentMode,
+        addresses: userProfile.addresses.map(addr => ({
+          id: addr.id || '',
+          type: addr.label || 'home', // Use label as type since type doesn't exist
+          street: addr.street,
+          city: addr.city,
+          state: addr.state,
+          pincode: addr.pincode,
+          landmark: addr.landmark,
+          latitude: addr.latitude || 0,
+          longitude: addr.longitude || 0,
+          isDefault: addr.isDefault || false,
+        })),
+        createdAt: userProfile.createdAt,
+      };
+
       return {
         token,
-        user: await this.userService.getUserProfile(user.id),
+        user: authUserProfile,
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) {
@@ -156,6 +185,7 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     if (!user || !user.isActive) {
       throw new UnauthorizedException('User not found or inactive');
     }
+    // UserData already has the id property
     return user as unknown as User;
   }
 

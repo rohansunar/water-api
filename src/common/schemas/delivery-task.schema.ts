@@ -26,7 +26,7 @@ export class DeliveryTask {
   storeId?: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User' })
-  driverId?: Types.ObjectId; // Reference to user with agent role
+  driverId?: Types.ObjectId; // Reference to user with rider role
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   customerId: Types.ObjectId;

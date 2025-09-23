@@ -14,8 +14,8 @@ import {
 } from '../common/interfaces/order.interface';
 import { CreateOrderDto, OrderResponseDto } from '../common/dto/order.dto';
 import { ProductService } from '../product/product.service';
-import { UserService } from '../user/user.service';
-import { MonthlyLedgerService } from '../monthly-ledger/monthly-ledger.service';
+import { UserService } from '../modules/user/services/user.service';
+import { LedgerService } from '../ledger/ledger.service';
 
 @Injectable()
 export class OrderService {
@@ -27,7 +27,7 @@ export class OrderService {
   constructor(
     private readonly productService: ProductService,
     private readonly userService: UserService,
-    private readonly monthlyLedgerService: MonthlyLedgerService,
+    private readonly ledgerService: LedgerService,
   ) {}
 
   async create(
@@ -52,8 +52,8 @@ export class OrderService {
       }
 
       // Get user details
-      const user = await this.userService.findById(userId);
-      if (!user) {
+      const userProfile = await this.userService.getUserProfile(userId);
+      if (!userProfile) {
         throw new NotFoundException('User not found');
       }
 
@@ -67,9 +67,9 @@ export class OrderService {
 
       // Validate payment method and balance
       if (createOrderDto.payment_method === PaymentMethod.WALLET) {
-        if (user.walletBalance < totalAmount) {
+        if (userProfile.walletBalance < totalAmount) {
           throw new BadRequestException(
-            `Insufficient wallet balance. Order total is ₹${totalAmount} (₹${itemTotal} + ₹${depositAmount} deposit + ₹${deliveryFee} delivery), but your wallet balance is ₹${user.walletBalance}. Please add money to your wallet or choose a different payment method.`,
+            `Insufficient wallet balance. Order total is ₹${totalAmount} (₹${itemTotal} + ₹${depositAmount} deposit + ₹${deliveryFee} delivery), but your wallet balance is ₹${userProfile.walletBalance}. Please add money to your wallet or choose a different payment method.`,
           );
         }
       }
@@ -92,7 +92,7 @@ export class OrderService {
         paymentMethod: createOrderDto.payment_method,
         paymentStatus: PaymentStatus.PENDING,
         deliveryAddress:
-          createOrderDto.delivery_address || this.getDefaultAddress(user),
+          createOrderDto.delivery_address || this.getDefaultAddress(userProfile),
         specialInstructions: createOrderDto.special_instructions,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -234,18 +234,16 @@ export class OrderService {
     // If order is delivered and user has monthly payment mode enabled, create ledger entry
     if (status === OrderStatus.DELIVERED) {
       try {
-        const user = await this.userService.findById(order.userId);
-        if (user && user.monthlyPaymentMode) {
+        const userProfile = await this.userService.getUserProfile(order.userId);
+        if (userProfile && userProfile.monthlyPaymentMode) {
           const deliveryDate = new Date();
-          await this.monthlyLedgerService.createLedgerEntry({
-            userId: order.userId,
+          await this.ledgerService.createLedgerEntry({
             vendorId: order.vendorId,
             orderId: order.id,
-            rate: order.totalAmount / order.quantity, // Calculate per-unit rate
-            quantity: order.quantity,
-            deliveryDate: deliveryDate.toISOString(),
-            month: deliveryDate.getMonth() + 1,
-            year: deliveryDate.getFullYear(),
+            userId: order.userId,
+            amount: order.totalAmount,
+            type: 'sale' as any, // LedgerEntryType.SALE
+            description: `Order delivery - ${order.quantity} items`,
           });
           this.logger.log(
             `Created monthly ledger entry for delivered order ${orderId}`,
@@ -304,8 +302,22 @@ export class OrderService {
     return 15; // Default delivery fee
   }
 
-  private getDefaultAddress(user: any): any {
-    // Return default address or require address in request
+  private getDefaultAddress(userProfile: any): any {
+    // Try to find default address from user's addresses
+    const defaultAddress = userProfile.addresses?.find((addr: any) => addr.isDefault);
+    if (defaultAddress) {
+      return {
+        street: defaultAddress.street,
+        city: defaultAddress.city,
+        state: defaultAddress.state,
+        pincode: defaultAddress.pincode,
+        latitude: defaultAddress.latitude || 28.6139,
+        longitude: defaultAddress.longitude || 77.209,
+        contactPhone: userProfile.phone,
+      };
+    }
+
+    // Return default address if no user address found
     return {
       street: '123 Default Street',
       city: 'Delhi',
@@ -313,7 +325,7 @@ export class OrderService {
       pincode: '110001',
       latitude: 28.6139,
       longitude: 77.209,
-      contactPhone: user.phone,
+      contactPhone: userProfile.phone,
     };
   }
 

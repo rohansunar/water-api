@@ -5,7 +5,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../common/interfaces/user.interface';
 import { UserProfileDto } from '../common/dto/auth.dto';
 
-@Controller('api/user')
+@Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UserController {
   private readonly logger = new Logger(UserController.name);

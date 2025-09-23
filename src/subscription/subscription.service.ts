@@ -18,7 +18,7 @@ import {
   SubscriptionResponseDto,
 } from '../common/dto/subscription.dto';
 import { ProductService } from '../product/product.service';
-import { UserService } from '../user/user.service';
+import { UserService } from '../modules/user/services/user.service';
 import { OrderService } from '../order/order.service';
 
 @Injectable()

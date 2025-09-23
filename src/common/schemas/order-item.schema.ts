@@ -53,16 +53,19 @@ export class OrderItem {
 
   // Product specifications at time of order
   @Prop({
-    capacity: { type: String },
-    unit: { type: String },
-    brand: { type: String },
-    category: { type: String },
-    weight: { type: Number },
-    dimensions: {
-      length: { type: Number },
-      width: { type: Number },
-      height: { type: Number },
+    type: {
+      capacity: { type: String },
+      unit: { type: String },
+      brand: { type: String },
+      category: { type: String },
+      weight: { type: Number },
+      dimensions: {
+        length: { type: Number },
+        width: { type: Number },
+        height: { type: Number },
+      },
     },
+    required: false
   })
   productSpecs: {
     capacity?: string;

@@ -16,7 +16,7 @@ import {
   ComplaintResponseDto,
 } from '../common/dto/complaint.dto';
 
-@Controller('api/complaints')
+@Controller('complaints')
 @UseGuards(JwtAuthGuard)
 export class ComplaintController {
   private readonly logger = new Logger(ComplaintController.name);

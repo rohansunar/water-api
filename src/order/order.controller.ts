@@ -14,7 +14,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../common/interfaces/user.interface';
 import { CreateOrderDto, OrderResponseDto } from '../common/dto/order.dto';
 
-@Controller('api/orders')
+@Controller('orders')
 @UseGuards(JwtAuthGuard)
 export class OrderController {
   private readonly logger = new Logger(OrderController.name);

@@ -1,13 +1,13 @@
 import { Injectable, ExecutionContext } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { Request } from 'express';
+import { FastifyRequest } from 'fastify';
 
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
-  protected async getTracker(req: Request): Promise<string> {
+  protected async getTracker(req: FastifyRequest): Promise<string> {
     // Use IP address and user ID (if authenticated) for tracking
-    const ip = req.ip || req.connection.remoteAddress || 'unknown';
-    const userId = req.user?.['sub'] || 'anonymous';
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const userId = (req as any).user?.['sub'] || 'anonymous';
     return `${ip}-${userId}`;
   }
 
@@ -16,7 +16,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
   }
 
   protected async shouldSkip(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<FastifyRequest>();
 
     // Skip rate limiting for health checks
     if (request.url === '/health' || request.url === '/') {

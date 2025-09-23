@@ -18,7 +18,7 @@ import {
   WalletResponseDto,
   WalletTransactionDto,
 } from '../common/dto/wallet.dto';
-import { UserService } from '../user/user.service';
+import { UserService } from '../modules/user/services/user.service';
 
 @Injectable()
 export class WalletService implements OnModuleDestroy {

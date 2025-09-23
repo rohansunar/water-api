@@ -141,6 +141,24 @@ export class CustomLoggerService implements LoggerService {
     });
   }
 
+  logApiRequest(
+    method: string,
+    url: string,
+    statusCode: number,
+    duration: number,
+    context?: { userId?: string; requestId?: string; correlationId?: string }
+  ): void {
+    this.logger.info('API Request', {
+      type: 'api_request',
+      method,
+      url,
+      statusCode,
+      duration,
+      ...context,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   logBusinessEvent(event: string, data: any, userId?: string): void {
     this.logger.info('Business Event', {
       type: 'business_event',
@@ -238,6 +256,75 @@ export class CustomLoggerService implements LoggerService {
       operation,
       duration,
       metadata,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  // Enhanced methods for modular architecture
+  logModuleAction(
+    module: string,
+    action: string,
+    data?: any,
+    context?: { userId?: string; requestId?: string; correlationId?: string }
+  ): void {
+    this.logger.info('Module Action', {
+      type: 'module_action',
+      module,
+      action,
+      data,
+      ...context,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  logEvent(
+    eventType: string,
+    eventData: any,
+    context?: { source?: string; correlationId?: string; userId?: string }
+  ): void {
+    this.logger.info('Event Published', {
+      type: 'event',
+      eventType,
+      eventData,
+      ...context,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  logInterModuleCommunication(
+    sourceModule: string,
+    targetModule: string,
+    operation: string,
+    duration?: number,
+    success?: boolean,
+    error?: any
+  ): void {
+    const logLevel = success === false ? 'error' : 'info';
+    this.logger.log(logLevel, 'Inter-Module Communication', {
+      type: 'inter_module_communication',
+      sourceModule,
+      targetModule,
+      operation,
+      duration,
+      success,
+      error: error ? {
+        message: error.message,
+        stack: error.stack,
+      } : undefined,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  logMemoryUsage(module: string, memoryUsage: NodeJS.MemoryUsage): void {
+    this.logger.debug('Memory Usage', {
+      type: 'memory_usage',
+      module,
+      memoryUsage: {
+        rss: Math.round(memoryUsage.rss / 1024 / 1024), // MB
+        heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024), // MB
+        heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024), // MB
+        external: Math.round(memoryUsage.external / 1024 / 1024), // MB
+      },
       timestamp: new Date().toISOString(),
     });
   }

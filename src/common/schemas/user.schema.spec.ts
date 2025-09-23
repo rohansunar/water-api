@@ -76,9 +76,9 @@ describe('User Schema', () => {
       expect(schema.paths.vendorExtension).toBeDefined();
     });
 
-    it('should have agent extension structure', () => {
+    it('should have rider extension structure', () => {
       const schema = UserSchema;
-      expect(schema.paths.agentExtension).toBeDefined();
+      expect(schema.paths.riderExtension).toBeDefined();
     });
 
     it('should have admin extension structure', () => {
@@ -138,7 +138,7 @@ describe('User Schema', () => {
         role: UserRole.CUSTOMER,
         customerExtension: undefined,
         vendorExtension: undefined,
-        agentExtension: undefined,
+        riderExtension: undefined,
         adminExtension: undefined,
       };
     });
@@ -192,12 +192,12 @@ describe('User Schema', () => {
       expect(mockUser.vendorExtension.businessMetrics.totalRevenue).toBe(0);
     });
 
-    it('should initialize agent extension for delivery agent role', () => {
-      mockUser.role = UserRole.DELIVERY_AGENT;
-      
+    it('should initialize rider extension for delivery rider role', () => {
+      mockUser.role = UserRole.DELIVERY_RIDER;
+
       // Simulate pre-save middleware logic
-      if (mockUser.isNew && mockUser.role === UserRole.DELIVERY_AGENT && !mockUser.agentExtension) {
-        mockUser.agentExtension = {
+      if (mockUser.isNew && mockUser.role === UserRole.DELIVERY_RIDER && !mockUser.riderExtension) {
+        mockUser.riderExtension = {
           shift: {
             startTime: '09:00',
             endTime: '18:00',
@@ -211,11 +211,11 @@ describe('User Schema', () => {
           },
         };
       }
-      
-      expect(mockUser.agentExtension).toBeDefined();
-      expect(mockUser.agentExtension.status).toBe('inactive');
-      expect(mockUser.agentExtension.shift.startTime).toBe('09:00');
-      expect(mockUser.agentExtension.performanceMetrics.totalDeliveries).toBe(0);
+
+      expect(mockUser.riderExtension).toBeDefined();
+      expect(mockUser.riderExtension.status).toBe('inactive');
+      expect(mockUser.riderExtension.shift.startTime).toBe('09:00');
+      expect(mockUser.riderExtension.performanceMetrics.totalDeliveries).toBe(0);
     });
 
     it('should initialize admin extension for admin role', () => {

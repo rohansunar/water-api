@@ -15,7 +15,7 @@ import {
   CreateComplaintDto,
   ComplaintResponseDto,
 } from '../common/dto/complaint.dto';
-import { UserService } from '../user/user.service';
+import { UserService } from '../modules/user/services/user.service';
 
 @Injectable()
 export class ComplaintService {
