@@ -1,46 +1,41 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
-import { PrismaService } from '../common/database/prisma.service';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { ProductResponseDto, CreateProductDto } from '../common/dto/product.dto';
-import { Product } from '@prisma/client';
+import { Product, ProductDocument } from '../common/schemas/product.schema';
+import { CustomLoggerService } from '../common/logger/logger.service';
 
 @Injectable()
 export class ProductService {
-  private readonly logger = new Logger(ProductService.name);
+  constructor(
+    @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    private readonly logger: CustomLoggerService,
+  ) {}
 
-  constructor(private prisma: PrismaService) {}
-
-  async findById(id: string): Promise<Product | null> {
+  async findById(id: string): Promise<ProductDocument | null> {
     try {
-      return await this.prisma.product.findUnique({
-        where: { id },
-      });
+      return await this.productModel.findById(id).exec();
     } catch (error) {
       this.logger.error(`Error finding product by ID ${id}:`, error);
       return null;
     }
   }
 
-  async findAll(): Promise<Product[]> {
+  async findAll(): Promise<ProductDocument[]> {
     try {
-      return await this.prisma.product.findMany({
-        where: { isAvailable: true },
-        orderBy: { createdAt: 'desc' },
-      });
+      return await this.productModel.find({ isAvailable: true }).sort({ createdAt: -1 }).exec();
     } catch (error) {
       this.logger.error('Error finding all products:', error);
       throw error;
     }
   }
 
-  async findByCategory(category: string): Promise<Product[]> {
+  async findByCategory(category: string): Promise<ProductDocument[]> {
     try {
-      return await this.prisma.product.findMany({
-        where: {
-          category,
-          isAvailable: true,
-        },
-        orderBy: { price: 'asc' },
-      });
+      return await this.productModel.find({
+        category,
+        isAvailable: true,
+      }).sort({ price: 1 }).exec();
     } catch (error) {
       this.logger.error(`Error finding products by category ${category}:`, error);
       throw error;
@@ -53,45 +48,63 @@ export class ProductService {
       throw new NotFoundException('Product not found');
     }
 
-    const p = product as any;
     return {
-      id: p.id,
-      vendorId: p.vendorId,
-      name: p.name,
-      description: p.description,
-      category: p.category,
-      price: p.price,
-      imageUrl: p.imageUrl,
-      isAvailable: p.isAvailable,
-      isActive: p.isActive,
-      stockQuantity: p.stockQuantity,
-      hasDeposit: p.hasDeposit,
-      depositAmount: p.depositAmount,
-      size: p.size,
-      images: p.images,
-      createdAt: p.createdAt,
-      updatedAt: p.updatedAt,
+      id: (product as any).id,
+      vendorId: (product.vendorId as any).toString(),
+      name: product.name,
+      description: product.description,
+      category: product.category,
+      size: product.capacity,
+      price: product.price,
+      depositAmount: 0, // Not in schema, default to 0
+      hasDeposit: false, // Not in schema, default to false
+      stockQuantity: product.stock,
+      isActive: product.isAvailable,
+      images: product.images,
+      specifications: {
+        capacity: parseInt(product.capacity.replace('L', '')),
+        material: product.specifications?.material || 'Plastic',
+        brand: product.specifications?.brand || 'Generic',
+        weight: product.specifications?.weight || 1.5,
+        dimensions: {
+          height: product.specifications?.dimensions?.height || 50,
+          diameter: product.specifications?.dimensions?.length || product.specifications?.dimensions?.width || 30,
+        },
+      },
+      vendor: {
+        id: (product.vendorId as any).toString(),
+        businessName: 'Default Vendor',
+        rating: 4.5,
+        totalOrders: 100,
+        deliveryZones: [],
+      },
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
     };
   }
 
-  async create(createProductDto: CreateProductDto, vendorId?: string): Promise<Product> {
+  async create(createProductDto: CreateProductDto, vendorId?: string): Promise<ProductDocument> {
     try {
-      const product = await this.prisma.product.create({
-        data: {
-          vendorId: vendorId || 'default-vendor-id', // TODO: Get from context
-          name: createProductDto.name,
-          description: createProductDto.description,
-          price: createProductDto.price,
-          category: createProductDto.category,
-          imageUrl: createProductDto.imageUrl,
-          isAvailable: true,
-          isActive: true,
-          stockQuantity: createProductDto.stockQuantity || 0,
-          hasDeposit: createProductDto.hasDeposit || false,
-          depositAmount: createProductDto.depositAmount || 0,
-          size: createProductDto.size,
-          images: createProductDto.images || [],
-        } as any,
+      const product = await this.productModel.create({
+        vendorId: vendorId || 'default-vendor-id', // TODO: Get from context
+        name: createProductDto.name,
+        description: createProductDto.description,
+        price: createProductDto.price,
+        category: createProductDto.category,
+        capacity: createProductDto.size,
+        unit: 'jar', // Default unit
+        stock: createProductDto.stockQuantity || 0,
+        isAvailable: true,
+        minOrderQuantity: 1,
+        maxOrderQuantity: 1000,
+        areaPincodes: [],
+        images: createProductDto.images || [],
+        specifications: {
+          material: 'Plastic',
+          brand: 'Generic',
+          weight: 1.5,
+        },
+        status: 'active',
       });
 
       this.logger.log(`Created product: ${product.id}`);
@@ -102,12 +115,13 @@ export class ProductService {
     }
   }
 
-  async update(id: string, updateData: Partial<Product>): Promise<Product> {
+  async update(id: string, updateData: Partial<ProductDocument>): Promise<ProductDocument> {
     try {
-      const product = await this.prisma.product.update({
-        where: { id },
-        data: updateData,
-      });
+      const product = await this.productModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
+
+      if (!product) {
+        throw new NotFoundException('Product not found');
+      }
 
       this.logger.log(`Updated product: ${id}`);
       return product;
@@ -117,22 +131,27 @@ export class ProductService {
     }
   }
 
-  async updateStock(id: string, quantityChange: number): Promise<Product> {
+  async updateStock(id: string, quantityChange: number): Promise<ProductDocument> {
     try {
       const product = await this.findById(id);
       if (!product) {
         throw new NotFoundException('Product not found');
       }
 
-      const newStock = (product as any).stockQuantity + quantityChange;
+      const newStock = product.stock + quantityChange;
       if (newStock < 0) {
         throw new BadRequestException('Insufficient stock');
       }
 
-      const updatedProduct = await this.prisma.product.update({
-        where: { id },
-        data: { stockQuantity: newStock } as any,
-      });
+      const updatedProduct = await this.productModel.findByIdAndUpdate(
+        id,
+        { stock: newStock },
+        { new: true }
+      );
+
+      if (!updatedProduct) {
+        throw new NotFoundException('Product not found');
+      }
 
       this.logger.log(`Updated stock for product ${id}: ${quantityChange}`);
       return updatedProduct;
@@ -142,18 +161,48 @@ export class ProductService {
     }
   }
 
-  async findByLocation(lat: number, lng: number): Promise<Product[]> {
+  async findByLocation(lat: number, lng: number): Promise<ProductResponseDto[]> {
     // In real implementation, calculate distance from vendor location
     // For now, return all available products
-    return this.findAll();
+    const products = await this.findAll();
+    return products.map(product => ({
+      id: (product as any).id,
+      vendorId: (product.vendorId as any).toString(),
+      name: product.name,
+      description: product.description,
+      category: product.category,
+      size: product.capacity,
+      price: product.price,
+      depositAmount: 0, // Not in schema, default to 0
+      hasDeposit: false, // Not in schema, default to false
+      stockQuantity: product.stock,
+      isActive: product.isAvailable,
+      images: product.images,
+      specifications: {
+        capacity: parseInt(product.capacity.replace('L', '')),
+        material: product.specifications?.material || 'Plastic',
+        brand: product.specifications?.brand || 'Generic',
+        weight: product.specifications?.weight || 1.5,
+        dimensions: {
+          height: product.specifications?.dimensions?.height || 50,
+          diameter: product.specifications?.dimensions?.length || product.specifications?.dimensions?.width || 30,
+        },
+      },
+      vendor: {
+        id: (product.vendorId as any).toString(),
+        businessName: 'Default Vendor',
+        rating: 4.5,
+        totalOrders: 100,
+        deliveryZones: [],
+      },
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+    }));
   }
 
   async delete(id: string): Promise<void> {
     try {
-      await this.prisma.product.delete({
-        where: { id },
-      });
-
+      await this.productModel.findByIdAndDelete(id).exec();
       this.logger.log(`Deleted product: ${id}`);
     } catch (error) {
       this.logger.error(`Error deleting product ${id}:`, error);
@@ -169,39 +218,47 @@ export class ProductService {
           name: '20L Water Jar',
           description: 'Premium quality 20L water jar with secure cap',
           price: 30,
-          category: 'Water Jar',
-          imageUrl: '/images/jar-20l.jpg',
+          category: 'water_jar' as any,
+          size: '20L' as any,
+          stockQuantity: 100,
+          images: ['/images/jar-20l.jpg'],
         },
         {
           name: '15L Water Jar',
           description: 'Compact 15L water jar perfect for small families',
           price: 25,
-          category: 'Water Jar',
-          imageUrl: '/images/jar-15l.jpg',
+          category: 'water_jar' as any,
+          size: '15L' as any,
+          stockQuantity: 150,
+          images: ['/images/jar-15l.jpg'],
         },
         {
           name: '25L Water Jar',
           description: 'Large capacity 25L water jar for big families',
           price: 35,
-          category: 'Water Jar',
-          imageUrl: '/images/jar-25l.jpg',
+          category: 'water_jar' as any,
+          size: '25L' as any,
+          stockQuantity: 80,
+          images: ['/images/jar-25l.jpg'],
         },
         {
           name: '10L Water Bottle',
           description: 'Portable 10L water bottle for office use',
           price: 20,
-          category: 'Water Bottle',
-          imageUrl: '/images/bottle-10l.jpg',
+          category: 'water_jar' as any,
+          size: '10L' as any,
+          stockQuantity: 200,
+          images: ['/images/bottle-10l.jpg'],
         },
       ];
 
       for (const productData of testProducts) {
-        const existingProduct = await this.prisma.product.findFirst({
-          where: { name: productData.name },
-        });
+        const existingProduct = await this.productModel.findOne({
+          name: productData.name,
+        }).exec();
 
         if (!existingProduct) {
-          await this.create(productData);
+          await this.create(productData as any);
         }
       }
 

@@ -10,228 +10,343 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id                String   @id @default(cuid())
-  email             String   @unique
-  password          String
+model Customer {
+  id                BigInt   @id @default(autoincrement())
+  uuid              String   @unique @default(uuid())
+  phone             String?  @unique
+  email             String?  @unique
+  passwordHash      String?
   name              String
-  phone             String?
-  role              UserRole @default(CUSTOMER)
+  loyaltyPoints     Int      @default(0)
+  preferences       Json?
   isActive          Boolean  @default(true)
-  monthlyPaymentMode Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  isDeleted         Boolean  @default(false)
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
+  lastActiveAt      DateTime? @db.Timestamptz
 
   // Relations
-  addresses   Address[]
-  orders      Order[]
-  subscriptions Subscription[]
-  wallet      Wallet?
-  vendor      Vendor?
+  addresses         CustomerAddress[]
+  orders            Order[]
+  subscriptions     Subscription[]
 
-  @@map("users")
-}
-
-model Address {
-  id          String   @id @default(cuid())
-  userId      String
-  type        AddressType @default(HOME)
-  street      String
-  city        String
-  state       String
-  pincode     String
-  landmark    String?
-  isDefault   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders      Order[]  @relation("OrderDeliveryAddress")
-
-  @@map("addresses")
+  @@map("customers")
 }
 
 model Vendor {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  businessName  String
-  description   String?
-  address       String
-  phone         String
-  email         String
-  rating        Float    @default(0)
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                BigInt   @id @default(autoincrement())
+  uuid              String   @unique @default(uuid())
+  phone             String?  @unique
+  email             String?  @unique
+  passwordHash      String?
+  name              String
+  kycStatus         String   @default("pending")
+  gstin             String?
+  bankAccountId     BigInt?
+  rating            Decimal? @default(0) @db.Decimal(3, 2)
+  isVerified        Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  isDeleted         Boolean  @default(false)
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
+  lastActiveAt      DateTime? @db.Timestamptz
+  metadata          Json?
 
   // Relations
-  user          User     @relation(fields: [userId], references: [id])
-  products      Product[]
+  stores            VendorStore[]
+  addresses         VendorAddress[]
+  products          Product[]
+  orders            Order[]
+  subscriptions     Subscription[]
+  ledgerEntries     LedgerEntry[]
+  payouts           Payout[]
 
   @@map("vendors")
 }
 
-model Product {
-  id            String   @id @default(cuid())
-  vendorId      String
-  name          String
-  description   String?
-  price         Float
-  category      String
-  imageUrl      String?
-  isAvailable   Boolean  @default(true)
-  isActive      Boolean  @default(true)
-  stockQuantity Int      @default(0)
-  hasDeposit    Boolean  @default(false)
-  depositAmount Float    @default(0)
-  size          String?
-  images        String[] @default([])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+model Agent {
+  id                BigInt   @id @default(autoincrement())
+  uuid              String   @unique @default(uuid())
+  phone             String?  @unique
+  email             String?  @unique
+  passwordHash      String?
+  name              String
+  licenseNo         String?
+  vehicleType       String?
+  shift             Json?
+  status            String   @default("inactive")
+  rating            Decimal? @default(0) @db.Decimal(3, 2)
+  isActive          Boolean  @default(true)
+  isDeleted         Boolean  @default(false)
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
+  lastActiveAt      DateTime? @db.Timestamptz
+  metadata          Json?
 
   // Relations
-  vendor        Vendor   @relation(fields: [vendorId], references: [id])
-  orderItems    OrderItem[]
-  subscriptions Subscription[]
+  orders            Order[]
+
+  @@map("agents")
+}
+
+model Admin {
+  id                BigInt   @id @default(autoincrement())
+  uuid              String   @unique @default(uuid())
+  phone             String?  @unique
+  email             String?  @unique
+  passwordHash      String?
+  name              String
+  roleLevel         String   @default("support")
+  permissions       Json?
+  isActive          Boolean  @default(true)
+  isDeleted         Boolean  @default(false)
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
+  lastActiveAt      DateTime? @db.Timestamptz
+
+  @@map("admins")
+}
+
+model VendorStore {
+  id                BigInt   @id @default(autoincrement())
+  vendorId          BigInt
+  name              String
+  addressId         BigInt?
+  phone             String?
+  activeHours       Json?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now()) @db.Timestamptz
+
+  // Relations
+  vendor            Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  address           VendorAddress? @relation(fields: [addressId], references: [id])
+  productMappings   ProductStoreMapping[]
+  orders            Order[]
+
+  @@map("vendor_stores")
+}
+
+model CustomerAddress {
+  id                BigInt   @id @default(autoincrement())
+  customerId        BigInt
+  label             String   @default("Home")
+  line1             String
+  line2             String?
+  city              String
+  state             String?
+  country           String   @default("India")
+  pincode           String
+  location          Unsupported("GEOGRAPHY(Point,4326)")?
+  latitude          Decimal? @db.Decimal(10, 8)
+  longitude         Decimal? @db.Decimal(11, 8)
+  isDefault         Boolean  @default(false)
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  customer          Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orders            Order[]
+
+  @@map("customer_addresses")
+}
+
+model VendorAddress {
+  id                BigInt   @id @default(autoincrement())
+  vendorId          BigInt
+  label             String   @default("Store")
+  line1             String
+  line2             String?
+  city              String
+  state             String?
+  country           String   @default("India")
+  pincode           String
+  location          Unsupported("GEOGRAPHY(Point,4326)")?
+  latitude          Decimal? @db.Decimal(10, 8)
+  longitude         Decimal? @db.Decimal(11, 8)
+  isDefault         Boolean  @default(false)
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  vendor            Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  stores            VendorStore[]
+
+  @@map("vendor_addresses")
+}
+
+model Product {
+  id                BigInt   @id @default(autoincrement())
+  vendorId          BigInt
+  name              String
+  category          String
+  subcategory       String?
+  basePrice         Decimal  @db.Decimal(10, 2)
+  description       String?
+  imageUrl          String?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  vendor            Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  storeMappings     ProductStoreMapping[]
 
   @@map("products")
 }
 
-model Order {
-  id            String   @id @default(cuid())
-  userId        String
-  vendorId      String?
-  productId     String?
-  quantity      Int?
-  schedule      String?
-  deliveryTime  DateTime?
-  depositAmount Float    @default(0)
-  status        OrderStatus @default(PENDING)
-  totalAmount   Float
-  deliveryFee   Float    @default(0)
-  paymentStatus PaymentStatus @default(PENDING)
-  paymentMethod PaymentMethod?
-  deliveryAddressId String
-  scheduledDate DateTime?
-  notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+model ProductStoreMapping {
+  id                BigInt   @id @default(autoincrement())
+  productId         BigInt
+  storeId           BigInt
+  price             Decimal? @db.Decimal(10, 2)
+  stockQuantity     Int      @default(0)
+  reservedStock     Int      @default(0)
+  isAvailable       Boolean  @default(true)
+  areaPincodes      String[] @default([])
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
 
   // Relations
-  user          User     @relation(fields: [userId], references: [id])
-  deliveryAddress Address @relation("OrderDeliveryAddress", fields: [deliveryAddressId], references: [id])
-  items         OrderItem[]
-  payments      Payment[]
+  product           Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  store             VendorStore @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orderItems        OrderItem[]
 
+  @@unique([productId, storeId])
+  @@map("product_store_mapping")
+}
+
+model Order {
+  id                BigInt
+  orderUuid         String   @unique @default(uuid())
+  customerId        BigInt
+  vendorId          BigInt?
+  storeId           BigInt?
+  agentId           BigInt?
+  addressId         BigInt
+  orderNumber       String   @unique
+  status            String   @default("placed")
+  subtotal          Decimal  @db.Decimal(10, 2)
+  deliveryFee       Decimal  @default(0) @db.Decimal(8, 2)
+  taxAmount         Decimal  @default(0) @db.Decimal(8, 2)
+  totalAmount       Decimal  @db.Decimal(10, 2)
+  paymentMethod     String   @default("cash")
+  paymentStatus     String   @default("pending")
+  deliveryInstructions String?
+  scheduledDelivery DateTime? @db.Timestamptz
+  deliveredAt       DateTime? @db.Timestamptz
+  subscriptionId    BigInt?
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  customer          Customer            @relation(fields: [customerId], references: [id])
+  vendor            Vendor?             @relation(fields: [vendorId], references: [id])
+  store             VendorStore?        @relation(fields: [storeId], references: [id])
+  agent             Agent?              @relation(fields: [agentId], references: [id])
+  address           CustomerAddress     @relation(fields: [addressId], references: [id])
+  items             OrderItem[]
+  payments          Payment[]
+  ledgerEntries     LedgerEntry[]
+
+  @@id([id, createdAt])
   @@map("orders")
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  productId String
-  quantity  Int
-  price     Float
-  total     Float
+  id                BigInt   @id @default(autoincrement())
+  orderId           BigInt
+  orderCreatedAt    DateTime @db.Timestamptz
+  productStoreId    BigInt
+  productName       String?
+  quantity          Int
+  unitPrice         Decimal  @db.Decimal(10, 2)
+  totalPrice        Decimal  @db.Decimal(10, 2)
 
   // Relations
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id])
+  order             Order               @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt], onDelete: Cascade)
+  productStore      ProductStoreMapping @relation(fields: [productStoreId], references: [id])
 
   @@map("order_items")
 }
 
 model Subscription {
-  id            String   @id @default(cuid())
-  userId        String
-  productId     String
-  frequency     SubscriptionFrequency
-  quantity      Int
-  startDate     DateTime
-  endDate       DateTime?
-  isActive      Boolean  @default(true)
-  nextDelivery  DateTime
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                BigInt   @id @default(autoincrement())
+  customerId        BigInt
+  vendorId          BigInt?
+  storeId           BigInt?
+  addressId         BigInt
+  name              String
+  status            String   @default("active")
+  frequencyType     String
+  frequencyValue    Int?
+  deliveryDays      String?
+  products          Json
+  preferredDeliveryTime DateTime?
+  nextDeliveryDate  DateTime
+  startDate         DateTime
+  endDate           DateTime?
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
 
   // Relations
-  user          User     @relation(fields: [userId], references: [id])
-  product       Product  @relation(fields: [productId], references: [id])
+  customer          Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vendor            Vendor?       @relation(fields: [vendorId], references: [id])
+  store             VendorStore?  @relation(fields: [storeId], references: [id])
+  address           CustomerAddress @relation(fields: [addressId], references: [id])
+  orders            Order[]
 
   @@map("subscriptions")
 }
 
 model Payment {
-  id            String   @id @default(cuid())
-  orderId       String
-  amount        Float
-  status        PaymentStatus @default(PENDING)
-  paymentMethod String
-  transactionId String?
-  razorpayOrderId String?
-  razorpayPaymentId String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                BigInt   @id @default(autoincrement())
+  orderId           BigInt
+  orderCreatedAt    DateTime @db.Timestamptz
+  amount            Decimal  @db.Decimal(10, 2)
+  paymentMethod     String
+  status            String   @default("pending")
+  gatewayTransactionId String?
+  gatewayResponse   Json?
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  completedAt       DateTime? @db.Timestamptz
 
   // Relations
-  order         Order    @relation(fields: [orderId], references: [id])
+  order             Order    @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt], onDelete: Cascade)
 
   @@map("payments")
 }
 
-model Wallet {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  balance   Float    @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model LedgerEntry {
+  id                BigInt   @id @default(autoincrement())
+  vendorId          BigInt
+  orderId           BigInt?
+  orderCreatedAt    DateTime? @db.Timestamptz
+  type              String
+  amount            Decimal  @db.Decimal(10, 2)
+  balanceAfter      Decimal? @db.Decimal(10, 2)
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  metadata          Json?
 
   // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendor            Vendor   @relation(fields: [vendorId], references: [id])
+  order             Order?   @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt])
 
-  @@map("wallets")
+  @@map("ledger_entries")
 }
 
-enum UserRole {
-  CUSTOMER
-  VENDOR
-  RIDER
-  ADMIN
-}
+model Payout {
+  id                BigInt   @id @default(autoincrement())
+  vendorId          BigInt
+  amount            Decimal  @db.Decimal(10, 2)
+  status            String   @default("requested")
+  bankAccountId     BigInt?
+  initiatedAt       DateTime? @db.Timestamptz
+  completedAt       DateTime? @db.Timestamptz
+  reference         String?
+  createdAt         DateTime @default(now()) @db.Timestamptz
 
-enum AddressType {
-  HOME
-  WORK
-  OTHER
-}
+  // Relations
+  vendor            Vendor   @relation(fields: [vendorId], references: [id])
 
-enum OrderStatus {
-  PENDING
-  CONFIRMED
-  PREPARING
-  READY_FOR_PICKUP
-  OUT_FOR_DELIVERY
-  DELIVERED
-  CANCELLED
-}
-
-enum PaymentStatus {
-  PENDING
-  COMPLETED
-  FAILED
-  REFUNDED
-}
-
-enum SubscriptionFrequency {
-  DAILY
-  WEEKLY
-  MONTHLY
-}
-
-enum PaymentMethod {
-  WALLET
-  UPI
-  COD
-  CARD
+  @@map("payouts")
 }

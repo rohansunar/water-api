@@ -94,7 +94,7 @@ export class SubscriptionService {
         id: uuidv4(),
         userId,
         productId: createSubscriptionDto.product_id,
-        vendorId: product.vendorId,
+        vendorId: product.vendorId.toString(),
         frequency: createSubscriptionDto.frequency,
         quantity: createSubscriptionDto.quantity,
         deliveryDays:
@@ -124,9 +124,9 @@ export class SubscriptionService {
       this.userSubscriptionIndex.set(userId, userSubscriptions);
 
       const vendorSubscriptions =
-        this.vendorSubscriptionIndex.get(product.vendorId) || [];
+        this.vendorSubscriptionIndex.get(product.vendorId.toString()) || [];
       vendorSubscriptions.push(subscription.id);
-      this.vendorSubscriptionIndex.set(product.vendorId, vendorSubscriptions);
+      this.vendorSubscriptionIndex.set(product.vendorId.toString(), vendorSubscriptions);
 
       this.logger.log(
         `Created subscription ${subscription.id} for user ${userId}`,

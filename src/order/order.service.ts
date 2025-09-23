@@ -62,7 +62,7 @@ export class OrderService {
       const depositAmount = product.hasDeposit
         ? product.depositAmount * createOrderDto.quantity
         : 0;
-      const deliveryFee = this.calculateDeliveryFee(product.vendorId);
+      const deliveryFee = this.calculateDeliveryFee(product.vendorId.toString());
       const totalAmount = itemTotal + depositAmount + deliveryFee;
 
       // Validate payment method and balance
@@ -78,7 +78,7 @@ export class OrderService {
       const order: Order = {
         id: uuidv4(),
         userId,
-        vendorId: product.vendorId,
+        vendorId: product.vendorId.toString(),
         productId: createOrderDto.product_id,
         quantity: createOrderDto.quantity,
         totalAmount,
@@ -121,9 +121,9 @@ export class OrderService {
       userOrders.push(order.id);
       this.userOrderIndex.set(userId, userOrders);
 
-      const vendorOrders = this.vendorOrderIndex.get(product.vendorId) || [];
+      const vendorOrders = this.vendorOrderIndex.get(product.vendorId.toString()) || [];
       vendorOrders.push(order.id);
-      this.vendorOrderIndex.set(product.vendorId, vendorOrders);
+      this.vendorOrderIndex.set(product.vendorId.toString(), vendorOrders);
 
       this.logger.log(`Created order ${order.id} for user ${userId}`);
 

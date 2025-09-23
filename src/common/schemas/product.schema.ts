@@ -50,8 +50,21 @@ export class Product {
   @Prop({ default: 0, min: 0 })
   stock: number;
 
+  @Prop({ default: 0, min: 0 })
+  stockQuantity: number; // Alias for stock for backward compatibility
+
   @Prop({ default: true })
   isAvailable: boolean;
+
+  @Prop({ default: false })
+  isActive: boolean; // Alias for isAvailable for backward compatibility
+
+  // Deposit system properties
+  @Prop({ default: false })
+  hasDeposit: boolean;
+
+  @Prop({ default: 0, min: 0 })
+  depositAmount: number;
 
   @Prop({ default: 1, min: 1 })
   minOrderQuantity: number;
