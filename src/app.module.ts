@@ -27,6 +27,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { CustomThrottlerGuard } from './common/guards/rate-limit.guard';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { SecurityMiddleware } from './common/middleware/security.middleware';
+import { StoreModule } from './store/store.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { SecurityMiddleware } from './common/middleware/security.middleware';
     ComplaintModule,
     LedgerModule,
     AdminModule,
+    StoreModule,
   ],
   controllers: [AppController],
   providers: [

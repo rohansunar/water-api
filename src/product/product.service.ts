@@ -200,6 +200,74 @@ export class ProductService {
     }));
   }
 
+  async searchProducts(searchDto: any): Promise<any> {
+    try {
+      const { query, pincode, category, page = 1, limit = 20 } = searchDto;
+      const skip = (page - 1) * limit;
+
+      // Build search query
+      const searchQuery: any = { isAvailable: true };
+
+      if (query) {
+        searchQuery.$or = [
+          { name: { $regex: query, $options: 'i' } },
+          { description: { $regex: query, $options: 'i' } },
+        ];
+      }
+
+      if (category) {
+        searchQuery.category = category;
+      }
+
+      // For now, we'll ignore pincode filtering as vendor location logic needs to be implemented
+      // In a real implementation, you'd join with vendor/store data and filter by delivery zones
+
+      const total = await this.productModel.countDocuments(searchQuery).exec();
+      const products = await this.productModel
+        .find(searchQuery)
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .exec();
+
+      const totalPages = Math.ceil(total / limit);
+
+      // Transform to search result format
+      const searchResults = products.map(product => ({
+        id: (product as any).id,
+        name: product.name,
+        category: product.category,
+        subcategory: product.capacity, // Using capacity as subcategory
+        price: product.price,
+        store: {
+          id: (product.vendorId as any).toString(),
+          name: 'Default Store', // TODO: Get from vendor data
+          rating: 4.5, // TODO: Calculate from reviews
+          distance_km: 2.3, // TODO: Calculate based on user location
+        },
+        is_available: product.isAvailable,
+        stock_quantity: product.stock,
+      }));
+
+      return {
+        products: searchResults,
+        meta: {
+          pagination: {
+            page,
+            limit,
+            total,
+            total_pages: totalPages,
+            has_next: page < totalPages,
+            has_prev: page > 1,
+          },
+        },
+      };
+    } catch (error) {
+      this.logger.error('Error searching products:', error);
+      throw error;
+    }
+  }
+
   async delete(id: string): Promise<void> {
     try {
       await this.productModel.findByIdAndDelete(id).exec();

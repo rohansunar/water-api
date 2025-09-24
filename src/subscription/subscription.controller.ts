@@ -90,4 +90,14 @@ export class SubscriptionController {
     );
     return this.subscriptionService.resume(subscriptionId, user.id);
   }
+  @Get(':id/analytics')
+  async getSubscriptionAnalytics(
+    @Param('id') subscriptionId: string,
+    @CurrentUser() user: User,
+  ): Promise<any> {
+    this.logger.log(
+      `Getting analytics for subscription ${subscriptionId} for user: ${user.id}`,
+    );
+    return this.subscriptionService.getAnalytics(subscriptionId, user.id);
+  }
 }

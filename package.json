@@ -1,7 +1,7 @@
 {
   "name": "water-jar-delivery-api",
   "private": true,
-  "version": "6.0.0",
+  "version": "6.1.0",
   "description": "Backend API for Water Jar Delivery Platform - On-demand and subscription-based water jar delivery service",
   "license": "MIT",
   "scripts": {

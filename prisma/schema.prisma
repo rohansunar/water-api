@@ -122,6 +122,7 @@ model VendorStore {
   address           VendorAddress? @relation(fields: [addressId], references: [id])
   productMappings   ProductStoreMapping[]
   orders            Order[]
+  subscriptions     Subscription[]
 
   @@map("vendor_stores")
 }
@@ -136,7 +137,6 @@ model CustomerAddress {
   state             String?
   country           String   @default("India")
   pincode           String
-  location          Unsupported("GEOGRAPHY(Point,4326)")?
   latitude          Decimal? @db.Decimal(10, 8)
   longitude         Decimal? @db.Decimal(11, 8)
   isDefault         Boolean  @default(false)
@@ -146,6 +146,7 @@ model CustomerAddress {
   // Relations
   customer          Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   orders            Order[]
+  subscriptions     Subscription[]
 
   @@map("customer_addresses")
 }
@@ -160,7 +161,6 @@ model VendorAddress {
   state             String?
   country           String   @default("India")
   pincode           String
-  location          Unsupported("GEOGRAPHY(Point,4326)")?
   latitude          Decimal? @db.Decimal(10, 8)
   longitude         Decimal? @db.Decimal(11, 8)
   isDefault         Boolean  @default(false)
@@ -244,6 +244,7 @@ model Order {
   store             VendorStore?        @relation(fields: [storeId], references: [id])
   agent             Agent?              @relation(fields: [agentId], references: [id])
   address           CustomerAddress     @relation(fields: [addressId], references: [id])
+  subscription      Subscription?       @relation(fields: [subscriptionId], references: [id])
   items             OrderItem[]
   payments          Payment[]
   ledgerEntries     LedgerEntry[]

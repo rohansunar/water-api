@@ -37,4 +37,12 @@ export class ProductController {
     this.logger.log(`Getting product details for: ${productId}`);
     return this.productService.getProductDetails(productId);
   }
+
+  @Get('products/search')
+  async searchProducts(
+    @Query() searchDto: any,
+  ): Promise<any> {
+    this.logger.log(`Searching products with query: ${JSON.stringify(searchDto)}`);
+    return this.productService.searchProducts(searchDto);
+  }
 }

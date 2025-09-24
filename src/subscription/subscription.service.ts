@@ -428,4 +428,40 @@ export class SubscriptionService {
       updatedAt: subscription.updatedAt,
     };
   }
+  async getAnalytics(subscriptionId: string, userId: string): Promise<any> {
+    const subscription = this.subscriptions.get(subscriptionId);
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+
+    if (subscription.userId !== userId) {
+      throw new BadRequestException(
+        'You can only view analytics for your own subscriptions',
+      );
+    }
+
+    // Calculate analytics based on delivery history
+    const deliveryHistory = subscription.deliveryHistory || [];
+    const totalDeliveries = deliveryHistory.length;
+    const onTimeDeliveries = deliveryHistory.filter(
+      (delivery) => delivery.status === DeliveryStatus.DELIVERED,
+    ).length;
+
+    const onTimeRate = totalDeliveries > 0 ? (onTimeDeliveries / totalDeliveries) * 100 : 0;
+
+    // Calculate average cost (simplified)
+    const averageCost = subscription.totalAmount;
+
+    // Calculate savings vs one-time purchases
+    const oneTimeCost = totalDeliveries * subscription.totalAmount;
+    const subscriptionSavings = oneTimeCost * 0.15; // 15% savings assumption
+
+    return {
+      total_deliveries: totalDeliveries,
+      on_time_rate: Math.round(onTimeRate * 100) / 100,
+      average_cost: averageCost,
+      next_delivery: subscription.nextDeliveryDate?.toISOString(),
+      savings_vs_one_time: Math.round(subscriptionSavings * 100) / 100,
+    };
+  }
 }
