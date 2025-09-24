@@ -18,7 +18,10 @@ import {
   CustomerProfileDto,
 } from '../common/dto/auth.dto';
 import { User, UserRole } from '../modules/user/entities/user.entity';
-import { Customer, CustomerRole } from '../common/interfaces/customer.interface';
+import {
+  Customer,
+  CustomerRole,
+} from '../common/interfaces/customer.interface';
 import { CreateUserDto } from '../modules/user/dto/user.dto';
 import { CreateCustomerDto } from '../common/dto/customer.dto';
 
@@ -29,7 +32,7 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     string,
     { otp: string; expiresAt: Date; attempts: number }
   >();
-  private cleanupInterval: NodeJS.Timeout;
+  private cleanupInterval!: NodeJS.Timeout;
 
   constructor(
     private readonly jwtService: JwtService,
@@ -147,12 +150,18 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
       }
 
       // Generate JWT token using customer data
-      const payload = { sub: customer._id.toString(), phone: customer.phone, role: customer.role };
+      const payload = {
+        sub: (customer._id as any).toString(),
+        phone: customer.phone,
+        role: customer.role,
+      };
       const token = this.jwtService.sign(payload);
 
       this.logger.log(`Customer ${customer._id} authenticated successfully`);
 
-      const customerProfile = await this.customerService.getCustomerProfile(customer._id.toString());
+      const customerProfile = await this.customerService.getCustomerProfile(
+        customer._id.toString(),
+      );
       const userProfile = await this.userService.getUserProfile(user.id);
 
       // Convert to auth DTO format (new customer format)

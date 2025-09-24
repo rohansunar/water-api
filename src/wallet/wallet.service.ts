@@ -51,7 +51,7 @@ export class WalletService implements OnModuleDestroy {
     const transactionIds = this.walletTransactionIndex.get(wallet.id) || [];
     const transactions = transactionIds
       .map((id) => this.transactions.get(id))
-      .filter(Boolean) as WalletTransaction[];
+      .filter(Boolean);
 
     // Sort transactions by creation date (newest first)
     transactions.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -203,7 +203,7 @@ export class WalletService implements OnModuleDestroy {
     referenceId?: string,
     referenceType?: ReferenceType,
   ): Promise<WalletTransaction> {
-    let wallet = await this.findByUserId(userId);
+    const wallet = await this.findByUserId(userId);
 
     if (!wallet) {
       throw new NotFoundException('Wallet not found');

@@ -39,10 +39,10 @@ export class ProductController {
   }
 
   @Get('products/search')
-  async searchProducts(
-    @Query() searchDto: any,
-  ): Promise<any> {
-    this.logger.log(`Searching products with query: ${JSON.stringify(searchDto)}`);
+  async searchProducts(@Query() searchDto: any): Promise<any> {
+    this.logger.log(
+      `Searching products with query: ${JSON.stringify(searchDto)}`,
+    );
     return this.productService.searchProducts(searchDto);
   }
 }

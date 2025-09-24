@@ -396,7 +396,7 @@ export class UserService
       id: user._id.toString(),
       email: user.email || '',
       phone: user.phone,
-      role: user.role as 'customer' | 'vendor' | 'agent' | 'admin',
+      role: user.role as 'customer' | 'vendor' | 'rider' | 'admin',
       isActive: user.isActive,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -657,7 +657,7 @@ export class UserService
         },
         {
           phone: '7777777777',
-          name: 'Test Agent',
+          name: 'Test Rider',
           role: UserRole.DELIVERY_RIDER,
           walletBalance: 200,
         },

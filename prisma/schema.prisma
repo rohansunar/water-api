@@ -64,7 +64,7 @@ model Vendor {
   @@map("vendors")
 }
 
-model Agent {
+model Rider {
   id                BigInt   @id @default(autoincrement())
   uuid              String   @unique @default(uuid())
   phone             String?  @unique
@@ -86,7 +86,7 @@ model Agent {
   // Relations
   orders            Order[]
 
-  @@map("agents")
+  @@map("riders")
 }
 
 model Admin {
@@ -103,6 +103,16 @@ model Admin {
   createdAt         DateTime @default(now()) @db.Timestamptz
   updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
   lastActiveAt      DateTime? @db.Timestamptz
+
+  // Relations
+  commissionRules   CommissionRule[]
+  moderatedProducts Product[]
+  processedRefunds  Refund[] @relation("RefundProcessor")
+  approvedRefunds   Refund[] @relation("RefundApprover")
+  resolvedDisputes  Dispute[]
+  createdEscalations Escalation[] @relation("EscalationCreator")
+  resolvedEscalations Escalation[] @relation("EscalationResolver")
+  auditLogs         AuditLog[]
 
   @@map("admins")
 }
@@ -187,9 +197,18 @@ model Product {
   createdAt         DateTime @default(now()) @db.Timestamptz
   updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
 
+  // Moderation fields
+  moderationStatus  ProductModerationStatus @default(PENDING)
+  flaggedReason     String?
+  moderatedBy       BigInt?
+  moderatedAt       DateTime? @db.Timestamptz
+  autoFlagged       Boolean @default(false)
+  complianceIssues  Json?
+
   // Relations
   vendor            Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   storeMappings     ProductStoreMapping[]
+  moderator         Admin?                @relation(fields: [moderatedBy], references: [id])
 
   @@map("products")
 }
@@ -221,7 +240,7 @@ model Order {
   customerId        BigInt
   vendorId          BigInt?
   storeId           BigInt?
-  agentId           BigInt?
+  riderId           BigInt?
   addressId         BigInt
   orderNumber       String   @unique
   status            String   @default("placed")
@@ -242,12 +261,14 @@ model Order {
   customer          Customer            @relation(fields: [customerId], references: [id])
   vendor            Vendor?             @relation(fields: [vendorId], references: [id])
   store             VendorStore?        @relation(fields: [storeId], references: [id])
-  agent             Agent?              @relation(fields: [agentId], references: [id])
+  rider             Rider?              @relation(fields: [riderId], references: [id])
   address           CustomerAddress     @relation(fields: [addressId], references: [id])
   subscription      Subscription?       @relation(fields: [subscriptionId], references: [id])
   items             OrderItem[]
   payments          Payment[]
   ledgerEntries     LedgerEntry[]
+  refunds           Refund[]
+  disputes          Dispute[]
 
   @@id([id, createdAt])
   @@map("orders")
@@ -351,3 +372,167 @@ model Payout {
 
   @@map("payouts")
 }
+
+enum CommissionScope {
+  GLOBAL
+  CATEGORY
+  VENDOR
+  PRODUCT
+}
+
+enum ProductModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FLAGGED
+}
+
+enum RefundStatus {
+  PENDING
+  APPROVED
+  PROCESSING
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
+enum DisputeStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  CLOSED
+  ESCALATED
+}
+
+enum DisputePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum DisputeCategory {
+  DELIVERY_DELAY
+  PRODUCT_QUALITY
+  WRONG_ITEM
+  MISSING_ITEM
+  PAYMENT_ISSUE
+  SERVICE_ISSUE
+  OTHER
+}
+
+enum EscalationStatus {
+  PENDING
+  IN_REVIEW
+  RESOLVED
+  CLOSED
+}
+
+model CommissionRule {
+  id                BigInt   @id @default(autoincrement())
+  scope             CommissionScope
+  scopeId           String?  // category name, vendor uuid, product uuid
+  percentage        Decimal  @db.Decimal(5, 2)
+  priority          Int      @default(0) // higher = more specific
+  isActive          Boolean  @default(true)
+  createdBy         BigInt   // admin id
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  admin             Admin    @relation(fields: [createdBy], references: [id])
+
+  @@map("commission_rules")
+  }
+  
+  model Refund {
+    id                BigInt   @id @default(autoincrement())
+    orderId           BigInt
+    orderCreatedAt    DateTime @db.Timestamptz
+    amount            Decimal  @db.Decimal(10, 2)
+    reason            String
+    status            RefundStatus @default(PENDING)
+    refundMethod      String?
+    transactionId     String?
+    processedBy       BigInt?
+    processedAt       DateTime? @db.Timestamptz
+    approvedBy        BigInt?
+    approvedAt        DateTime? @db.Timestamptz
+    notes             String?
+    createdAt         DateTime @default(now()) @db.Timestamptz
+    updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
+  
+    // Relations
+    order             Order    @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt])
+    processor         Admin?   @relation("RefundProcessor", fields: [processedBy], references: [id])
+    approver          Admin?   @relation("RefundApprover", fields: [approvedBy], references: [id])
+  
+    @@map("refunds")
+  }
+  
+  model Dispute {
+    id                BigInt   @id @default(autoincrement())
+    orderId           BigInt
+    orderCreatedAt    DateTime @db.Timestamptz
+    raisedBy          BigInt   // customer or vendor id
+    raisedByType      String   // 'customer' or 'vendor'
+    reason            String
+    description       String
+    status            DisputeStatus @default(OPEN)
+    priority          DisputePriority @default(MEDIUM)
+    category          DisputeCategory
+    evidence          Json?    // files, messages, etc.
+    resolution        String?
+    resolvedBy        BigInt?
+    resolvedAt        DateTime? @db.Timestamptz
+    createdAt         DateTime @default(now()) @db.Timestamptz
+    updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
+  
+    // Relations
+    order             Order    @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt])
+    resolver          Admin?   @relation(fields: [resolvedBy], references: [id])
+    escalations       Escalation[]
+  
+    @@map("disputes")
+  }
+  
+  model Escalation {
+    id                BigInt   @id @default(autoincrement())
+    disputeId         BigInt
+    escalatedBy       BigInt   // admin id
+    escalatedTo       String   // role level: 'senior_admin', 'finance', 'management'
+    reason            String
+    priority          DisputePriority @default(HIGH)
+    status            EscalationStatus @default(PENDING)
+    resolvedBy        BigInt?
+    resolvedAt        DateTime? @db.Timestamptz
+    resolution        String?
+    createdAt         DateTime @default(now()) @db.Timestamptz
+    updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
+  
+    // Relations
+    dispute           Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+    escalator         Admin    @relation("EscalationCreator", fields: [escalatedBy], references: [id])
+    resolver          Admin?   @relation("EscalationResolver", fields: [resolvedBy], references: [id])
+  
+    @@map("escalations")
+  }
+  
+  model AuditLog {
+    id                BigInt   @id @default(autoincrement())
+    adminId           BigInt
+    action            String   // e.g., 'user_status_updated', 'product_approved', 'refund_processed'
+    resourceType      String   // e.g., 'user', 'product', 'order', 'refund'
+    resourceId        String   // ID of the affected resource
+    oldValues         Json?    // Previous state (optional)
+    newValues         Json?    // New state (optional)
+    metadata          Json?    // Additional context
+    ipAddress         String?
+    userAgent         String?
+    createdAt         DateTime @default(now()) @db.Timestamptz
+  
+    // Relations
+    admin             Admin    @relation(fields: [adminId], references: [id])
+  
+    @@map("audit_logs")
+  }

@@ -126,7 +126,10 @@ export class SubscriptionService {
       const vendorSubscriptions =
         this.vendorSubscriptionIndex.get(product.vendorId.toString()) || [];
       vendorSubscriptions.push(subscription.id);
-      this.vendorSubscriptionIndex.set(product.vendorId.toString(), vendorSubscriptions);
+      this.vendorSubscriptionIndex.set(
+        product.vendorId.toString(),
+        vendorSubscriptions,
+      );
 
       this.logger.log(
         `Created subscription ${subscription.id} for user ${userId}`,
@@ -146,7 +149,7 @@ export class SubscriptionService {
     const subscriptionIds = this.userSubscriptionIndex.get(userId) || [];
     const subscriptions = subscriptionIds
       .map((id) => this.subscriptions.get(id))
-      .filter(Boolean) as Subscription[];
+      .filter(Boolean);
 
     // Sort by creation date (newest first)
     subscriptions.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -447,7 +450,8 @@ export class SubscriptionService {
       (delivery) => delivery.status === DeliveryStatus.DELIVERED,
     ).length;
 
-    const onTimeRate = totalDeliveries > 0 ? (onTimeDeliveries / totalDeliveries) * 100 : 0;
+    const onTimeRate =
+      totalDeliveries > 0 ? (onTimeDeliveries / totalDeliveries) * 100 : 0;
 
     // Calculate average cost (simplified)
     const averageCost = subscription.totalAmount;

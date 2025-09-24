@@ -24,7 +24,7 @@ export interface UserData {
   id: string;
   email: string;
   phone: string;
-  role: 'customer' | 'vendor' | 'agent' | 'admin';
+  role: 'customer' | 'vendor' | 'rider' | 'admin';
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -33,7 +33,7 @@ export interface UserData {
 export interface CreateUserData {
   email: string;
   phone: string;
-  role: 'customer' | 'vendor' | 'agent' | 'admin';
+  role: 'customer' | 'vendor' | 'rider' | 'admin';
   password?: string;
 }
 

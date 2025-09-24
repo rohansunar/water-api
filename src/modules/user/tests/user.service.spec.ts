@@ -204,9 +204,9 @@ describe('UserService', () => {
       (userModel as any).mockImplementation(() => mockSavedUser);
 
       const result = await service.createUser({
-        email: createUserDto.email!,
+        email: createUserDto.email,
         phone: createUserDto.phone,
-        role: createUserDto.role! as 'customer' | 'vendor' | 'agent' | 'admin',
+        role: createUserDto.role as 'customer' | 'vendor' | 'agent' | 'admin',
       });
 
       expect(result).toEqual({
@@ -228,13 +228,9 @@ describe('UserService', () => {
 
       await expect(
         service.createUser({
-          email: createUserDto.email!,
+          email: createUserDto.email,
           phone: createUserDto.phone,
-          role: createUserDto.role! as
-            | 'customer'
-            | 'vendor'
-            | 'agent'
-            | 'admin',
+          role: createUserDto.role as 'customer' | 'vendor' | 'agent' | 'admin',
         }),
       ).rejects.toThrow(BadRequestException);
     });

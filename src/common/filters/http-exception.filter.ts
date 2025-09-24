@@ -9,6 +9,7 @@ import {
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { ValidationError } from 'class-validator';
 import { CustomLoggerService } from '../logger/logger.service';
+import { MongoError } from 'mongodb';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -63,7 +64,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     // Enhanced logging with custom logger
     if (status >= 400) {
       const requestId = request.headers['x-request-id'] as string;
-      const userId = (request as any).user?.id;
+      const userId = request.user?.id;
 
       // Use custom logger for API errors
       this.customLogger.logApiError(

@@ -5,7 +5,10 @@ import { ConfigModule } from '@nestjs/config';
 import * as request from 'supertest';
 import { CustomerModule } from '../src/customer/customer.module';
 import { AuthModule } from '../src/auth/auth.module';
-import { Customer, CustomerSchema } from '../src/common/schemas/customer.schema';
+import {
+  Customer,
+  CustomerSchema,
+} from '../src/common/schemas/customer.schema';
 import { Address, AddressSchema } from '../src/common/schemas/address.schema';
 import { CustomerRole } from '../src/common/interfaces/customer.interface';
 import { JwtService } from '@nestjs/jwt';
@@ -34,7 +37,8 @@ describe('Customer Integration Tests', () => {
           envFilePath: '.env.test',
         }),
         MongooseModule.forRoot(
-          process.env.MONGODB_TEST_URI || 'mongodb://localhost:27017/water-jar-delivery-test',
+          process.env.MONGODB_TEST_URI ||
+            'mongodb://localhost:27017/water-jar-delivery-test',
         ),
         MongooseModule.forFeature([
           { name: Customer.name, schema: CustomerSchema },
@@ -95,9 +99,7 @@ describe('Customer Integration Tests', () => {
     });
 
     it('should return 401 without auth token', async () => {
-      await request(app.getHttpServer())
-        .get('/customers/me')
-        .expect(401);
+      await request(app.getHttpServer()).get('/customers/me').expect(401);
     });
 
     it('should return 401 with invalid auth token', async () => {
@@ -206,7 +208,7 @@ describe('Customer Integration Tests', () => {
   describe('Performance Tests', () => {
     it('should respond to profile requests within acceptable time', async () => {
       const startTime = Date.now();
-      
+
       await request(app.getHttpServer())
         .get('/customers/me')
         .set('Authorization', `Bearer ${authToken}`)
@@ -219,15 +221,17 @@ describe('Customer Integration Tests', () => {
     });
 
     it('should handle concurrent requests', async () => {
-      const requests = Array(10).fill(null).map(() =>
-        request(app.getHttpServer())
-          .get('/customers/me')
-          .set('Authorization', `Bearer ${authToken}`)
-      );
+      const requests = Array(10)
+        .fill(null)
+        .map(() =>
+          request(app.getHttpServer())
+            .get('/customers/me')
+            .set('Authorization', `Bearer ${authToken}`),
+        );
 
       const responses = await Promise.all(requests);
 
-      responses.forEach(response => {
+      responses.forEach((response) => {
         expect(response.status).toBe(200);
         expect(response.body.id).toBe(testCustomerId);
       });
@@ -256,7 +260,7 @@ describe('Customer Integration Tests', () => {
     it('should not allow access with expired token', async () => {
       const expiredToken = jwtService.sign(
         { sub: testCustomerId, phone: testCustomer.phone, role: 'customer' },
-        { expiresIn: '-1h' }
+        { expiresIn: '-1h' },
       );
 
       await request(app.getHttpServer())

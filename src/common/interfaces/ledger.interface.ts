@@ -15,11 +15,11 @@ export interface LedgerEntry {
 }
 
 export enum LedgerEntryType {
-  SALE = 'sale',
-  REFUND = 'refund',
-  COMMISSION = 'commission',
-  PAYOUT = 'payout',
-  ADJUSTMENT = 'adjustment',
+  SALE = 'SALE',
+  REFUND = 'REFUND',
+  COMMISSION = 'COMMISSION',
+  PAYOUT = 'PAYOUT',
+  ADJUSTMENT = 'ADJUSTMENT',
 }
 
 export enum LedgerEntryStatus {

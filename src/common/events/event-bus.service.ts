@@ -87,11 +87,11 @@ export class EventBusService implements IEventBus, OnModuleDestroy {
       this.handlers.set(eventType, new Set());
     }
 
-    this.handlers.get(eventType)!.add(handler);
+    this.handlers.get(eventType).add(handler);
 
     this.logger.debug(`Subscribed handler to event: ${eventType}`, {
       handlerName: handler.constructor.name,
-      totalHandlers: this.handlers.get(eventType)!.size,
+      totalHandlers: this.handlers.get(eventType).size,
     });
   }
 
@@ -126,7 +126,7 @@ export class EventBusService implements IEventBus, OnModuleDestroy {
 
     try {
       while (this.eventQueue.length > 0) {
-        const event = this.eventQueue.shift()!;
+        const event = this.eventQueue.shift();
         await this.processEvent(event);
       }
     } catch (error) {

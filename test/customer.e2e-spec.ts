@@ -31,7 +31,8 @@ describe('Customer E2E Tests', () => {
       .expect(200);
 
     authToken = verifyResponse.body.token;
-    testCustomerId = verifyResponse.body.customer?.id || verifyResponse.body.user?.id;
+    testCustomerId =
+      verifyResponse.body.customer?.id || verifyResponse.body.user?.id;
   });
 
   afterAll(async () => {
@@ -162,15 +163,17 @@ describe('Customer E2E Tests', () => {
 
   describe('Performance and Load', () => {
     it('should handle multiple rapid requests', async () => {
-      const requests = Array(5).fill(null).map(() =>
-        request(app.getHttpServer())
-          .get('/customers/me')
-          .set('Authorization', `Bearer ${authToken}`)
-      );
+      const requests = Array(5)
+        .fill(null)
+        .map(() =>
+          request(app.getHttpServer())
+            .get('/customers/me')
+            .set('Authorization', `Bearer ${authToken}`),
+        );
 
       const responses = await Promise.all(requests);
 
-      responses.forEach(response => {
+      responses.forEach((response) => {
         expect(response.status).toBe(200);
         expect(response.body.id).toBe(testCustomerId);
       });
@@ -199,7 +202,7 @@ describe('Customer E2E Tests', () => {
         .expect(200);
 
       // Wait a moment to ensure persistence
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify persistence in multiple requests
       for (let i = 0; i < 3; i++) {
@@ -252,9 +255,7 @@ describe('Customer E2E Tests', () => {
 
   describe('Security Compliance', () => {
     it('should require authentication for all customer endpoints', async () => {
-      await request(app.getHttpServer())
-        .get('/customers/me')
-        .expect(401);
+      await request(app.getHttpServer()).get('/customers/me').expect(401);
 
       await request(app.getHttpServer())
         .put('/customers/monthly-payment-mode')

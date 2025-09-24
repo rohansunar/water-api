@@ -5,7 +5,7 @@ import {
 } from 'class-validator';
 
 export function IsValidUUID(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isValidUUID',
       target: object.constructor,
@@ -26,7 +26,7 @@ export function IsValidUUID(validationOptions?: ValidationOptions) {
 }
 
 export function IsValidPincode(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isValidPincode',
       target: object.constructor,
@@ -46,7 +46,7 @@ export function IsValidPincode(validationOptions?: ValidationOptions) {
 }
 
 export function IsValidLatitude(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isValidLatitude',
       target: object.constructor,
@@ -65,7 +65,7 @@ export function IsValidLatitude(validationOptions?: ValidationOptions) {
 }
 
 export function IsValidLongitude(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isValidLongitude',
       target: object.constructor,
@@ -84,7 +84,7 @@ export function IsValidLongitude(validationOptions?: ValidationOptions) {
 }
 
 export function IsPositiveNumber(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isPositiveNumber',
       target: object.constructor,
@@ -103,7 +103,7 @@ export function IsPositiveNumber(validationOptions?: ValidationOptions) {
 }
 
 export function IsValidAmount(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isValidAmount',
       target: object.constructor,
@@ -124,7 +124,7 @@ export function IsValidAmount(validationOptions?: ValidationOptions) {
 }
 
 export function IsValidQuantity(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isValidQuantity',
       target: object.constructor,

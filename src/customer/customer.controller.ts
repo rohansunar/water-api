@@ -1,5 +1,18 @@
-import { Controller, Get, Put, Body, UseGuards, HttpStatus, HttpCode } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Put,
+  Body,
+  UseGuards,
+  HttpStatus,
+  HttpCode,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { CustomerService } from './customer.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -21,7 +34,8 @@ export class CustomerController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get current customer profile',
-    description: 'Retrieve the profile information of the currently authenticated customer',
+    description:
+      'Retrieve the profile information of the currently authenticated customer',
   })
   @ApiResponse({
     status: 200,
@@ -52,20 +66,35 @@ export class CustomerController {
       },
     },
   })
-  async getProfile(@CurrentUser() customer: Customer): Promise<CustomerProfileDto> {
+  async getProfile(
+    @CurrentUser() customer: Customer,
+  ): Promise<CustomerProfileDto> {
     const startTime = Date.now();
-    
+
     try {
       this.logger.log(`Getting profile for customer: ${customer.id}`);
-      const profile = await this.customerService.getCustomerProfile(customer.id);
-      
+      const profile = await this.customerService.getCustomerProfile(
+        customer.id,
+      );
+
       const duration = Date.now() - startTime;
-      this.logger.logApiRequest('GET', '/customers/me', HttpStatus.OK, duration, { userId: customer.id });
-      
+      this.logger.logApiRequest(
+        'GET',
+        '/customers/me',
+        HttpStatus.OK,
+        duration,
+        { userId: customer.id },
+      );
+
       return profile;
     } catch (error) {
       const duration = Date.now() - startTime;
-      this.logger.logApiError('/customers/me', 'GET', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      this.logger.logApiError(
+        '/customers/me',
+        'GET',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
       throw error;
     }
   }
@@ -118,26 +147,26 @@ export class CustomerController {
     @Body() updateDto: { monthlyPaymentMode: boolean },
   ): Promise<{ message: string; monthlyPaymentMode: boolean }> {
     const startTime = Date.now();
-    
+
     try {
       this.logger.log(
         `Updating monthly payment mode for customer: ${customer.id} to ${updateDto.monthlyPaymentMode}`,
       );
-      
+
       await this.customerService.updateMonthlyPaymentMode(
         customer.id,
         updateDto.monthlyPaymentMode,
       );
-      
+
       const duration = Date.now() - startTime;
       this.logger.logApiRequest(
-        'PUT', 
-        '/customers/monthly-payment-mode', 
-        HttpStatus.OK, 
-        duration, 
-        { userId: customer.id }
+        'PUT',
+        '/customers/monthly-payment-mode',
+        HttpStatus.OK,
+        duration,
+        { userId: customer.id },
       );
-      
+
       return {
         message: 'Monthly payment mode updated successfully',
         monthlyPaymentMode: updateDto.monthlyPaymentMode,
@@ -145,10 +174,10 @@ export class CustomerController {
     } catch (error) {
       const duration = Date.now() - startTime;
       this.logger.logApiError(
-        '/customers/monthly-payment-mode', 
-        'PUT', 
-        HttpStatus.INTERNAL_SERVER_ERROR, 
-        error
+        '/customers/monthly-payment-mode',
+        'PUT',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
       throw error;
     }

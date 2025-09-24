@@ -1,6 +1,5 @@
 import {
   Injectable,
-  NotFoundException,
   BadRequestException,
   Logger,
 } from '@nestjs/common';
@@ -10,15 +9,18 @@ import { LedgerService } from '../ledger/ledger.service';
 import { User, UserRole } from '../common/interfaces/user.interface';
 import { LedgerSummaryResponseDto } from '../common/dto/ledger.dto';
 import { CustomLoggerService } from '../common/logger/logger.service';
+import { ProductModerationService } from '../product/product-moderation.service';
 
 export interface AdminDashboardStats {
   totalUsers: number;
   totalVendors: number;
-  totalDeliveryAgents: number;
+  totalDeliveryRiders: number;
   activeUsers: number;
   pendingVendorApprovals: number;
   totalPendingDues: number;
   monthlyRevenue: number;
+  pendingProductModerations: number;
+  flaggedProducts: number;
 }
 
 export interface UserManagementDto {
@@ -55,6 +57,7 @@ export class AdminService {
     private readonly vendorService: VendorService,
     private readonly ledgerService: LedgerService,
     private readonly customLogger: CustomLoggerService,
+    private readonly productModerationService: ProductModerationService,
   ) {}
 
   async getDashboardStats(): Promise<AdminDashboardStats> {
@@ -68,14 +71,28 @@ export class AdminService {
       // In a real implementation, this would aggregate from all vendors
       const totalPendingDues = 0; // TODO: Implement with new ledger system
 
+      // Get moderation stats
+      let pendingProductModerations = 0;
+      let flaggedProducts = 0;
+      try {
+        const moderationStats = await this.productModerationService.getModerationStats();
+        pendingProductModerations = moderationStats.totalPending;
+        flaggedProducts = moderationStats.totalFlagged;
+      } catch (error) {
+        this.logger.error('Failed to get moderation stats:', error);
+        // Continue with default values
+      }
+
       const stats: AdminDashboardStats = {
         totalUsers: 150, // Simulated data
         totalVendors: 25,
-        totalDeliveryAgents: 40,
+        totalDeliveryRiders: 40,
         activeUsers: 135,
         pendingVendorApprovals: 3,
         totalPendingDues,
         monthlyRevenue: 45000,
+        pendingProductModerations,
+        flaggedProducts,
       };
 
       this.logger.log('Generated admin dashboard stats');
@@ -119,7 +136,7 @@ export class AdminService {
         {
           id: '3',
           phone: '7777777777',
-          name: 'Test Agent',
+          name: 'Test Rider',
           role: UserRole.DELIVERY_RIDER,
           isActive: true,
           monthlyPaymentMode: false,

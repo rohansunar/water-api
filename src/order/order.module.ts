@@ -15,6 +15,7 @@ import { Payment, PaymentSchema } from '../common/schemas/payment.schema';
 import { ProductModule } from '../product/product.module';
 import { UserModule } from '../modules/user/user.module';
 import { LedgerModule } from '../ledger/ledger.module';
+import { CommissionModule } from '../commission/commission.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { LedgerModule } from '../ledger/ledger.module';
     ProductModule,
     UserModule,
     LedgerModule,
+    CommissionModule,
   ],
   controllers: [OrderController],
   providers: [OrderService],

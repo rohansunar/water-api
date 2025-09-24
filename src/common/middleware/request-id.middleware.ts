@@ -19,7 +19,7 @@ export class RequestIdMiddleware implements NestMiddleware {
     }
 
     // Add request ID to request object for easy access
-    (req as any).requestId = requestId;
+    req.requestId = requestId;
 
     next();
   }

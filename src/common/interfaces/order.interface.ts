@@ -13,7 +13,7 @@ export interface Order {
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   deliveryAddress: OrderAddress;
-  deliveryAgentId?: string;
+  deliveryRiderId?: string;
   specialInstructions?: string;
   trackingInfo?: TrackingInfo;
   createdAt: Date;
@@ -36,7 +36,7 @@ export interface TrackingInfo {
   currentStatus: OrderStatus;
   statusHistory: StatusHistory[];
   estimatedDeliveryTime?: Date;
-  deliveryAgentLocation?: {
+  deliveryRiderLocation?: {
     latitude: number;
     longitude: number;
     updatedAt: Date;

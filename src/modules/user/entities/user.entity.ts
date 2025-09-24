@@ -64,10 +64,6 @@ export class User {
 export const UserSchema = SchemaFactory.createForClass(User);
 
 // Indexes for performance
-UserSchema.index({ phone: 1 }, { unique: true });
-UserSchema.index({ email: 1 }, { unique: true, sparse: true });
-UserSchema.index({ role: 1 });
-UserSchema.index({ isActive: 1 });
 UserSchema.index({ createdAt: -1 });
 
 // Pre-save middleware to update timestamps
@@ -136,7 +132,6 @@ export const UserAddressSchema = SchemaFactory.createForClass(UserAddress);
 export type UserAddressDocument = UserAddress & Document;
 
 // Indexes for address collection
-UserAddressSchema.index({ userId: 1 });
 UserAddressSchema.index({ isActive: 1 });
 UserAddressSchema.index({ isDefault: 1 });
 UserAddressSchema.index({ location: '2dsphere' });

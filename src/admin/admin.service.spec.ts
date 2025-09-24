@@ -69,7 +69,7 @@ describe('AdminService', () => {
 
       expect(result).toHaveProperty('totalUsers');
       expect(result).toHaveProperty('totalVendors');
-      expect(result).toHaveProperty('totalDeliveryAgents');
+      expect(result).toHaveProperty('totalDeliveryRiders');
       expect(result).toHaveProperty('activeUsers');
       expect(result).toHaveProperty('pendingVendorApprovals');
       expect(result).toHaveProperty('totalPendingDues');

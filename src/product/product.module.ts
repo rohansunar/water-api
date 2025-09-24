@@ -8,6 +8,7 @@ import {
   VendorStoreSchema,
 } from '../common/schemas/vendor-store.schema';
 import { VendorModule } from '../vendor/vendor.module';
+import { ProductModerationModule } from './product-moderation.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { VendorModule } from '../vendor/vendor.module';
       { name: VendorStore.name, schema: VendorStoreSchema },
     ]),
     VendorModule,
+    ProductModerationModule,
   ],
   controllers: [ProductController],
   providers: [ProductService],

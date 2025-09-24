@@ -16,6 +16,7 @@ import {
   LedgerEntryType,
   LedgerEntryStatus,
   PayoutStatus,
+  PayoutMethod,
   AnalyticsPeriod,
   VendorAnalytics,
   LedgerSummary,
@@ -231,106 +232,118 @@ export class LedgerService {
   }
 
   /**
-   * Get ledger summary for vendor
-   */
-  async getLedgerSummary(vendorId: string): Promise<LedgerSummaryResponseDto> {
-    try {
-      const pipeline = [
-        {
-          $match: {
-            vendorId: new Types.ObjectId(vendorId),
-            status: LedgerEntryStatus.COMPLETED,
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            totalEarnings: {
-              $sum: {
-                $cond: [
-                  {
-                    $in: [
-                      '$type',
-                      [LedgerEntryType.SALE, LedgerEntryType.ADJUSTMENT],
-                    ],
-                  },
-                  '$amount',
-                  0,
-                ],
-              },
-            },
-            totalCommission: {
-              $sum: {
-                $cond: [
-                  { $eq: ['$type', LedgerEntryType.COMMISSION] },
-                  '$amount',
-                  0,
-                ],
-              },
-            },
-          },
-        },
-      ];
+    * Get ledger summary for vendor
+    */
+   async getLedgerSummary(vendorId: string): Promise<LedgerSummaryResponseDto> {
+     try {
+       // Combine ledger and payout queries for better performance
+       const [ledgerSummary, payoutSummary, lastPayout] = await Promise.all([
+         // Single aggregation for ledger entries
+         this.ledgerEntryModel.aggregate([
+           {
+             $match: {
+               vendorId: new Types.ObjectId(vendorId),
+               status: LedgerEntryStatus.COMPLETED,
+             },
+           },
+           {
+             $group: {
+               _id: null,
+               totalEarnings: {
+                 $sum: {
+                   $cond: [
+                     {
+                       $in: [
+                         '$type',
+                         [LedgerEntryType.SALE, LedgerEntryType.ADJUSTMENT],
+                       ],
+                     },
+                     '$amount',
+                     0,
+                   ],
+                 },
+               },
+               totalCommission: {
+                 $sum: {
+                   $cond: [
+                     { $eq: ['$type', LedgerEntryType.COMMISSION] },
+                     '$amount',
+                     0,
+                   ],
+                 },
+               },
+             },
+           },
+         ]),
+         // Single aggregation for payout summary
+         this.payoutModel.aggregate([
+           {
+             $match: {
+               vendorId: new Types.ObjectId(vendorId),
+             },
+           },
+           {
+             $group: {
+               _id: null,
+               pendingPayouts: {
+                 $sum: {
+                   $cond: [
+                     { $in: ['$status', [PayoutStatus.PENDING, PayoutStatus.PROCESSING]] },
+                     '$amount',
+                     0,
+                   ],
+                 },
+               },
+               completedPayouts: {
+                 $sum: {
+                   $cond: [
+                     { $eq: ['$status', PayoutStatus.COMPLETED] },
+                     '$amount',
+                     0,
+                   ],
+                 },
+               },
+             },
+           },
+         ]),
+         // Get last payout
+         this.payoutModel
+           .findOne(
+             {
+               vendorId: new Types.ObjectId(vendorId),
+               status: PayoutStatus.COMPLETED,
+             },
+             {},
+             { sort: { completedAt: -1 } },
+           )
+           .exec(),
+       ]);
 
-      const [summary] = await this.ledgerEntryModel.aggregate(pipeline);
+       const totalEarnings = ledgerSummary[0]?.totalEarnings || 0;
+       const totalCommission = ledgerSummary[0]?.totalCommission || 0;
+       const pendingPayoutAmount = payoutSummary[0]?.pendingPayouts || 0;
+       const completedPayoutAmount = payoutSummary[0]?.completedPayouts || 0;
+       const netBalance =
+         totalEarnings -
+         totalCommission -
+         completedPayoutAmount -
+         pendingPayoutAmount;
 
-      // Get payout information
-      const [pendingPayouts, completedPayouts, lastPayout] = await Promise.all([
-        this.payoutModel.aggregate([
-          {
-            $match: {
-              vendorId: new Types.ObjectId(vendorId),
-              status: { $in: [PayoutStatus.PENDING, PayoutStatus.PROCESSING] },
-            },
-          },
-          { $group: { _id: null, total: { $sum: '$amount' } } },
-        ]),
-        this.payoutModel.aggregate([
-          {
-            $match: {
-              vendorId: new Types.ObjectId(vendorId),
-              status: PayoutStatus.COMPLETED,
-            },
-          },
-          { $group: { _id: null, total: { $sum: '$amount' } } },
-        ]),
-        this.payoutModel
-          .findOne(
-            {
-              vendorId: new Types.ObjectId(vendorId),
-              status: PayoutStatus.COMPLETED,
-            },
-            {},
-            { sort: { completedAt: -1 } },
-          )
-          .exec(),
-      ]);
-
-      const totalEarnings = summary?.totalEarnings || 0;
-      const totalCommission = summary?.totalCommission || 0;
-      const pendingPayoutAmount = pendingPayouts[0]?.total || 0;
-      const completedPayoutAmount = completedPayouts[0]?.total || 0;
-      const netBalance =
-        totalEarnings -
-        totalCommission -
-        completedPayoutAmount -
-        pendingPayoutAmount;
-
-      return {
-        vendorId,
-        totalEarnings,
-        pendingPayouts: pendingPayoutAmount,
-        completedPayouts: completedPayoutAmount,
-        totalCommission,
-        netBalance,
-        lastPayoutDate: lastPayout?.completedAt,
-        nextPayoutDate: this.calculateNextPayoutDate(),
-      };
-    } catch (error) {
-      this.logger.error(`Failed to get ledger summary: ${error.message}`);
-      throw new BadRequestException('Failed to retrieve ledger summary');
-    }
-  }
+       return {
+         vendorId,
+         totalEarnings,
+         pendingPayouts: pendingPayoutAmount,
+         completedPayouts: completedPayoutAmount,
+         totalCommission,
+         netBalance,
+         lastPayoutDate: lastPayout?.completedAt,
+         nextPayoutDate: this.calculateNextPayoutDate(),
+       };
+     } catch (error) {
+       this.logger.error(`Failed to get ledger summary: ${error.message}`);
+       throw new BadRequestException('Failed to retrieve ledger summary');
+     }
+   }
 
   /**
    * Create a payout request
@@ -430,8 +443,8 @@ export class LedgerService {
       orderId: entry.orderId.toString(),
       userId: entry.userId?.toString() || '',
       amount: entry.amount,
-      type: entry.type,
-      status: entry.status,
+      type: entry.type as LedgerEntryType,
+      status: entry.status as LedgerEntryStatus,
       description: entry.description,
       referenceId: entry.referenceId,
       metadata: entry.metadata,
@@ -445,8 +458,8 @@ export class LedgerService {
       id: payout._id.toString(),
       vendorId: payout.vendorId.toString(),
       amount: payout.amount,
-      status: payout.status,
-      method: payout.method,
+      status: payout.status as PayoutStatus,
+      method: payout.method as PayoutMethod,
       bankDetails: payout.payoutDetails
         ? {
             accountNumber: payout.payoutDetails.bankAccountNumber || '',
@@ -476,7 +489,7 @@ export class LedgerService {
   ): { startDate: Date; endDate: Date } {
     const now = new Date();
     let start: Date;
-    let end: Date = endDate ? new Date(endDate) : now;
+    const end: Date = endDate ? new Date(endDate) : now;
 
     if (startDate) {
       start = new Date(startDate);

@@ -77,8 +77,12 @@ describe('CustomerService', () => {
     }).compile();
 
     service = module.get<CustomerService>(CustomerService);
-    customerModel = module.get<Model<CustomerDocument>>(getModelToken(Customer.name));
-    addressModel = module.get<Model<AddressDocument>>(getModelToken(Address.name));
+    customerModel = module.get<Model<CustomerDocument>>(
+      getModelToken(Customer.name),
+    );
+    addressModel = module.get<Model<AddressDocument>>(
+      getModelToken(Address.name),
+    );
     logger = module.get<CustomLoggerService>(CustomLoggerService);
   });
 
@@ -134,7 +138,9 @@ describe('CustomerService', () => {
       const result = await service.findByPhone('+919876543210');
 
       expect(result).toEqual(mockCustomer);
-      expect(mockCustomerModel.findOne).toHaveBeenCalledWith({ phone: '+919876543210' });
+      expect(mockCustomerModel.findOne).toHaveBeenCalledWith({
+        phone: '+919876543210',
+      });
     });
 
     it('should return null when customer not found by phone', async () => {
@@ -156,13 +162,24 @@ describe('CustomerService', () => {
         role: CustomerRole.CUSTOMER,
       };
 
-      const mockSavedCustomer = { ...mockCustomer, save: jest.fn().mockResolvedValue(mockCustomer) };
-      
-      // Mock the constructor call
-      jest.spyOn(service['customerModel'], 'prototype' as any).mockImplementation(() => mockSavedCustomer);
-      
+      const mockSavedCustomer = {
+        ...mockCustomer,
+        save: jest.fn().mockResolvedValue(mockCustomer),
+      };
+
+      // Mock the constructor and save
+      mockCustomerModel.create.mockResolvedValue(mockSavedCustomer);
+
       const result = await service.create(customerData);
 
+      expect(result).toMatchObject({
+        phone: '+919876543210',
+        name: 'John Doe',
+        role: CustomerRole.CUSTOMER,
+        walletBalance: 100,
+        isActive: true,
+        monthlyPaymentMode: false,
+      });
       expect(mockLogger.log).toHaveBeenCalledWith(
         expect.stringContaining('Created new customer:'),
       );
@@ -175,12 +192,13 @@ describe('CustomerService', () => {
       };
 
       const error = new Error('Validation error');
-      const mockFailedCustomer = { save: jest.fn().mockRejectedValue(error) };
-      
-      jest.spyOn(service['customerModel'], 'prototype' as any).mockImplementation(() => mockFailedCustomer);
+      mockCustomerModel.create.mockRejectedValue(error);
 
       await expect(service.create(customerData)).rejects.toThrow(error);
-      expect(mockLogger.error).toHaveBeenCalledWith('Error creating customer:', error);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error creating customer:',
+        error,
+      );
     });
   });
 
@@ -201,7 +219,9 @@ describe('CustomerService', () => {
         { ...updateData, updatedAt: expect.any(Date) },
         { new: true, runValidators: true },
       );
-      expect(mockLogger.log).toHaveBeenCalledWith('Updated customer: customer-123');
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        'Updated customer: customer-123',
+      );
     });
 
     it('should throw NotFoundException when customer not found', async () => {
@@ -209,9 +229,9 @@ describe('CustomerService', () => {
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.update('nonexistent', { name: 'Test' })).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update('nonexistent', { name: 'Test' }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -223,7 +243,10 @@ describe('CustomerService', () => {
         exec: jest.fn().mockResolvedValue(updatedCustomer),
       });
 
-      const result = await service.updateMonthlyPaymentMode('customer-123', true);
+      const result = await service.updateMonthlyPaymentMode(
+        'customer-123',
+        true,
+      );
 
       expect(result).toEqual(updatedCustomer);
       expect(mockCustomerModel.findByIdAndUpdate).toHaveBeenCalledWith(
@@ -252,7 +275,11 @@ describe('CustomerService', () => {
         exec: jest.fn().mockResolvedValue(updatedCustomer),
       });
 
-      const result = await service.updateWalletBalance('customer-123', 50, 'add');
+      const result = await service.updateWalletBalance(
+        'customer-123',
+        50,
+        'add',
+      );
 
       expect(result).toEqual(updatedCustomer);
       expect(mockCustomerModel.findByIdAndUpdate).toHaveBeenCalledWith(
@@ -269,7 +296,11 @@ describe('CustomerService', () => {
         exec: jest.fn().mockResolvedValue(updatedCustomer),
       });
 
-      const result = await service.updateWalletBalance('customer-123', 50, 'subtract');
+      const result = await service.updateWalletBalance(
+        'customer-123',
+        50,
+        'subtract',
+      );
 
       expect(result).toEqual(updatedCustomer);
       expect(mockCustomerModel.findByIdAndUpdate).toHaveBeenCalledWith(
@@ -286,7 +317,11 @@ describe('CustomerService', () => {
         exec: jest.fn().mockResolvedValue(updatedCustomer),
       });
 
-      const result = await service.updateWalletBalance('customer-123', 200, 'set');
+      const result = await service.updateWalletBalance(
+        'customer-123',
+        200,
+        'set',
+      );
 
       expect(result).toEqual(updatedCustomer);
       expect(mockCustomerModel.findByIdAndUpdate).toHaveBeenCalledWith(
@@ -334,7 +369,7 @@ describe('CustomerService', () => {
       // Mock different calls to countDocuments
       mockCustomerModel.countDocuments
         .mockReturnValueOnce({ exec: jest.fn().mockResolvedValue(100) }) // totalCustomers
-        .mockReturnValueOnce({ exec: jest.fn().mockResolvedValue(80) })  // activeCustomers
+        .mockReturnValueOnce({ exec: jest.fn().mockResolvedValue(80) }) // activeCustomers
         .mockReturnValueOnce({ exec: jest.fn().mockResolvedValue(20) }); // recentSignups
 
       mockCustomerModel.aggregate.mockReturnValue({
@@ -366,13 +401,18 @@ describe('CustomerService', () => {
         exec: jest.fn().mockResolvedValue(null), // No existing customers
       });
 
-      const mockSavedCustomer = { ...mockCustomer, save: jest.fn().mockResolvedValue(mockCustomer) };
+      const mockSavedCustomer = {
+        ...mockCustomer,
+        save: jest.fn().mockResolvedValue(mockCustomer),
+      };
       jest.spyOn(service, 'create').mockResolvedValue(mockSavedCustomer as any);
       jest.spyOn(service, 'findByPhone').mockResolvedValue(null);
 
       await service.seedTestData();
 
-      expect(mockLogger.log).toHaveBeenCalledWith('Customer test data seeded successfully');
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        'Customer test data seeded successfully',
+      );
     });
   });
 
@@ -385,7 +425,9 @@ describe('CustomerService', () => {
       expect(mockCustomerModel.deleteMany).toHaveBeenCalledWith({
         phone: { $in: ['9999999999', '8888888888', '7777777777'] },
       });
-      expect(mockLogger.log).toHaveBeenCalledWith('Customer test data cleared successfully');
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        'Customer test data cleared successfully',
+      );
     });
   });
 });

@@ -16,6 +16,7 @@ import { CreateOrderDto, OrderResponseDto } from '../common/dto/order.dto';
 import { ProductService } from '../product/product.service';
 import { UserService } from '../modules/user/services/user.service';
 import { LedgerService } from '../ledger/ledger.service';
+import { CommissionService } from '../commission/commission.service';
 
 @Injectable()
 export class OrderService {
@@ -28,6 +29,7 @@ export class OrderService {
     private readonly productService: ProductService,
     private readonly userService: UserService,
     private readonly ledgerService: LedgerService,
+    private readonly commissionService: CommissionService,
   ) {}
 
   async create(
@@ -62,7 +64,9 @@ export class OrderService {
       const depositAmount = product.hasDeposit
         ? product.depositAmount * createOrderDto.quantity
         : 0;
-      const deliveryFee = this.calculateDeliveryFee(product.vendorId.toString());
+      const deliveryFee = this.calculateDeliveryFee(
+        product.vendorId.toString(),
+      );
       const totalAmount = itemTotal + depositAmount + deliveryFee;
 
       // Validate payment method and balance
@@ -121,7 +125,8 @@ export class OrderService {
       userOrders.push(order.id);
       this.userOrderIndex.set(userId, userOrders);
 
-      const vendorOrders = this.vendorOrderIndex.get(product.vendorId.toString()) || [];
+      const vendorOrders =
+        this.vendorOrderIndex.get(product.vendorId.toString()) || [];
       vendorOrders.push(order.id);
       this.vendorOrderIndex.set(product.vendorId.toString(), vendorOrders);
 
@@ -136,9 +141,7 @@ export class OrderService {
 
   async findByUser(userId: string): Promise<OrderResponseDto[]> {
     const orderIds = this.userOrderIndex.get(userId) || [];
-    const orders = orderIds
-      .map((id) => this.orders.get(id))
-      .filter(Boolean) as Order[];
+    const orders = orderIds.map((id) => this.orders.get(id)).filter(Boolean);
 
     // Sort by creation date (newest first)
     orders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -148,9 +151,7 @@ export class OrderService {
 
   async findByVendor(vendorId: string): Promise<OrderResponseDto[]> {
     const orderIds = this.vendorOrderIndex.get(vendorId) || [];
-    const orders = orderIds
-      .map((id) => this.orders.get(id))
-      .filter(Boolean) as Order[];
+    const orders = orderIds.map((id) => this.orders.get(id)).filter(Boolean);
 
     // Sort by creation date (newest first)
     orders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -249,6 +250,35 @@ export class OrderService {
           this.logger.log(
             `Created monthly ledger entry for delivered order ${orderId}`,
           );
+
+          // Calculate and record commission
+          try {
+            const product = await this.productService.findById(order.productId);
+            if (product) {
+              const commission = await this.commissionService.calculateCommission(
+                order.productId,
+                product.category,
+                order.vendorId,
+                order.totalAmount,
+              );
+              await this.ledgerService.createLedgerEntry({
+                vendorId: order.vendorId,
+                orderId: order.id,
+                userId: order.userId,
+                amount: commission.amount,
+                type: 'commission' as any,
+                description: `Commission for order - ${commission.percentage}%`,
+              });
+              this.logger.log(
+                `Created commission ledger entry for order ${orderId}: ${commission.amount}`,
+              );
+            }
+          } catch (commissionError) {
+            this.logger.error(
+              `Failed to create commission ledger entry for order ${orderId}:`,
+              commissionError,
+            );
+          }
         }
       } catch (error) {
         this.logger.error(

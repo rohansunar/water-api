@@ -1,15 +1,24 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ProductResponseDto, CreateProductDto } from '../common/dto/product.dto';
+import {
+  ProductResponseDto,
+  CreateProductDto,
+} from '../common/dto/product.dto';
 import { Product, ProductDocument } from '../common/schemas/product.schema';
 import { CustomLoggerService } from '../common/logger/logger.service';
+import { ProductModerationService } from './product-moderation.service';
 
 @Injectable()
 export class ProductService {
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
     private readonly logger: CustomLoggerService,
+    private readonly productModerationService: ProductModerationService,
   ) {}
 
   async findById(id: string): Promise<ProductDocument | null> {
@@ -23,7 +32,10 @@ export class ProductService {
 
   async findAll(): Promise<ProductDocument[]> {
     try {
-      return await this.productModel.find({ isAvailable: true }).sort({ createdAt: -1 }).exec();
+      return await this.productModel
+        .find({ isAvailable: true })
+        .sort({ createdAt: -1 })
+        .exec();
     } catch (error) {
       this.logger.error('Error finding all products:', error);
       throw error;
@@ -32,12 +44,18 @@ export class ProductService {
 
   async findByCategory(category: string): Promise<ProductDocument[]> {
     try {
-      return await this.productModel.find({
-        category,
-        isAvailable: true,
-      }).sort({ price: 1 }).exec();
+      return await this.productModel
+        .find({
+          category,
+          isAvailable: true,
+        })
+        .sort({ price: 1 })
+        .exec();
     } catch (error) {
-      this.logger.error(`Error finding products by category ${category}:`, error);
+      this.logger.error(
+        `Error finding products by category ${category}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -48,42 +66,13 @@ export class ProductService {
       throw new NotFoundException('Product not found');
     }
 
-    return {
-      id: (product as any).id,
-      vendorId: (product.vendorId as any).toString(),
-      name: product.name,
-      description: product.description,
-      category: product.category,
-      size: product.capacity,
-      price: product.price,
-      depositAmount: 0, // Not in schema, default to 0
-      hasDeposit: false, // Not in schema, default to false
-      stockQuantity: product.stock,
-      isActive: product.isAvailable,
-      images: product.images,
-      specifications: {
-        capacity: parseInt(product.capacity.replace('L', '')),
-        material: product.specifications?.material || 'Plastic',
-        brand: product.specifications?.brand || 'Generic',
-        weight: product.specifications?.weight || 1.5,
-        dimensions: {
-          height: product.specifications?.dimensions?.height || 50,
-          diameter: product.specifications?.dimensions?.length || product.specifications?.dimensions?.width || 30,
-        },
-      },
-      vendor: {
-        id: (product.vendorId as any).toString(),
-        businessName: 'Default Vendor',
-        rating: 4.5,
-        totalOrders: 100,
-        deliveryZones: [],
-      },
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt,
-    };
+    return this.mapToProductResponseDto(product);
   }
 
-  async create(createProductDto: CreateProductDto, vendorId?: string): Promise<ProductDocument> {
+  async create(
+    createProductDto: CreateProductDto,
+    vendorId?: string,
+  ): Promise<ProductDocument> {
     try {
       const product = await this.productModel.create({
         vendorId: vendorId || 'default-vendor-id', // TODO: Get from context
@@ -108,6 +97,15 @@ export class ProductService {
       });
 
       this.logger.log(`Created product: ${product.id}`);
+
+      // Trigger auto-moderation for the new product
+      try {
+        await this.productModerationService.autoFlagProduct((product as any).id);
+      } catch (error) {
+        this.logger.error(`Failed to auto-flag product ${product.id}:`, error);
+        // Don't fail the product creation if moderation fails
+      }
+
       return product;
     } catch (error) {
       this.logger.error('Error creating product:', error);
@@ -115,9 +113,14 @@ export class ProductService {
     }
   }
 
-  async update(id: string, updateData: Partial<ProductDocument>): Promise<ProductDocument> {
+  async update(
+    id: string,
+    updateData: Partial<ProductDocument>,
+  ): Promise<ProductDocument> {
     try {
-      const product = await this.productModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
+      const product = await this.productModel
+        .findByIdAndUpdate(id, updateData, { new: true })
+        .exec();
 
       if (!product) {
         throw new NotFoundException('Product not found');
@@ -131,7 +134,10 @@ export class ProductService {
     }
   }
 
-  async updateStock(id: string, quantityChange: number): Promise<ProductDocument> {
+  async updateStock(
+    id: string,
+    quantityChange: number,
+  ): Promise<ProductDocument> {
     try {
       const product = await this.findById(id);
       if (!product) {
@@ -146,7 +152,7 @@ export class ProductService {
       const updatedProduct = await this.productModel.findByIdAndUpdate(
         id,
         { stock: newStock },
-        { new: true }
+        { new: true },
       );
 
       if (!updatedProduct) {
@@ -161,43 +167,14 @@ export class ProductService {
     }
   }
 
-  async findByLocation(lat: number, lng: number): Promise<ProductResponseDto[]> {
+  async findByLocation(
+    lat: number,
+    lng: number,
+  ): Promise<ProductResponseDto[]> {
     // In real implementation, calculate distance from vendor location
     // For now, return all available products
     const products = await this.findAll();
-    return products.map(product => ({
-      id: (product as any).id,
-      vendorId: (product.vendorId as any).toString(),
-      name: product.name,
-      description: product.description,
-      category: product.category,
-      size: product.capacity,
-      price: product.price,
-      depositAmount: 0, // Not in schema, default to 0
-      hasDeposit: false, // Not in schema, default to false
-      stockQuantity: product.stock,
-      isActive: product.isAvailable,
-      images: product.images,
-      specifications: {
-        capacity: parseInt(product.capacity.replace('L', '')),
-        material: product.specifications?.material || 'Plastic',
-        brand: product.specifications?.brand || 'Generic',
-        weight: product.specifications?.weight || 1.5,
-        dimensions: {
-          height: product.specifications?.dimensions?.height || 50,
-          diameter: product.specifications?.dimensions?.length || product.specifications?.dimensions?.width || 30,
-        },
-      },
-      vendor: {
-        id: (product.vendorId as any).toString(),
-        businessName: 'Default Vendor',
-        rating: 4.5,
-        totalOrders: 100,
-        deliveryZones: [],
-      },
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt,
-    }));
+    return products.map((product) => this.mapToProductResponseDto(product));
   }
 
   async searchProducts(searchDto: any): Promise<any> {
@@ -233,7 +210,7 @@ export class ProductService {
       const totalPages = Math.ceil(total / limit);
 
       // Transform to search result format
-      const searchResults = products.map(product => ({
+      const searchResults = products.map((product) => ({
         id: (product as any).id,
         name: product.name,
         category: product.category,
@@ -321,9 +298,11 @@ export class ProductService {
       ];
 
       for (const productData of testProducts) {
-        const existingProduct = await this.productModel.findOne({
-          name: productData.name,
-        }).exec();
+        const existingProduct = await this.productModel
+          .findOne({
+            name: productData.name,
+          })
+          .exec();
 
         if (!existingProduct) {
           await this.create(productData as any);
@@ -335,5 +314,44 @@ export class ProductService {
       this.logger.error('Error seeding product test data:', error);
       throw error;
     }
+  }
+
+  private mapToProductResponseDto(product: ProductDocument): ProductResponseDto {
+    return {
+      id: (product as any).id,
+      vendorId: (product.vendorId as any).toString(),
+      name: product.name,
+      description: product.description,
+      category: product.category,
+      size: product.capacity,
+      price: product.price,
+      depositAmount: 0, // Not in schema, default to 0
+      hasDeposit: false, // Not in schema, default to false
+      stockQuantity: product.stock,
+      isActive: product.isAvailable,
+      images: product.images,
+      specifications: {
+        capacity: parseInt(product.capacity.replace('L', '')),
+        material: product.specifications?.material || 'Plastic',
+        brand: product.specifications?.brand || 'Generic',
+        weight: product.specifications?.weight || 1.5,
+        dimensions: {
+          height: product.specifications?.dimensions?.height || 50,
+          diameter:
+            product.specifications?.dimensions?.length ||
+            product.specifications?.dimensions?.width ||
+            30,
+        },
+      },
+      vendor: {
+        id: (product.vendorId as any).toString(),
+        businessName: 'Default Vendor',
+        rating: 4.5,
+        totalOrders: 100,
+        deliveryZones: [],
+      },
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+    };
   }
 }

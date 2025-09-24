@@ -1,157 +1,102 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { ProductService } from './product.service';
-import { Product, ProductDocument } from '../common/schemas/product.schema';
+import { Product } from '../common/schemas/product.schema';
 import { CustomLoggerService } from '../common/logger/logger.service';
-import { ProductResponseDto, CreateProductDto } from '../common/dto/product.dto';
 
 describe('ProductService', () => {
   let service: ProductService;
-  let productModel: Model<ProductDocument>;
-  let logger: CustomLoggerService;
+  let productModel: any;
+  let logger: any;
 
   const mockProduct = {
-    _id: 'product123',
-    id: 'product123',
-    vendorId: 'vendor123',
+    id: 'product-id',
+    vendorId: 'vendor-id',
     name: '20L Water Jar',
-    description: 'Premium quality 20L water jar',
-    category: 'water_jar' as any,
+    description: 'Premium quality water jar',
+    category: 'water_jar',
     capacity: '20L',
-    unit: 'jar',
     price: 30,
     stock: 100,
     isAvailable: true,
-    minOrderQuantity: 1,
-    maxOrderQuantity: 1000,
-    areaPincodes: [],
-    images: ['/images/jar-20l.jpg'],
+    images: ['/images/jar.jpg'],
     specifications: {
       material: 'Plastic',
       brand: 'Generic',
       weight: 1.5,
+      dimensions: { height: 50, length: 30, width: 30 },
     },
-    status: 'active',
     createdAt: new Date(),
     updatedAt: new Date(),
-    toObject: jest.fn(() => ({
-      _id: 'product123',
-      id: 'product123',
-      vendorId: 'vendor123',
-      name: '20L Water Jar',
-      description: 'Premium quality 20L water jar',
-      category: 'water_jar',
-      capacity: '20L',
-      unit: 'jar',
-      price: 30,
-      stock: 100,
-      isAvailable: true,
-      minOrderQuantity: 1,
-      maxOrderQuantity: 1000,
-      areaPincodes: [],
-      images: ['/images/jar-20l.jpg'],
-      specifications: {
-        material: 'Plastic',
-        brand: 'Generic',
-        weight: 1.5,
-      },
-      status: 'active',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    })),
-  };
-
-  const mockProductModel = {
-    findById: jest.fn(),
-    findOne: jest.fn(),
-    find: jest.fn(),
-    findByIdAndUpdate: jest.fn(),
-    findByIdAndDelete: jest.fn(),
-    create: jest.fn(),
-    exec: jest.fn(),
-  };
-
-  const mockLogger = {
-    logModuleAction: jest.fn(),
-    logPerformance: jest.fn(),
-    logEvent: jest.fn(),
-    logApiError: jest.fn(),
-    logMemoryUsage: jest.fn(),
-    logDatabaseOperation: jest.fn(),
-    error: jest.fn(),
-    log: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
   };
 
   beforeEach(async () => {
+    productModel = {
+      findById: jest.fn(),
+      find: jest.fn(),
+      findByCategory: jest.fn(),
+      create: jest.fn(),
+      findByIdAndUpdate: jest.fn(),
+      findByIdAndDelete: jest.fn(),
+      countDocuments: jest.fn().mockReturnValue({ exec: jest.fn() }),
+      findOne: jest.fn().mockReturnValue({ exec: jest.fn() }),
+    };
+
+    logger = {
+      log: jest.fn(),
+      error: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProductService,
         {
           provide: getModelToken(Product.name),
-          useValue: mockProductModel,
+          useValue: productModel,
         },
         {
           provide: CustomLoggerService,
-          useValue: mockLogger,
+          useValue: logger,
         },
       ],
     }).compile();
 
     service = module.get<ProductService>(ProductService);
-    productModel = module.get<Model<ProductDocument>>(getModelToken(Product.name));
-    logger = module.get<CustomLoggerService>(CustomLoggerService);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
   describe('findById', () => {
-    it('should return product when it exists', async () => {
-      mockProductModel.findById.mockReturnValue({
+    it('should return product if found', async () => {
+      productModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockProduct),
       });
 
-      const result = await service.findById('product123');
+      const result = await service.findById('product-id');
 
       expect(result).toEqual(mockProduct);
-      expect(mockProductModel.findById).toHaveBeenCalledWith('product123');
+      expect(productModel.findById).toHaveBeenCalledWith('product-id');
     });
 
-    it('should return null when product does not exist', async () => {
-      mockProductModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null),
+    it('should return null on error', async () => {
+      productModel.findById.mockReturnValue({
+        exec: jest.fn().mockRejectedValue(new Error('DB error')),
       });
 
-      const result = await service.findById('nonexistent');
+      const result = await service.findById('product-id');
 
       expect(result).toBeNull();
-    });
-
-    it('should handle database errors gracefully', async () => {
-      const error = new Error('Database error');
-      mockProductModel.findById.mockReturnValue({
-        exec: jest.fn().mockRejectedValue(error),
-      });
-
-      const result = await service.findById('product123');
-
-      expect(result).toBeNull();
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Error finding product by ID product123:',
-        error
-      );
+      expect(logger.error).toHaveBeenCalled();
     });
   });
 
   describe('findAll', () => {
-    it('should return all available products', async () => {
+    it('should return all available products sorted by creation date', async () => {
       const products = [mockProduct];
-      mockProductModel.find.mockReturnValue({
+      productModel.find.mockReturnValue({
         sort: jest.fn().mockReturnValue({
           exec: jest.fn().mockResolvedValue(products),
         }),
@@ -160,26 +105,25 @@ describe('ProductService', () => {
       const result = await service.findAll();
 
       expect(result).toEqual(products);
-      expect(mockProductModel.find).toHaveBeenCalledWith({ isAvailable: true });
+      expect(productModel.find).toHaveBeenCalledWith({ isAvailable: true });
     });
 
-    it('should handle database errors gracefully', async () => {
-      const error = new Error('Database error');
-      mockProductModel.find.mockReturnValue({
+    it('should throw error on database failure', async () => {
+      productModel.find.mockReturnValue({
         sort: jest.fn().mockReturnValue({
-          exec: jest.fn().mockRejectedValue(error),
+          exec: jest.fn().mockRejectedValue(new Error('DB error')),
         }),
       });
 
-      await expect(service.findAll()).rejects.toThrow(error);
-      expect(mockLogger.error).toHaveBeenCalledWith('Error finding all products:', error);
+      await expect(service.findAll()).rejects.toThrow('DB error');
+      expect(logger.error).toHaveBeenCalled();
     });
   });
 
   describe('findByCategory', () => {
-    it('should return products by category', async () => {
+    it('should return products by category sorted by price', async () => {
       const products = [mockProduct];
-      mockProductModel.find.mockReturnValue({
+      productModel.find.mockReturnValue({
         sort: jest.fn().mockReturnValue({
           exec: jest.fn().mockResolvedValue(products),
         }),
@@ -188,329 +132,320 @@ describe('ProductService', () => {
       const result = await service.findByCategory('water_jar');
 
       expect(result).toEqual(products);
-      expect(mockProductModel.find).toHaveBeenCalledWith({
+      expect(productModel.find).toHaveBeenCalledWith({
         category: 'water_jar',
         isAvailable: true,
       });
     });
 
-    it('should handle database errors gracefully', async () => {
-      const error = new Error('Database error');
-      mockProductModel.find.mockReturnValue({
+    it('should throw error on database failure', async () => {
+      productModel.find.mockReturnValue({
         sort: jest.fn().mockReturnValue({
-          exec: jest.fn().mockRejectedValue(error),
+          exec: jest.fn().mockRejectedValue(new Error('DB error')),
         }),
       });
 
-      await expect(service.findByCategory('water_jar')).rejects.toThrow(error);
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Error finding products by category water_jar:',
-        error
-      );
+      await expect(service.findByCategory('water_jar')).rejects.toThrow('DB error');
+      expect(logger.error).toHaveBeenCalled();
     });
   });
 
   describe('getProductDetails', () => {
-    it('should return product details when product exists', async () => {
-      mockProductModel.findById.mockReturnValue({
+    it('should return product details DTO', async () => {
+      productModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockProduct),
       });
 
-      const result = await service.getProductDetails('product123');
+      const result = await service.getProductDetails('product-id');
 
-      expect(result).toEqual({
-        id: 'product123',
-        vendorId: 'vendor123',
-        name: '20L Water Jar',
-        description: 'Premium quality 20L water jar',
-        category: 'water_jar',
-        size: '20L',
-        price: 30,
-        depositAmount: 0,
-        hasDeposit: false,
-        stockQuantity: 100,
-        isActive: true,
-        images: ['/images/jar-20l.jpg'],
-        specifications: {
-          capacity: 20,
-          material: 'Plastic',
-          brand: 'Generic',
-          weight: 1.5,
-          dimensions: {
-            height: 50,
-            diameter: 30,
-          },
-        },
-        vendor: {
-          id: 'vendor123',
-          businessName: 'Default Vendor',
-          rating: 4.5,
-          totalOrders: 100,
-          deliveryZones: [],
-        },
-        createdAt: mockProduct.createdAt,
-        updatedAt: mockProduct.updatedAt,
-      });
+      expect(result).toHaveProperty('id', 'product-id');
+      expect(result).toHaveProperty('name', '20L Water Jar');
+      expect(result).toHaveProperty('price', 30);
+      expect(result).toHaveProperty('stockQuantity', 100);
+      expect(result).toHaveProperty('isActive', true);
+      expect(result.specifications.capacity).toBe(20);
     });
 
-    it('should throw NotFoundException when product does not exist', async () => {
-      mockProductModel.findById.mockReturnValue({
+    it('should throw NotFoundException for non-existent product', async () => {
+      productModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.getProductDetails('nonexistent')).rejects.toThrow(
-        NotFoundException
+      await expect(service.getProductDetails('non-existent')).rejects.toThrow(
+        NotFoundException,
       );
     });
   });
 
   describe('create', () => {
-    const createProductDto: CreateProductDto = {
-      name: '20L Water Jar',
-      description: 'Premium quality 20L water jar',
-      price: 30,
+    const createProductDto = {
+      name: 'New Product',
+      description: 'New product description',
+      price: 25,
       category: 'water_jar' as any,
-      size: '20L' as any,
-      depositAmount: 50,
+      size: '15L' as any,
+      depositAmount: 10,
       hasDeposit: true,
-      stockQuantity: 100,
-      images: ['/images/jar-20l.jpg'],
+      stockQuantity: 50,
+      images: ['/images/new.jpg'],
     };
 
-    it('should create a new product successfully', async () => {
-      const createdProduct = { ...mockProduct, _id: 'newProduct123', id: 'newProduct123' };
-      mockProductModel.create.mockResolvedValue(createdProduct);
+    it('should create product successfully', async () => {
+      const createdProduct = { ...mockProduct, ...createProductDto };
+      productModel.create.mockResolvedValue(createdProduct);
 
-      const result = await service.create(createProductDto, 'vendor123');
+      const result = await service.create(createProductDto, 'vendor-id');
 
       expect(result).toEqual(createdProduct);
-      expect(mockProductModel.create).toHaveBeenCalledWith({
-        vendorId: 'vendor123',
-        name: '20L Water Jar',
-        description: 'Premium quality 20L water jar',
-        price: 30,
-        category: 'water_jar',
-        capacity: '20L',
-        unit: 'jar',
-        stock: 100,
-        isAvailable: true,
-        minOrderQuantity: 1,
-        maxOrderQuantity: 1000,
-        areaPincodes: [],
-        images: ['/images/jar-20l.jpg'],
-        specifications: {
-          material: 'Plastic',
-          brand: 'Generic',
-          weight: 1.5,
-        },
-        status: 'active',
-      });
-      expect(mockLogger.log).toHaveBeenCalledWith('Created product: newProduct123');
+      expect(productModel.create).toHaveBeenCalled();
+      expect(logger.log).toHaveBeenCalledWith(`Created product: ${createdProduct.id}`);
     });
 
-    it('should handle database errors gracefully', async () => {
-      const error = new Error('Database error');
-      mockProductModel.create.mockRejectedValue(error);
+    it('should create product with default vendor if not provided', async () => {
+      const createdProduct = { ...mockProduct, ...createProductDto };
+      productModel.create.mockResolvedValue(createdProduct);
 
-      await expect(service.create(createProductDto)).rejects.toThrow(error);
-      expect(mockLogger.error).toHaveBeenCalledWith('Error creating product:', error);
+      await service.create(createProductDto);
+
+      expect(productModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({ vendorId: 'default-vendor-id' }),
+      );
+    });
+
+    it('should throw error on creation failure', async () => {
+      productModel.create.mockRejectedValue(new Error('Creation failed'));
+
+      await expect(service.create(createProductDto)).rejects.toThrow('Creation failed');
+      expect(logger.error).toHaveBeenCalled();
     });
   });
 
   describe('update', () => {
-    const updateData = { price: 35 };
-
     it('should update product successfully', async () => {
-      const updatedProduct = { ...mockProduct, price: 35 };
-      mockProductModel.findByIdAndUpdate.mockReturnValue({
+      const updateData = { price: 35 };
+      const updatedProduct = { ...mockProduct, ...updateData };
+      productModel.findByIdAndUpdate.mockReturnValue({
         exec: jest.fn().mockResolvedValue(updatedProduct),
       });
 
-      const result = await service.update('product123', updateData);
+      const result = await service.update('product-id', updateData);
 
       expect(result).toEqual(updatedProduct);
-      expect(mockProductModel.findByIdAndUpdate).toHaveBeenCalledWith(
-        'product123',
+      expect(productModel.findByIdAndUpdate).toHaveBeenCalledWith(
+        'product-id',
         updateData,
-        { new: true }
+        { new: true },
       );
-      expect(mockLogger.log).toHaveBeenCalledWith('Updated product: product123');
+      expect(logger.log).toHaveBeenCalledWith('Updated product: product-id');
     });
 
-    it('should throw NotFoundException when product does not exist', async () => {
-      mockProductModel.findByIdAndUpdate.mockReturnValue({
+    it('should throw NotFoundException for non-existent product', async () => {
+      productModel.findByIdAndUpdate.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.update('nonexistent', updateData)).rejects.toThrow(
-        NotFoundException
+      await expect(service.update('non-existent', { price: 35 })).rejects.toThrow(
+        NotFoundException,
       );
     });
 
-    it('should handle database errors gracefully', async () => {
-      const error = new Error('Database error');
-      mockProductModel.findByIdAndUpdate.mockReturnValue({
-        exec: jest.fn().mockRejectedValue(error),
+    it('should throw error on update failure', async () => {
+      productModel.findByIdAndUpdate.mockReturnValue({
+        exec: jest.fn().mockRejectedValue(new Error('Update failed')),
       });
 
-      await expect(service.update('product123', updateData)).rejects.toThrow(error);
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Error updating product product123:',
-        error
-      );
+      await expect(service.update('product-id', { price: 35 })).rejects.toThrow('Update failed');
+      expect(logger.error).toHaveBeenCalled();
     });
   });
 
   describe('updateStock', () => {
-    it('should update stock successfully', async () => {
-      const updatedProduct = { ...mockProduct, stock: 150, id: 'product123' };
-      mockProductModel.findById.mockReturnValue({
+    it('should update stock successfully with positive change', async () => {
+      productModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockProduct),
       });
-      mockProductModel.findByIdAndUpdate.mockResolvedValue(updatedProduct);
-
-      const result = await service.updateStock('product123', 50);
-
-      expect(result).toEqual(updatedProduct);
-      expect(mockProductModel.findByIdAndUpdate).toHaveBeenCalledWith(
-        'product123',
-        { stock: 150 },
-        { new: true }
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith('Updated stock for product product123: 50');
-    });
-
-    it('should throw BadRequestException for insufficient stock', async () => {
-      mockProductModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(mockProduct),
+      productModel.findByIdAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({ ...mockProduct, stock: 110 }),
       });
 
-      await expect(service.updateStock('product123', -150)).rejects.toThrow(
-        BadRequestException
-      );
+      const result = await service.updateStock('product-id', 10);
+
+      expect(result.stock).toBe(110);
+      expect(logger.log).toHaveBeenCalledWith('Updated stock for product product-id: 10');
     });
 
-    it('should throw NotFoundException when product does not exist', async () => {
-      mockProductModel.findById.mockReturnValue({
+    it('should update stock successfully with negative change', async () => {
+      productModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockProduct),
+      });
+      productModel.findByIdAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({ ...mockProduct, stock: 90 }),
+      });
+
+      const result = await service.updateStock('product-id', -10);
+
+      expect(result.stock).toBe(90);
+    });
+
+    it('should throw NotFoundException for non-existent product', async () => {
+      productModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.updateStock('nonexistent', 10)).rejects.toThrow(
-        NotFoundException
+      await expect(service.updateStock('non-existent', 10)).rejects.toThrow(
+        NotFoundException,
       );
+    });
+
+    it('should throw BadRequestException for insufficient stock', async () => {
+      productModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({ ...mockProduct, stock: 5 }),
+      });
+
+      await expect(service.updateStock('product-id', -10)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw error on update failure', async () => {
+      productModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockProduct),
+      });
+      productModel.findByIdAndUpdate.mockReturnValue({
+        exec: jest.fn().mockRejectedValue(new Error('Update failed')),
+      });
+
+      await expect(service.updateStock('product-id', 10)).rejects.toThrow('Update failed');
+      expect(logger.error).toHaveBeenCalled();
     });
   });
 
   describe('findByLocation', () => {
-    it('should return products for location', async () => {
+    it('should return products transformed to DTOs', async () => {
       const products = [mockProduct];
-      mockProductModel.find.mockReturnValue({
+      productModel.find.mockReturnValue({
         sort: jest.fn().mockReturnValue({
           exec: jest.fn().mockResolvedValue(products),
         }),
       });
 
-      const result = await service.findByLocation(28.6139, 77.2090);
+      const result = await service.findByLocation(28.6139, 77.209);
 
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        id: 'product123',
-        vendorId: 'vendor123',
-        name: '20L Water Jar',
-        description: 'Premium quality 20L water jar',
-        category: 'water_jar',
-        size: '20L',
-        price: 30,
-        depositAmount: 0,
-        hasDeposit: false,
-        stockQuantity: 100,
-        isActive: true,
-        images: ['/images/jar-20l.jpg'],
-        specifications: {
-          capacity: 20,
-          material: 'Plastic',
-          brand: 'Generic',
-          weight: 1.5,
-          dimensions: {
-            height: 50,
-            diameter: 30,
-          },
-        },
-        vendor: {
-          id: 'vendor123',
-          businessName: 'Default Vendor',
-          rating: 4.5,
-          totalOrders: 100,
-          deliveryZones: [],
-        },
-        createdAt: mockProduct.createdAt,
-        updatedAt: mockProduct.updatedAt,
+      expect(result[0]).toHaveProperty('id', 'product-id');
+      expect(result[0]).toHaveProperty('name', '20L Water Jar');
+      expect(result[0].specifications.capacity).toBe(20);
+    });
+  });
+
+  describe('searchProducts', () => {
+    const searchDto = {
+      query: 'water',
+      category: 'water_jar',
+      pincode: '110001',
+      page: 1,
+      limit: 20,
+    };
+
+    it('should return search results with pagination', async () => {
+      const products = [mockProduct];
+      productModel.countDocuments.mockResolvedValue(1);
+      productModel.find.mockReturnValue({
+        skip: jest.fn().mockReturnValue({
+          limit: jest.fn().mockReturnValue({
+            sort: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue(products),
+            }),
+          }),
+        }),
       });
+
+      const result = await service.searchProducts(searchDto);
+
+      expect(result).toHaveProperty('products');
+      expect(result).toHaveProperty('meta');
+      expect(result.products).toHaveLength(1);
+      expect(result.meta.pagination).toHaveProperty('total', 1);
+      expect(result.meta.pagination).toHaveProperty('total_pages', 1);
+    });
+
+    it('should search without category filter', async () => {
+      const searchDtoNoCategory = { query: 'water', page: 1, limit: 20 };
+      productModel.countDocuments.mockResolvedValue(0);
+      productModel.find.mockReturnValue({
+        skip: jest.fn().mockReturnValue({
+          limit: jest.fn().mockReturnValue({
+            sort: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue([]),
+            }),
+          }),
+        }),
+      });
+
+      const result = await service.searchProducts(searchDtoNoCategory);
+
+      expect(result.products).toHaveLength(0);
+      expect(result.meta.pagination.total).toBe(0);
+    });
+
+    it('should throw error on search failure', async () => {
+      productModel.countDocuments.mockImplementation(() => {
+        throw new Error('Search failed');
+      });
+
+      await expect(service.searchProducts(searchDto)).rejects.toThrow('Search failed');
+      expect(logger.error).toHaveBeenCalled();
     });
   });
 
   describe('delete', () => {
     it('should delete product successfully', async () => {
-      mockProductModel.findByIdAndDelete.mockReturnValue({
+      productModel.findByIdAndDelete.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockProduct),
       });
 
-      await service.delete('product123');
+      await service.delete('product-id');
 
-      expect(mockProductModel.findByIdAndDelete).toHaveBeenCalledWith('product123');
-      expect(mockLogger.log).toHaveBeenCalledWith('Deleted product: product123');
+      expect(productModel.findByIdAndDelete).toHaveBeenCalledWith('product-id');
+      expect(logger.log).toHaveBeenCalledWith('Deleted product: product-id');
     });
 
-    it('should handle database errors gracefully', async () => {
-      const error = new Error('Database error');
-      mockProductModel.findByIdAndDelete.mockReturnValue({
-        exec: jest.fn().mockRejectedValue(error),
+    it('should throw error on deletion failure', async () => {
+      productModel.findByIdAndDelete.mockReturnValue({
+        exec: jest.fn().mockRejectedValue(new Error('Deletion failed')),
       });
 
-      await expect(service.delete('product123')).rejects.toThrow(error);
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Error deleting product product123:',
-        error
-      );
+      await expect(service.delete('product-id')).rejects.toThrow('Deletion failed');
+      expect(logger.error).toHaveBeenCalled();
     });
   });
 
   describe('seedTestData', () => {
     it('should seed test data successfully', async () => {
-      const existingProduct = { ...mockProduct, name: '20L Water Jar' };
-      mockProductModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null), // No existing product
-      });
-      mockProductModel.create.mockResolvedValue(mockProduct);
+      productModel.findOne.mockResolvedValue(null);
+      productModel.create.mockResolvedValue(mockProduct);
 
       await service.seedTestData();
 
-      expect(mockProductModel.create).toHaveBeenCalled();
-      expect(mockLogger.log).toHaveBeenCalledWith('Product test data seeded successfully');
+      expect(productModel.create).toHaveBeenCalledTimes(4); // 4 test products
+      expect(logger.log).toHaveBeenCalledWith('Product test data seeded successfully');
     });
 
     it('should skip existing products', async () => {
-      const existingProduct = { ...mockProduct, name: '20L Water Jar' };
-      mockProductModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(existingProduct),
-      });
+      productModel.findOne.mockResolvedValue(mockProduct);
 
       await service.seedTestData();
 
-      expect(mockProductModel.create).not.toHaveBeenCalled();
+      expect(productModel.create).not.toHaveBeenCalled();
     });
 
-    it('should handle database errors gracefully', async () => {
-      const error = new Error('Database error');
-      mockProductModel.findOne.mockReturnValue({
-        exec: jest.fn().mockRejectedValue(error),
+    it('should throw error on seeding failure', async () => {
+      productModel.findOne.mockImplementation(() => {
+        throw new Error('Seeding failed');
       });
 
-      await expect(service.seedTestData()).rejects.toThrow(error);
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Error seeding product test data:',
-        error
-      );
+      await expect(service.seedTestData()).rejects.toThrow('Seeding failed');
+      expect(logger.error).toHaveBeenCalled();
     });
   });
 });

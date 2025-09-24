@@ -89,8 +89,8 @@ export enum EventTypes {
   WALLET_TOPPED_UP = 'wallet.topped.up',
   WALLET_DEBITED = 'wallet.debited',
 
-  // Agent events
-  AGENT_ASSIGNED = 'agent.assigned',
+  // Rider events
+  RIDER_ASSIGNED = 'rider.assigned',
   DELIVERY_STARTED = 'delivery.started',
   DELIVERY_COMPLETED = 'delivery.completed',
 

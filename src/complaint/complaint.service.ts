@@ -94,7 +94,7 @@ export class ComplaintService {
       const complaintIds = this.userComplaintIndex.get(userId) || [];
       const complaints = complaintIds
         .map((id) => this.complaints.get(id))
-        .filter(Boolean) as Complaint[];
+        .filter(Boolean);
 
       // Sort by creation date (newest first)
       complaints.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());

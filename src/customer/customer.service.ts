@@ -1,17 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { Customer, CustomerDocument } from '../common/schemas/customer.schema';
-import { Address, AddressDocument } from '../common/schemas/address.schema';
+import { Model } from 'mongoose';
 import { CustomerRole } from '../common/interfaces/customer.interface';
 import { CustomerProfileDto } from '../common/dto/auth.dto';
 import { CustomLoggerService } from '../common/logger/logger.service';
+import { Customer, CustomerDocument } from '../common/schemas/customer.schema';
 
 @Injectable()
 export class CustomerService {
   constructor(
     @InjectModel(Customer.name) private customerModel: Model<CustomerDocument>,
-    @InjectModel(Address.name) private addressModel: Model<AddressDocument>,
     private readonly logger: CustomLoggerService,
   ) {}
 
@@ -35,7 +33,7 @@ export class CustomerService {
 
   async create(customerData: Partial<Customer>): Promise<CustomerDocument> {
     try {
-      const customer = new this.customerModel({
+      const customer = await this.customerModel.create({
         phone: customerData.phone,
         name: customerData.name,
         email: customerData.email,
@@ -46,18 +44,20 @@ export class CustomerService {
         monthlyPaymentMode: customerData.monthlyPaymentMode || false,
       });
 
-      const savedCustomer = await customer.save();
       this.logger.log(
-        `Created new customer: ${savedCustomer._id} with phone: ${savedCustomer.phone}`,
+        `Created new customer: ${customer._id} with phone: ${customer.phone}`,
       );
-      return savedCustomer;
+      return customer;
     } catch (error) {
       this.logger.error('Error creating customer:', error);
       throw error;
     }
   }
 
-  async update(id: string, updateData: Partial<Customer>): Promise<CustomerDocument> {
+  async update(
+    id: string,
+    updateData: Partial<Customer>,
+  ): Promise<CustomerDocument> {
     try {
       const updatedCustomer = await this.customerModel
         .findByIdAndUpdate(
@@ -82,7 +82,7 @@ export class CustomerService {
   async delete(id: string): Promise<void> {
     try {
       const result = await this.customerModel
-        .findByIdAndUpdate(id, { isDeleted: true, isActive: false })
+        .findByIdAndUpdate(id, { isActive: false, updatedAt: new Date() })
         .exec();
 
       if (!result) {
@@ -98,7 +98,10 @@ export class CustomerService {
 
   async getCustomerProfile(id: string): Promise<CustomerProfileDto> {
     try {
-      const customer = await this.findById(id);
+      const customer = await this.customerModel
+        .findById(id)
+        .populate('addresses')
+        .exec();
       if (!customer) {
         throw new NotFoundException('Customer not found');
       }
@@ -112,8 +115,8 @@ export class CustomerService {
         walletBalance: customer.walletBalance,
         isActive: customer.isActive,
         monthlyPaymentMode: customer.monthlyPaymentMode,
-        addresses: customer.addresses.map((addr) => ({
-          id: addr.id,
+        addresses: customer.addresses.map((addr: any) => ({
+          id: addr._id.toString(),
           type: addr.type,
           street: addr.street,
           city: addr.city,
@@ -168,7 +171,7 @@ export class CustomerService {
     operation: 'add' | 'subtract' | 'set' = 'set',
   ): Promise<CustomerDocument> {
     try {
-      let updateQuery: any = { updatedAt: new Date() };
+      const updateQuery: any = { updatedAt: new Date() };
 
       switch (operation) {
         case 'add':
@@ -196,7 +199,10 @@ export class CustomerService {
       );
       return updatedCustomer;
     } catch (error) {
-      this.logger.error(`Error updating wallet balance for customer ${id}:`, error);
+      this.logger.error(
+        `Error updating wallet balance for customer ${id}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -225,20 +231,22 @@ export class CustomerService {
     limit: number = 10,
   ): Promise<CustomerDocument[]> {
     try {
-      const searchRegex = new RegExp(query, 'i');
       return await this.customerModel
         .find({
           $or: [
-            { name: searchRegex },
-            { email: searchRegex },
-            { phone: searchRegex },
+            { name: { $regex: query, $options: 'i' } },
+            { email: { $regex: query, $options: 'i' } },
+            { phone: { $regex: query, $options: 'i' } },
           ],
           isActive: true,
         })
         .limit(limit)
         .exec();
     } catch (error) {
-      this.logger.error(`Error searching customers with query ${query}:`, error);
+      this.logger.error(
+        `Error searching customers with query ${query}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -282,28 +290,25 @@ export class CustomerService {
     recentSignups: number;
   }> {
     try {
-      const totalCustomers = await this.customerModel.countDocuments().exec();
-      const activeCustomers = await this.customerModel
-        .countDocuments({ isActive: true })
-        .exec();
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const roleStats = await this.customerModel
-        .aggregate([
-          { $group: { _id: '$role', count: { $sum: 1 } } },
-        ])
-        .exec();
+      // Run queries in parallel for better performance
+      const [totalCustomers, activeCustomers, roleStats, recentSignups] = await Promise.all([
+        this.customerModel.countDocuments().exec(),
+        this.customerModel.countDocuments({ isActive: true }).exec(),
+        this.customerModel
+          .aggregate([{ $group: { _id: '$role', count: { $sum: 1 } } }])
+          .exec(),
+        this.customerModel
+          .countDocuments({ createdAt: { $gte: thirtyDaysAgo } })
+          .exec(),
+      ]);
 
       const customersByRole = roleStats.reduce((acc, stat) => {
         acc[stat._id] = stat.count;
         return acc;
       }, {});
-
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      const recentSignups = await this.customerModel
-        .countDocuments({ createdAt: { $gte: thirtyDaysAgo } })
-        .exec();
 
       return {
         totalCustomers,
