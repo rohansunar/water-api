@@ -14,6 +14,7 @@
 
 import { connect, connection, Types } from 'mongoose';
 import * as dotenv from 'dotenv';
+import { CustomLoggerService } from '../src/common/logger/logger.service';
 
 // Load environment variables
 dotenv.config();
@@ -27,23 +28,24 @@ interface MigrationResult {
 
 class DatabaseMigration {
   private results: MigrationResult[] = [];
+  public logger = new CustomLoggerService();
 
   async connect(): Promise<void> {
     const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/water-jar-delivery';
     await connect(mongoUri);
-    console.log('Connected to MongoDB');
+    this.logger.log('Connected to MongoDB');
   }
 
   async disconnect(): Promise<void> {
     await connection.close();
-    console.log('Disconnected from MongoDB');
+    this.logger.log('Disconnected from MongoDB');
   }
 
   /**
    * Migrate user documents to new schema with role extensions
    */
   async migrateUsers(): Promise<MigrationResult> {
-    console.log('Migrating users collection...');
+    this.logger.log('Migrating users collection...');
     const collection = connection.collection('users');
     
     let migrated = 0;
@@ -192,18 +194,18 @@ class DatabaseMigration {
             skipped++;
           }
         } catch (error) {
-          console.error(`Error migrating user ${user._id}:`, error);
+          this.logger.error(`Error migrating user ${user._id}:`, error);
           errors++;
         }
       }
     } catch (error) {
-      console.error('Error in user migration:', error);
+      this.logger.error('Error in user migration:', error);
       errors++;
     }
 
     const result = { collection: 'users', migrated, errors, skipped };
     this.results.push(result);
-    console.log(`Users migration completed: ${migrated} migrated, ${errors} errors, ${skipped} skipped`);
+    this.logger.log(`Users migration completed: ${migrated} migrated, ${errors} errors, ${skipped} skipped`);
     return result;
   }
 
@@ -211,7 +213,7 @@ class DatabaseMigration {
    * Create separate address documents from embedded addresses
    */
   async migrateAddresses(): Promise<MigrationResult> {
-    console.log('Creating separate address documents...');
+    this.logger.log('Creating separate address documents...');
     const usersCollection = connection.collection('users');
     const addressesCollection = connection.collection('addresses');
     
@@ -263,18 +265,18 @@ class DatabaseMigration {
             }
           }
         } catch (error) {
-          console.error(`Error migrating addresses for user ${user._id}:`, error);
+          this.logger.error(`Error migrating addresses for user ${user._id}:`, error);
           errors++;
         }
       }
     } catch (error) {
-      console.error('Error in address migration:', error);
+      this.logger.error('Error in address migration:', error);
       errors++;
     }
 
     const result = { collection: 'addresses', migrated, errors, skipped };
     this.results.push(result);
-    console.log(`Address migration completed: ${migrated} migrated, ${errors} errors, ${skipped} skipped`);
+    this.logger.log(`Address migration completed: ${migrated} migrated, ${errors} errors, ${skipped} skipped`);
     return result;
   }
 
@@ -282,7 +284,7 @@ class DatabaseMigration {
    * Migrate product documents to enhanced schema
    */
   async migrateProducts(): Promise<MigrationResult> {
-    console.log('Migrating products collection...');
+    this.logger.log('Migrating products collection...');
     const collection = connection.collection('products');
     
     let migrated = 0;
@@ -382,18 +384,18 @@ class DatabaseMigration {
             skipped++;
           }
         } catch (error) {
-          console.error(`Error migrating product ${product._id}:`, error);
+          this.logger.error(`Error migrating product ${product._id}:`, error);
           errors++;
         }
       }
     } catch (error) {
-      console.error('Error in product migration:', error);
+      this.logger.error('Error in product migration:', error);
       errors++;
     }
 
     const result = { collection: 'products', migrated, errors, skipped };
     this.results.push(result);
-    console.log(`Products migration completed: ${migrated} migrated, ${errors} errors, ${skipped} skipped`);
+    this.logger.log(`Products migration completed: ${migrated} migrated, ${errors} errors, ${skipped} skipped`);
     return result;
   }
 
@@ -401,7 +403,7 @@ class DatabaseMigration {
    * Create wallet documents for existing users
    */
   async createWallets(): Promise<MigrationResult> {
-    console.log('Creating wallet documents for users...');
+    this.logger.log('Creating wallet documents for users...');
     const usersCollection = connection.collection('users');
     const walletsCollection = connection.collection('wallets');
     
@@ -447,18 +449,18 @@ class DatabaseMigration {
             skipped++;
           }
         } catch (error) {
-          console.error(`Error creating wallet for user ${user._id}:`, error);
+          this.logger.error(`Error creating wallet for user ${user._id}:`, error);
           errors++;
         }
       }
     } catch (error) {
-      console.error('Error in wallet creation:', error);
+      this.logger.error('Error in wallet creation:', error);
       errors++;
     }
 
     const result = { collection: 'wallets', migrated, errors, skipped };
     this.results.push(result);
-    console.log(`Wallet creation completed: ${migrated} migrated, ${errors} errors, ${skipped} skipped`);
+    this.logger.log(`Wallet creation completed: ${migrated} migrated, ${errors} errors, ${skipped} skipped`);
     return result;
   }
 
@@ -466,7 +468,7 @@ class DatabaseMigration {
    * Run all migrations
    */
   async runAllMigrations(): Promise<void> {
-    console.log('Starting database migration...\n');
+    this.logger.log('Starting database migration...\n');
     
     try {
       await this.connect();
@@ -478,29 +480,29 @@ class DatabaseMigration {
       await this.createWallets();
       
       // Print summary
-      console.log('\n=== Migration Summary ===');
+      this.logger.log('\n=== Migration Summary ===');
       let totalMigrated = 0;
       let totalErrors = 0;
       let totalSkipped = 0;
       
       for (const result of this.results) {
-        console.log(`${result.collection}: ${result.migrated} migrated, ${result.errors} errors, ${result.skipped} skipped`);
+        this.logger.log(`${result.collection}: ${result.migrated} migrated, ${result.errors} errors, ${result.skipped} skipped`);
         totalMigrated += result.migrated;
         totalErrors += result.errors;
         totalSkipped += result.skipped;
       }
       
-      console.log(`\nTotal: ${totalMigrated} migrated, ${totalErrors} errors, ${totalSkipped} skipped`);
+      this.logger.log(`\nTotal: ${totalMigrated} migrated, ${totalErrors} errors, ${totalSkipped} skipped`);
       
       if (totalErrors > 0) {
-        console.log('\n⚠️  Migration completed with errors. Please review the logs above.');
+        this.logger.log('\n⚠️  Migration completed with errors. Please review the logs above.');
         process.exit(1);
       } else {
-        console.log('\n✅ Migration completed successfully!');
+        this.logger.log('\n✅ Migration completed successfully!');
       }
       
     } catch (error) {
-      console.error('Migration failed:', error);
+      this.logger.error('Migration failed:', error);
       process.exit(1);
     } finally {
       await this.disconnect();
@@ -511,7 +513,7 @@ class DatabaseMigration {
 // Run migration if this script is executed directly
 if (require.main === module) {
   const migration = new DatabaseMigration();
-  migration.runAllMigrations().catch(console.error);
+  migration.runAllMigrations().catch((error) => migration.logger.error(error));
 }
 
 export { DatabaseMigration };

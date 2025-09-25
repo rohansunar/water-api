@@ -13,6 +13,7 @@
 import { connect, connection } from 'mongoose';
 import * as dotenv from 'dotenv';
 import * as readline from 'readline';
+import { CustomLoggerService } from '../src/common/logger/logger.service';
 
 // Load environment variables
 dotenv.config();
@@ -25,16 +26,17 @@ interface RollbackResult {
 
 class DatabaseRollback {
   private results: RollbackResult[] = [];
+  public logger = new CustomLoggerService();
 
   async connect(): Promise<void> {
     const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/water-jar-delivery';
     await connect(mongoUri);
-    console.log('Connected to MongoDB');
+    this.logger.log('Connected to MongoDB');
   }
 
   async disconnect(): Promise<void> {
     await connection.close();
-    console.log('Disconnected from MongoDB');
+    this.logger.log('Disconnected from MongoDB');
   }
 
   /**
@@ -62,7 +64,7 @@ class DatabaseRollback {
    * Rollback user schema changes
    */
   async rollbackUsers(): Promise<RollbackResult> {
-    console.log('Rolling back users collection...');
+    this.logger.log('Rolling back users collection...');
     const collection = connection.collection('users');
     
     let processed = 0;
@@ -119,18 +121,18 @@ class DatabaseRollback {
           }
           processed++;
         } catch (error) {
-          console.error(`Error rolling back user ${user._id}:`, error);
+          this.logger.error(`Error rolling back user ${user._id}:`, error);
           errors++;
         }
       }
     } catch (error) {
-      console.error('Error in user rollback:', error);
+      this.logger.error('Error in user rollback:', error);
       errors++;
     }
 
     const result = { collection: 'users', processed, errors };
     this.results.push(result);
-    console.log(`Users rollback completed: ${processed} processed, ${errors} errors`);
+    this.logger.log(`Users rollback completed: ${processed} processed, ${errors} errors`);
     return result;
   }
 
@@ -138,7 +140,7 @@ class DatabaseRollback {
    * Remove separate address documents
    */
   async rollbackAddresses(): Promise<RollbackResult> {
-    console.log('Removing separate address documents...');
+    this.logger.log('Removing separate address documents...');
     const collection = connection.collection('addresses');
     
     let processed = 0;
@@ -148,13 +150,13 @@ class DatabaseRollback {
       const result = await collection.deleteMany({});
       processed = result.deletedCount || 0;
     } catch (error) {
-      console.error('Error removing address documents:', error);
+      this.logger.error('Error removing address documents:', error);
       errors++;
     }
 
     const rollbackResult = { collection: 'addresses', processed, errors };
     this.results.push(rollbackResult);
-    console.log(`Address rollback completed: ${processed} processed, ${errors} errors`);
+    this.logger.log(`Address rollback completed: ${processed} processed, ${errors} errors`);
     return rollbackResult;
   }
 
@@ -162,7 +164,7 @@ class DatabaseRollback {
    * Rollback product schema enhancements
    */
   async rollbackProducts(): Promise<RollbackResult> {
-    console.log('Rolling back products collection...');
+    this.logger.log('Rolling back products collection...');
     const collection = connection.collection('products');
     
     let processed = 0;
@@ -211,18 +213,18 @@ class DatabaseRollback {
           }
           processed++;
         } catch (error) {
-          console.error(`Error rolling back product ${product._id}:`, error);
+          this.logger.error(`Error rolling back product ${product._id}:`, error);
           errors++;
         }
       }
     } catch (error) {
-      console.error('Error in product rollback:', error);
+      this.logger.error('Error in product rollback:', error);
       errors++;
     }
 
     const result = { collection: 'products', processed, errors };
     this.results.push(result);
-    console.log(`Products rollback completed: ${processed} processed, ${errors} errors`);
+    this.logger.log(`Products rollback completed: ${processed} processed, ${errors} errors`);
     return result;
   }
 
@@ -230,7 +232,7 @@ class DatabaseRollback {
    * Remove wallet documents
    */
   async rollbackWallets(): Promise<RollbackResult> {
-    console.log('Removing wallet documents...');
+    this.logger.log('Removing wallet documents...');
     const walletsCollection = connection.collection('wallets');
     const transactionsCollection = connection.collection('wallet_transactions');
     
@@ -240,19 +242,19 @@ class DatabaseRollback {
     try {
       // Remove wallet transactions first
       const transactionResult = await transactionsCollection.deleteMany({});
-      console.log(`Removed ${transactionResult.deletedCount || 0} wallet transactions`);
+      this.logger.log(`Removed ${transactionResult.deletedCount || 0} wallet transactions`);
 
       // Remove wallets
       const walletResult = await walletsCollection.deleteMany({});
       processed = walletResult.deletedCount || 0;
     } catch (error) {
-      console.error('Error removing wallet documents:', error);
+      this.logger.error('Error removing wallet documents:', error);
       errors++;
     }
 
     const result = { collection: 'wallets', processed, errors };
     this.results.push(result);
-    console.log(`Wallet rollback completed: ${processed} processed, ${errors} errors`);
+    this.logger.log(`Wallet rollback completed: ${processed} processed, ${errors} errors`);
     return result;
   }
 
@@ -260,7 +262,7 @@ class DatabaseRollback {
    * Remove other new collections
    */
   async rollbackNewCollections(): Promise<RollbackResult> {
-    console.log('Removing new collections...');
+    this.logger.log('Removing new collections...');
     
     let processed = 0;
     let errors = 0;
@@ -281,21 +283,21 @@ class DatabaseRollback {
         try {
           const collection = connection.collection(collectionName);
           const result = await collection.deleteMany({});
-          console.log(`Removed ${result.deletedCount || 0} documents from ${collectionName}`);
+          this.logger.log(`Removed ${result.deletedCount || 0} documents from ${collectionName}`);
           processed += result.deletedCount || 0;
         } catch (error) {
-          console.error(`Error removing collection ${collectionName}:`, error);
+          this.logger.error(`Error removing collection ${collectionName}:`, error);
           errors++;
         }
       }
     } catch (error) {
-      console.error('Error removing new collections:', error);
+      this.logger.error('Error removing new collections:', error);
       errors++;
     }
 
     const result = { collection: 'new_collections', processed, errors };
     this.results.push(result);
-    console.log(`New collections rollback completed: ${processed} processed, ${errors} errors`);
+    this.logger.log(`New collections rollback completed: ${processed} processed, ${errors} errors`);
     return result;
   }
 
@@ -303,7 +305,7 @@ class DatabaseRollback {
    * Create backup before rollback
    */
   async createBackup(): Promise<void> {
-    console.log('Creating backup before rollback...');
+    this.logger.log('Creating backup before rollback...');
     
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupCollections = ['users', 'products', 'orders', 'subscriptions'];
@@ -316,13 +318,13 @@ class DatabaseRollback {
         const documents = await sourceCollection.find({}).toArray();
         if (documents.length > 0) {
           await backupCollection.insertMany(documents);
-          console.log(`Backed up ${documents.length} documents from ${collectionName}`);
+          this.logger.log(`Backed up ${documents.length} documents from ${collectionName}`);
         }
       }
       
-      console.log(`Backup completed with timestamp: ${timestamp}`);
+      this.logger.log(`Backup completed with timestamp: ${timestamp}`);
     } catch (error) {
-      console.error('Error creating backup:', error);
+      this.logger.error('Error creating backup:', error);
       throw error;
     }
   }
@@ -331,7 +333,7 @@ class DatabaseRollback {
    * Run all rollback operations
    */
   async runAllRollbacks(): Promise<void> {
-    console.log('Starting database rollback...\n');
+    this.logger.log('Starting database rollback...\n');
     
     try {
       await this.connect();
@@ -339,7 +341,7 @@ class DatabaseRollback {
       // Confirm rollback
       const confirmed = await this.confirmRollback();
       if (!confirmed) {
-        console.log('Rollback cancelled by user.');
+        this.logger.log('Rollback cancelled by user.');
         return;
       }
       
@@ -354,28 +356,28 @@ class DatabaseRollback {
       await this.rollbackUsers();
       
       // Print summary
-      console.log('\n=== Rollback Summary ===');
+      this.logger.log('\n=== Rollback Summary ===');
       let totalProcessed = 0;
       let totalErrors = 0;
       
       for (const result of this.results) {
-        console.log(`${result.collection}: ${result.processed} processed, ${result.errors} errors`);
+        this.logger.log(`${result.collection}: ${result.processed} processed, ${result.errors} errors`);
         totalProcessed += result.processed;
         totalErrors += result.errors;
       }
       
-      console.log(`\nTotal: ${totalProcessed} processed, ${totalErrors} errors`);
+      this.logger.log(`\nTotal: ${totalProcessed} processed, ${totalErrors} errors`);
       
       if (totalErrors > 0) {
-        console.log('\n⚠️  Rollback completed with errors. Please review the logs above.');
+        this.logger.log('\n⚠️  Rollback completed with errors. Please review the logs above.');
         process.exit(1);
       } else {
-        console.log('\n✅ Rollback completed successfully!');
-        console.log('💡 Backup collections have been created with timestamp suffix for recovery if needed.');
+        this.logger.log('\n✅ Rollback completed successfully!');
+        this.logger.log('💡 Backup collections have been created with timestamp suffix for recovery if needed.');
       }
       
     } catch (error) {
-      console.error('Rollback failed:', error);
+      this.logger.error('Rollback failed:', error);
       process.exit(1);
     } finally {
       await this.disconnect();
@@ -386,7 +388,7 @@ class DatabaseRollback {
 // Run rollback if this script is executed directly
 if (require.main === module) {
   const rollback = new DatabaseRollback();
-  rollback.runAllRollbacks().catch(console.error);
+  rollback.runAllRollbacks().catch((error) => rollback.logger.error(error));
 }
 
 export { DatabaseRollback };

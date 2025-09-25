@@ -1,10 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { CustomLoggerService } from '../src/common/logger/logger.service';
 
 const prisma = new PrismaClient();
+const logger = new CustomLoggerService();
 
 async function main() {
-  console.log('Seeding admin users...');
+  logger.log('Seeding admin users...');
 
   // Hash password for admin users
   const hashedPassword = await bcrypt.hash('Admin123!', 12);
@@ -78,17 +80,17 @@ async function main() {
     },
   });
 
-  console.log('Admin users created:');
-  console.log('- Super Admin:', superAdmin.email);
-  console.log('- Finance Admin:', financeAdmin.email);
-  console.log('- Support Admin:', supportAdmin.email);
-  console.log('\nDefault password for all admins: Admin123!');
-  console.log('Please change passwords after first login.');
+  logger.log('Admin users created:');
+  logger.log(`- Super Admin: ${superAdmin.email}`);
+  logger.log(`- Finance Admin: ${financeAdmin.email}`);
+  logger.log(`- Support Admin: ${supportAdmin.email}`);
+  logger.log('\nDefault password for all admins: Admin123!');
+  logger.log('Please change passwords after first login.');
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    logger.error(e);
     process.exit(1);
   })
   .finally(async () => {

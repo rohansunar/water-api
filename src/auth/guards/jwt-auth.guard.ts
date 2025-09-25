@@ -13,6 +13,18 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   canActivate(context: ExecutionContext) {
+    const request = context.switchToHttp().getRequest();
+    const path = request.url;
+
+    // Skip authentication for admin routes - they use their own guards
+    if (path.startsWith('/admin')) {
+      return true;
+    }
+
+    if (path.startsWith('/')) {
+      return true;
+    }
+
     // Check if route is marked as public
     const isPublic = this.reflector.getAllAndOverride<boolean>('isPublic', [
       context.getHandler(),

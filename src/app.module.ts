@@ -1,5 +1,6 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ConfigModule as CustomConfigModule } from './config/config.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -40,6 +41,7 @@ import { StoreModule } from './store/store.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    CustomConfigModule,
     MongooseModule.forRoot(
       process.env.MONGODB_URI || 'mongodb://localhost:27017/water-jar-delivery',
     ),

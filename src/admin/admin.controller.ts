@@ -124,17 +124,24 @@ export class AdminController {
 
     const result = await this.adminService.updateUserStatus(userId, updateDto.isActive);
 
-    // Audit log the action
+    await this.auditUserStatusUpdate(user.id, userId, updateDto.isActive);
+
+    return result;
+  }
+
+  private async auditUserStatusUpdate(
+    adminId: string,
+    userId: string,
+    isActive: boolean,
+  ): Promise<void> {
     await this.auditService.logAction({
-      adminId: BigInt(user.id),
+      adminId: BigInt(adminId),
       action: 'user_status_updated',
       resourceType: 'user',
       resourceId: userId,
-      newValues: { isActive: updateDto.isActive },
+      newValues: { isActive },
       metadata: { reason: 'Admin action' },
     });
-
-    return result;
   }
 
   @Get('vendors/pending-approvals')
