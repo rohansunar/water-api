@@ -7,6 +7,7 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { OrderStatus } from '../interfaces/order.interface';
+import { PaginationQueryDto } from '../utils/pagination.util';
 
 export class AdminUpdateOrderStatusDto {
   @ApiProperty({
@@ -43,7 +44,7 @@ export class AdminUpdateOrderStatusDto {
   processRefund?: boolean;
 }
 
-export class AdminOrderQueryDto {
+export class AdminOrderQueryDto extends PaginationQueryDto {
   @ApiProperty({
     description: 'Filter by order status',
     enum: OrderStatus,
@@ -87,27 +88,6 @@ export class AdminOrderQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
-
-  @ApiProperty({
-    description: 'Page number',
-    example: 1,
-    minimum: 1,
-    default: 1,
-    required: false,
-  })
-  @IsOptional()
-  page?: number = 1;
-
-  @ApiProperty({
-    description: 'Items per page',
-    example: 10,
-    minimum: 1,
-    maximum: 100,
-    default: 10,
-    required: false,
-  })
-  @IsOptional()
-  limit?: number = 10;
 }
 
 export class AdminOrderResponseDto {

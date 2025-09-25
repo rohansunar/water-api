@@ -66,6 +66,8 @@ export class Product {
       brand: { type: String, maxlength: 100 },
       color: { type: String, maxlength: 50 },
       warranty: { type: String, maxlength: 100 },
+      sku: { type: String, maxlength: 100 },
+      areaPincodes: [{ type: String, maxlength: 16 }],
     },
     required: false,
   })
@@ -80,7 +82,26 @@ export class Product {
     brand?: string;
     color?: string;
     warranty?: string;
+    sku?: string;
+    areaPincodes?: string[];
   };
+
+  @Prop([{
+    storeId: { type: String, required: true },
+    price: { type: Number, min: 0 },
+    stockQuantity: { type: Number, min: 0, default: 0 },
+    reservedStock: { type: Number, min: 0, default: 0 },
+    isAvailable: { type: Boolean, default: true },
+    areaPincodes: [{ type: String, maxlength: 16 }],
+  }])
+  storeMappings?: {
+    storeId: string;
+    price?: number;
+    stockQuantity?: number;
+    reservedStock?: number;
+    isAvailable?: boolean;
+    areaPincodes?: string[];
+  }[];
 
   // Deposit system properties
   @Prop({ default: false })

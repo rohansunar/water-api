@@ -10,6 +10,35 @@ import {
   UpdateOrderStatusDto,
 } from '../common/dto/order.dto';
 import { OrderStatus } from '../common/interfaces/order.interface';
+import {
+  // Earnings Management DTOs
+  EarningsHistoryDto,
+  EarningsSummaryDto,
+  WithdrawalRequestDto,
+  WithdrawalHistoryDto,
+  // Delivery History DTOs
+  DeliveryHistoryDto,
+  DeliveryStatsDto,
+  RateDeliveryDto,
+  UpcomingDeliveryDto,
+  // Route Optimization DTOs
+  RouteOptimizationDto,
+  RoutePreferencesDto,
+  RouteHistoryDto,
+  // Performance Tracking DTOs
+  PerformanceMetricsDto,
+  RiderRatingDto,
+  LeaderboardPositionDto,
+  PerformanceGoalsDto,
+  // Availability & Scheduling DTOs
+  ScheduleSlotDto,
+  CreateScheduleDto,
+  UpdateScheduleDto,
+  AvailabilityStatusDto,
+  // Pagination DTOs
+  PaginationQueryDto,
+  PaginationResponseDto,
+} from '../common/dto/rider.dto';
 
 export interface DeliveryRider {
   id: string;
@@ -274,5 +303,696 @@ export class RiderService {
     }
 
     this.logger.log('Delivery rider test data seeded successfully');
+  }
+
+  // ===== EARNINGS MANAGEMENT SERVICE METHODS =====
+
+  async getEarningsHistory(
+    userId: string,
+    paginationDto: PaginationQueryDto,
+  ): Promise<PaginationResponseDto<EarningsHistoryDto>> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock earnings data - in real implementation, fetch from database
+    const mockEarnings: EarningsHistoryDto[] = [
+      {
+        id: 'earning-1',
+        orderId: 'order-1',
+        amount: 50.00,
+        type: 'delivery_fee',
+        status: 'completed',
+        earnedAt: new Date('2024-01-15T10:30:00Z'),
+        description: 'Delivery completed successfully',
+      },
+      {
+        id: 'earning-2',
+        orderId: 'order-2',
+        amount: 25.00,
+        type: 'tips',
+        status: 'completed',
+        earnedAt: new Date('2024-01-14T15:45:00Z'),
+        description: 'Customer tip for excellent service',
+      },
+    ];
+
+    const { page = 1, limit = 10, sortBy = 'earnedAt', sortOrder = 'desc' } = paginationDto;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+
+    const sortedEarnings = mockEarnings.sort((a, b) => {
+      const aValue = a[sortBy as keyof EarningsHistoryDto];
+      const bValue = b[sortBy as keyof EarningsHistoryDto];
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      }
+      return aValue < bValue ? 1 : -1;
+    });
+
+    const paginatedData = sortedEarnings.slice(startIndex, endIndex);
+
+    return {
+      data: paginatedData,
+      total: mockEarnings.length,
+      page,
+      limit,
+      totalPages: Math.ceil(mockEarnings.length / limit),
+      hasNext: endIndex < mockEarnings.length,
+      hasPrev: page > 1,
+    };
+  }
+
+  async getEarningsSummary(userId: string): Promise<EarningsSummaryDto> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock summary data - in real implementation, calculate from database
+    const currentMonth = new Date();
+    const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+
+    return {
+      totalEarnings: 1250.50,
+      totalDeliveries: 25,
+      averagePerDelivery: 50.00,
+      totalTips: 150.00,
+      totalBonuses: 100.00,
+      pendingWithdrawal: 800.00,
+      dateRange: {
+        startDate: startOfMonth,
+        endDate: endOfMonth,
+      },
+    };
+  }
+
+  async getEarningDetails(
+    userId: string,
+    earningId: string,
+  ): Promise<EarningsHistoryDto> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock earning details - in real implementation, fetch from database
+    const earning: EarningsHistoryDto = {
+      id: earningId,
+      orderId: 'order-123',
+      amount: 50.00,
+      type: 'delivery_fee',
+      status: 'completed',
+      earnedAt: new Date('2024-01-15T10:30:00Z'),
+      description: 'Delivery completed successfully',
+    };
+
+    return earning;
+  }
+
+  async requestWithdrawal(
+    userId: string,
+    withdrawalDto: WithdrawalRequestDto,
+  ): Promise<WithdrawalHistoryDto> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock withdrawal request processing
+    const withdrawal: WithdrawalHistoryDto = {
+      id: `withdrawal-${Date.now()}`,
+      amount: withdrawalDto.amount,
+      status: 'pending',
+      bankAccountNumber: `****${withdrawalDto.bankAccountNumber.slice(-4)}`,
+      ifscCode: withdrawalDto.ifscCode,
+      accountHolderName: withdrawalDto.accountHolderName,
+      requestedAt: new Date(),
+    };
+
+    this.logger.log(
+      `Withdrawal request created for rider ${rider.id}: ${withdrawalDto.amount}`,
+    );
+    return withdrawal;
+  }
+
+  async getWithdrawalHistory(
+    userId: string,
+    paginationDto: PaginationQueryDto,
+  ): Promise<PaginationResponseDto<WithdrawalHistoryDto>> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock withdrawal history - in real implementation, fetch from database
+    const mockWithdrawals: WithdrawalHistoryDto[] = [
+      {
+        id: 'withdrawal-1',
+        amount: 500.00,
+        status: 'completed',
+        bankAccountNumber: '****5678',
+        ifscCode: 'HDFC0001234',
+        accountHolderName: 'Rajesh Kumar',
+        transactionRef: 'TXN123456789',
+        requestedAt: new Date('2024-01-10T10:00:00Z'),
+        processedAt: new Date('2024-01-11T10:00:00Z'),
+      },
+    ];
+
+    const { page = 1, limit = 10 } = paginationDto;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+
+    const paginatedData = mockWithdrawals.slice(startIndex, endIndex);
+
+    return {
+      data: paginatedData,
+      total: mockWithdrawals.length,
+      page,
+      limit,
+      totalPages: Math.ceil(mockWithdrawals.length / limit),
+      hasNext: endIndex < mockWithdrawals.length,
+      hasPrev: page > 1,
+    };
+  }
+
+  // ===== DELIVERY HISTORY SERVICE METHODS =====
+
+  async getDeliveryHistory(
+    userId: string,
+    paginationDto: PaginationQueryDto,
+  ): Promise<PaginationResponseDto<DeliveryHistoryDto>> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock delivery history - in real implementation, fetch from database
+    const mockDeliveries: DeliveryHistoryDto[] = [
+      {
+        id: 'delivery-1',
+        orderId: 'order-1',
+        customerName: 'Amit Sharma',
+        customerPhone: '+919876543210',
+        deliveryAddress: {
+          street: '123 Main Street',
+          city: 'Mumbai',
+          state: 'Maharashtra',
+          pincode: '400001',
+        },
+        status: 'delivered',
+        scheduledTime: new Date('2024-01-15T14:00:00Z'),
+        completedAt: new Date('2024-01-15T13:45:00Z'),
+        customerRating: 5,
+        customerFeedback: 'Excellent service!',
+      },
+    ];
+
+    const { page = 1, limit = 10 } = paginationDto;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+
+    const paginatedData = mockDeliveries.slice(startIndex, endIndex);
+
+    return {
+      data: paginatedData,
+      total: mockDeliveries.length,
+      page,
+      limit,
+      totalPages: Math.ceil(mockDeliveries.length / limit),
+      hasNext: endIndex < mockDeliveries.length,
+      hasPrev: page > 1,
+    };
+  }
+
+  async getDeliveryDetails(
+    userId: string,
+    deliveryId: string,
+  ): Promise<DeliveryHistoryDto> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock delivery details - in real implementation, fetch from database
+    const delivery: DeliveryHistoryDto = {
+      id: deliveryId,
+      orderId: 'order-123',
+      customerName: 'Priya Singh',
+      customerPhone: '+919876543211',
+      deliveryAddress: {
+        street: '456 Customer Avenue',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400002',
+      },
+      status: 'delivered',
+      scheduledTime: new Date('2024-01-15T14:00:00Z'),
+      completedAt: new Date('2024-01-15T13:45:00Z'),
+      customerRating: 5,
+      customerFeedback: 'Great service, very professional!',
+    };
+
+    return delivery;
+  }
+
+  async getDeliveryStats(userId: string): Promise<DeliveryStatsDto> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock delivery statistics - in real implementation, calculate from database
+    return {
+      totalDeliveries: 150,
+      thisMonthDeliveries: 25,
+      averageDeliveryTime: 35,
+      onTimeDeliveryRate: 92.5,
+      averageRating: 4.7,
+      totalDistance: 450.5,
+    };
+  }
+
+  async rateDelivery(
+    userId: string,
+    deliveryId: string,
+    rateDto: RateDeliveryDto,
+  ): Promise<DeliveryHistoryDto> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock rating update - in real implementation, update database
+    const delivery: DeliveryHistoryDto = {
+      id: deliveryId,
+      orderId: 'order-123',
+      customerName: 'Customer Name',
+      customerPhone: '+919876543210',
+      deliveryAddress: {
+        street: '123 Delivery Street',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400001',
+      },
+      status: 'delivered',
+      scheduledTime: new Date('2024-01-15T14:00:00Z'),
+      completedAt: new Date('2024-01-15T13:45:00Z'),
+      customerRating: rateDto.rating,
+      customerFeedback: rateDto.feedback,
+    };
+
+    this.logger.log(
+      `Delivery ${deliveryId} rated ${rateDto.rating} by rider ${rider.id}`,
+    );
+    return delivery;
+  }
+
+  async getUpcomingDeliveries(userId: string): Promise<UpcomingDeliveryDto[]> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock upcoming deliveries - in real implementation, fetch from database
+    const upcomingDeliveries: UpcomingDeliveryDto[] = [
+      {
+        id: 'upcoming-delivery-1',
+        orderId: 'order-upcoming-1',
+        customerName: 'Rajesh Kumar',
+        customerPhone: '+919876543212',
+        pickupAddress: {
+          street: '789 Restaurant Street',
+          city: 'Mumbai',
+          state: 'Maharashtra',
+          pincode: '400003',
+        },
+        deliveryAddress: {
+          street: '321 Customer Road',
+          city: 'Mumbai',
+          state: 'Maharashtra',
+          pincode: '400004',
+        },
+        scheduledPickupTime: new Date('2024-01-16T13:00:00Z'),
+        scheduledDeliveryTime: new Date('2024-01-16T14:00:00Z'),
+        orderItems: ['2x Chicken Burger', '1x French Fries'],
+        specialInstructions: 'Call customer before delivery',
+      },
+    ];
+
+    return upcomingDeliveries;
+  }
+
+  // ===== ROUTE OPTIMIZATION SERVICE METHODS =====
+
+  async getOptimizedRoute(userId: string): Promise<RouteOptimizationDto> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock route optimization - in real implementation, use routing algorithms
+    const route: RouteOptimizationDto = {
+      id: `route-${Date.now()}`,
+      deliverySequence: [
+        {
+          orderId: 'order-1',
+          sequence: 1,
+          estimatedArrival: new Date('2024-01-16T13:30:00Z'),
+          address: {
+            street: '123 Main Street',
+            city: 'Mumbai',
+            state: 'Maharashtra',
+            pincode: '400001',
+          },
+        },
+        {
+          orderId: 'order-2',
+          sequence: 2,
+          estimatedArrival: new Date('2024-01-16T14:15:00Z'),
+          address: {
+            street: '456 Oak Avenue',
+            city: 'Mumbai',
+            state: 'Maharashtra',
+            pincode: '400002',
+          },
+        },
+      ],
+      totalDistance: 15.5,
+      totalTime: 45,
+      optimizedAt: new Date(),
+    };
+
+    return route;
+  }
+
+  async setRoutePreferences(
+    userId: string,
+    preferencesDto: RoutePreferencesDto,
+  ): Promise<RoutePreferencesDto> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock preference update - in real implementation, save to database
+    this.logger.log(
+      `Route preferences updated for rider ${rider.id}: ${JSON.stringify(preferencesDto)}`,
+    );
+    return preferencesDto;
+  }
+
+  async getRouteHistory(
+    userId: string,
+    paginationDto: PaginationQueryDto,
+  ): Promise<PaginationResponseDto<RouteHistoryDto>> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock route history - in real implementation, fetch from database
+    const mockRoutes: RouteHistoryDto[] = [
+      {
+        id: 'route-history-1',
+        routeDate: new Date('2024-01-15'),
+        totalDeliveries: 8,
+        totalDistance: 25.5,
+        totalTime: 180,
+        status: 'completed',
+        startedAt: new Date('2024-01-15T09:00:00Z'),
+        completedAt: new Date('2024-01-15T12:00:00Z'),
+      },
+    ];
+
+    const { page = 1, limit = 10 } = paginationDto;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+
+    const paginatedData = mockRoutes.slice(startIndex, endIndex);
+
+    return {
+      data: paginatedData,
+      total: mockRoutes.length,
+      page,
+      limit,
+      totalPages: Math.ceil(mockRoutes.length / limit),
+      hasNext: endIndex < mockRoutes.length,
+      hasPrev: page > 1,
+    };
+  }
+
+  async completeRoute(userId: string, routeId: string): Promise<RouteHistoryDto> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock route completion - in real implementation, update database
+    const route: RouteHistoryDto = {
+      id: routeId,
+      routeDate: new Date(),
+      totalDeliveries: 8,
+      totalDistance: 25.5,
+      totalTime: 180,
+      status: 'completed',
+      startedAt: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
+      completedAt: new Date(),
+    };
+
+    this.logger.log(`Route ${routeId} completed by rider ${rider.id}`);
+    return route;
+  }
+
+  // ===== PERFORMANCE TRACKING SERVICE METHODS =====
+
+  async getPerformanceMetrics(userId: string): Promise<PerformanceMetricsDto> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock performance metrics - in real implementation, calculate from database
+    const currentMonth = new Date();
+    const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+
+    return {
+      overallScore: 4.7,
+      completionRate: 98.5,
+      onTimeRate: 92.0,
+      averageRating: 4.6,
+      monthlyEarnings: 12500.00,
+      period: {
+        startDate: startOfMonth,
+        endDate: endOfMonth,
+      },
+    };
+  }
+
+  async getRiderRating(userId: string): Promise<RiderRatingDto> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock rating details - in real implementation, fetch from database
+    return {
+      averageRating: 4.6,
+      totalRatings: 150,
+      ratingDistribution: {
+        5: 120,
+        4: 25,
+        3: 4,
+        2: 1,
+        1: 0,
+      },
+      recentRatings: [
+        {
+          rating: 5,
+          comment: 'Excellent service!',
+          customerName: 'Amit S.',
+          date: new Date('2024-01-15T10:30:00Z'),
+        },
+      ],
+    };
+  }
+
+  async getLeaderboardPosition(userId: string): Promise<LeaderboardPositionDto> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock leaderboard data - in real implementation, calculate from database
+    return {
+      currentRank: 15,
+      totalRiders: 250,
+      score: 4.7,
+      topPerformers: [
+        {
+          rank: 1,
+          name: 'Rider A',
+          score: 4.9,
+          deliveries: 180,
+        },
+        {
+          rank: 2,
+          name: 'Rider B',
+          score: 4.8,
+          deliveries: 175,
+        },
+      ],
+      nearbyRiders: [
+        {
+          rank: 14,
+          name: 'Rider X',
+          score: 4.71,
+        },
+        {
+          rank: 16,
+          name: 'Rider Y',
+          score: 4.68,
+        },
+      ],
+    };
+  }
+
+  async getPerformanceGoals(userId: string): Promise<PerformanceGoalsDto> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock performance goals - in real implementation, fetch from database
+    const currentMonth = new Date();
+    const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
+    const daysRemaining = daysInMonth - currentMonth.getDate();
+
+    return {
+      monthlyDeliveries: 200,
+      currentDeliveries: 150,
+      monthlyEarnings: 15000.00,
+      currentEarnings: 11250.00,
+      targetRating: 4.5,
+      currentRating: 4.6,
+      daysRemaining,
+    };
+  }
+
+  // ===== AVAILABILITY & SCHEDULING SERVICE METHODS =====
+
+  async getSchedule(userId: string): Promise<ScheduleSlotDto[]> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock schedule slots - in real implementation, fetch from database
+    const scheduleSlots: ScheduleSlotDto[] = [
+      {
+        id: 'schedule-1',
+        startTime: new Date('2024-01-15T09:00:00Z'),
+        endTime: new Date('2024-01-15T18:00:00Z'),
+        dayOfWeek: 'monday',
+        isActive: true,
+        createdAt: new Date('2024-01-01T00:00:00Z'),
+      },
+    ];
+
+    return scheduleSlots;
+  }
+
+  async createScheduleSlot(
+    userId: string,
+    scheduleDto: CreateScheduleDto,
+  ): Promise<ScheduleSlotDto> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock schedule slot creation - in real implementation, save to database
+    const scheduleSlot: ScheduleSlotDto = {
+      id: `schedule-${Date.now()}`,
+      startTime: new Date(scheduleDto.startTime),
+      endTime: new Date(scheduleDto.endTime),
+      dayOfWeek: scheduleDto.dayOfWeek,
+      isActive: true,
+      createdAt: new Date(),
+    };
+
+    this.logger.log(
+      `Schedule slot created for rider ${rider.id}: ${scheduleDto.dayOfWeek}`,
+    );
+    return scheduleSlot;
+  }
+
+  async updateScheduleSlot(
+    userId: string,
+    slotId: string,
+    updateDto: UpdateScheduleDto,
+  ): Promise<ScheduleSlotDto> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock schedule slot update - in real implementation, update database
+    const updatedSlot: ScheduleSlotDto = {
+      id: slotId,
+      startTime: updateDto.startTime ? new Date(updateDto.startTime) : new Date('2024-01-15T09:00:00Z'),
+      endTime: updateDto.endTime ? new Date(updateDto.endTime) : new Date('2024-01-15T18:00:00Z'),
+      dayOfWeek: 'monday',
+      isActive: updateDto.isActive ?? true,
+      createdAt: new Date(),
+    };
+
+    this.logger.log(`Schedule slot ${slotId} updated for rider ${rider.id}`);
+    return updatedSlot;
+  }
+
+  async deleteScheduleSlot(
+    userId: string,
+    slotId: string,
+  ): Promise<{ message: string }> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock schedule slot deletion - in real implementation, delete from database
+    this.logger.log(`Schedule slot ${slotId} deleted for rider ${rider.id}`);
+    return { message: 'Schedule slot deleted successfully' };
+  }
+
+  async getAvailabilityStatus(userId: string): Promise<AvailabilityStatusDto> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock availability status - in real implementation, check current schedule
+    const currentTime = new Date();
+    const currentDay = currentTime.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+
+    return {
+      isAvailable: rider.isAvailable,
+      currentSlot: rider.isAvailable ? {
+        id: 'current-slot',
+        startTime: new Date(currentTime.getTime() - 60 * 60 * 1000), // 1 hour ago
+        endTime: new Date(currentTime.getTime() + 7 * 60 * 60 * 1000), // 7 hours from now
+        dayOfWeek: currentDay,
+      } : undefined,
+      nextSlot: rider.isAvailable ? undefined : {
+        id: 'next-slot',
+        startTime: new Date(currentTime.getTime() + 24 * 60 * 60 * 1000), // Tomorrow
+        endTime: new Date(currentTime.getTime() + 33 * 60 * 60 * 1000), // Tomorrow + 9 hours
+        dayOfWeek: new Date(currentTime.getTime() + 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase(),
+      },
+    };
   }
 }

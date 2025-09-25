@@ -1,15 +1,23 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CustomerRole } from '../common/interfaces/customer.interface';
 import { CustomerProfileDto } from '../common/dto/auth.dto';
+import {
+  CreateAddressDto,
+  UpdateAddressDto,
+  AddressResponseDto,
+  PaginationQueryDto,
+} from '../common/dto/customer.dto';
 import { CustomLoggerService } from '../common/logger/logger.service';
 import { Customer, CustomerDocument } from '../common/schemas/customer.schema';
+import { Address, AddressDocument } from '../common/schemas/address.schema';
 
 @Injectable()
 export class CustomerService {
   constructor(
     @InjectModel(Customer.name) private customerModel: Model<CustomerDocument>,
+    @InjectModel(Address.name) private addressModel: Model<AddressDocument>,
     private readonly logger: CustomLoggerService,
   ) {}
 
@@ -369,6 +377,328 @@ export class CustomerService {
       this.logger.log('Customer test data cleared successfully');
     } catch (error) {
       this.logger.error('Error clearing customer test data:', error);
+      throw error;
+    }
+  }
+
+  // Address Management Methods
+  async getCustomerAddresses(customerId: string): Promise<AddressResponseDto[]> {
+    try {
+      const customer = await this.customerModel.findById(customerId).exec();
+      if (!customer) {
+        throw new NotFoundException('Customer not found');
+      }
+
+      const addresses = await this.addressModel
+        .find({ customerId })
+        .sort({ isDefault: -1, createdAt: -1 })
+        .exec();
+
+      return addresses.map((address) => ({
+        id: address._id.toString(),
+        type: address.type,
+        street: address.street,
+        city: address.city,
+        state: address.state,
+        pincode: address.pincode,
+        landmark: address.landmark,
+        latitude: address.latitude,
+        longitude: address.longitude,
+        isDefault: address.isDefault,
+        createdAt: address.createdAt,
+        updatedAt: address.updatedAt,
+      }));
+    } catch (error) {
+      this.logger.error(`Error getting addresses for customer ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  async createAddress(
+    customerId: string,
+    createAddressDto: CreateAddressDto,
+  ): Promise<AddressResponseDto> {
+    try {
+      const customer = await this.customerModel.findById(customerId).exec();
+      if (!customer) {
+        throw new NotFoundException('Customer not found');
+      }
+
+      // If this is set as default, unset other default addresses
+      if (createAddressDto.isDefault) {
+        await this.addressModel.updateMany(
+          { customerId },
+          { isDefault: false },
+        );
+      }
+
+      const address = await this.addressModel.create({
+        customerId,
+        ...createAddressDto,
+      });
+
+      // Add address to customer's address list
+      await this.customerModel.findByIdAndUpdate(customerId, {
+        $push: { addresses: address._id },
+      });
+
+      this.logger.log(`Created address ${address._id} for customer ${customerId}`);
+      return this.getAddressResponse(address);
+    } catch (error) {
+      this.logger.error(`Error creating address for customer ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  async updateAddress(
+    customerId: string,
+    addressId: string,
+    updateAddressDto: UpdateAddressDto,
+  ): Promise<AddressResponseDto> {
+    try {
+      const address = await this.addressModel.findOne({
+        _id: addressId,
+        customerId,
+      });
+
+      if (!address) {
+        throw new NotFoundException('Address not found');
+      }
+
+      // If this is set as default, unset other default addresses
+      if (updateAddressDto.isDefault) {
+        await this.addressModel.updateMany(
+          { customerId, _id: { $ne: addressId } },
+          { isDefault: false },
+        );
+      }
+
+      const updatedAddress = await this.addressModel
+        .findByIdAndUpdate(addressId, updateAddressDto, { new: true })
+        .exec();
+
+      this.logger.log(`Updated address ${addressId} for customer ${customerId}`);
+      return this.getAddressResponse(updatedAddress);
+    } catch (error) {
+      this.logger.error(`Error updating address ${addressId} for customer ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteAddress(customerId: string, addressId: string): Promise<void> {
+    try {
+      const address = await this.addressModel.findOne({
+        _id: addressId,
+        customerId,
+      });
+
+      if (!address) {
+        throw new NotFoundException('Address not found');
+      }
+
+      await this.addressModel.findByIdAndDelete(addressId);
+
+      // Remove address from customer's address list
+      await this.customerModel.findByIdAndUpdate(customerId, {
+        $pull: { addresses: addressId },
+      });
+
+      this.logger.log(`Deleted address ${addressId} for customer ${customerId}`);
+    } catch (error) {
+      this.logger.error(`Error deleting address ${addressId} for customer ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  async setDefaultAddress(customerId: string, addressId: string): Promise<void> {
+    try {
+      const address = await this.addressModel.findOne({
+        _id: addressId,
+        customerId,
+      });
+
+      if (!address) {
+        throw new NotFoundException('Address not found');
+      }
+
+      // Unset all other default addresses
+      await this.addressModel.updateMany(
+        { customerId },
+        { isDefault: false },
+      );
+
+      // Set this address as default
+      await this.addressModel.findByIdAndUpdate(addressId, { isDefault: true });
+
+      this.logger.log(`Set address ${addressId} as default for customer ${customerId}`);
+    } catch (error) {
+      this.logger.error(`Error setting default address ${addressId} for customer ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  private getAddressResponse(address: AddressDocument): AddressResponseDto {
+    return {
+      id: address._id.toString(),
+      type: address.type,
+      street: address.street,
+      city: address.city,
+      state: address.state,
+      pincode: address.pincode,
+      landmark: address.landmark,
+      latitude: address.latitude,
+      longitude: address.longitude,
+      isDefault: address.isDefault,
+      createdAt: address.createdAt,
+      updatedAt: address.updatedAt,
+    };
+  }
+
+  // Order History Methods
+  async getOrderHistory(
+    customerId: string,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<any> {
+    try {
+      const skip = (page - 1) * limit;
+
+      // This would typically integrate with an Order service
+      // For now, returning a mock structure
+      const orders = [];
+      const total = 0;
+
+      return {
+        orders,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (error) {
+      this.logger.error(`Error getting order history for customer ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  async getOrderDetails(customerId: string, orderId: string): Promise<any> {
+    try {
+      // This would typically integrate with an Order service
+      // For now, returning a mock structure
+      return {};
+    } catch (error) {
+      this.logger.error(`Error getting order details ${orderId} for customer ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  async cancelOrder(customerId: string, orderId: string, reason: string): Promise<void> {
+    try {
+      // This would typically integrate with an Order service
+      this.logger.log(`Cancelled order ${orderId} for customer ${customerId} with reason: ${reason}`);
+    } catch (error) {
+      this.logger.error(`Error cancelling order ${orderId} for customer ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  async requestRefund(
+    customerId: string,
+    orderId: string,
+    reason: string,
+    description?: string,
+  ): Promise<void> {
+    try {
+      // This would typically integrate with a Refund service
+      this.logger.log(
+        `Requested refund for order ${orderId} for customer ${customerId} with reason: ${reason}`,
+      );
+    } catch (error) {
+      this.logger.error(`Error requesting refund for order ${orderId} for customer ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  // Subscription Management Methods
+  async getCustomerSubscriptions(customerId: string): Promise<any[]> {
+    try {
+      // This would typically integrate with a Subscription service
+      // For now, returning an empty array
+      return [];
+    } catch (error) {
+      this.logger.error(`Error getting subscriptions for customer ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  async createSubscription(customerId: string, subscriptionData: any): Promise<any> {
+    try {
+      // This would typically integrate with a Subscription service
+      this.logger.log(`Created subscription for customer ${customerId}`);
+      return {};
+    } catch (error) {
+      this.logger.error(`Error creating subscription for customer ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  async updateSubscription(
+    customerId: string,
+    subscriptionId: string,
+    updateData: any,
+  ): Promise<any> {
+    try {
+      // This would typically integrate with a Subscription service
+      this.logger.log(`Updated subscription ${subscriptionId} for customer ${customerId}`);
+      return {};
+    } catch (error) {
+      this.logger.error(`Error updating subscription ${subscriptionId} for customer ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  async cancelSubscription(
+    customerId: string,
+    subscriptionId: string,
+    reason: string,
+  ): Promise<void> {
+    try {
+      // This would typically integrate with a Subscription service
+      this.logger.log(
+        `Cancelled subscription ${subscriptionId} for customer ${customerId} with reason: ${reason}`,
+      );
+    } catch (error) {
+      this.logger.error(`Error cancelling subscription ${subscriptionId} for customer ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  // Profile Management Methods
+  async updateProfile(customerId: string, updateData: any): Promise<CustomerProfileDto> {
+    try {
+      const customer = await this.customerModel
+        .findByIdAndUpdate(customerId, updateData, { new: true })
+        .populate('addresses')
+        .exec();
+
+      if (!customer) {
+        throw new NotFoundException('Customer not found');
+      }
+
+      this.logger.log(`Updated profile for customer ${customerId}`);
+      return this.getCustomerProfile(customerId);
+    } catch (error) {
+      this.logger.error(`Error updating profile for customer ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  async updatePreferences(customerId: string, preferences: any): Promise<void> {
+    try {
+      // This would typically update customer preferences in the database
+      this.logger.log(`Updated preferences for customer ${customerId}`);
+    } catch (error) {
+      this.logger.error(`Error updating preferences for customer ${customerId}:`, error);
       throw error;
     }
   }

@@ -12,7 +12,7 @@ export class VendorStore {
   name: string;
 
   @Prop()
-  addressId?: string;
+  address?: string;
 
   @Prop()
   phone?: string;
@@ -28,6 +28,9 @@ export class VendorStore {
 
   @Prop({ default: Date.now })
   createdAt: Date;
+
+  @Prop({ default: Date.now })
+  updatedAt: Date;
 }
 
 export const VendorStoreSchema = SchemaFactory.createForClass(VendorStore);

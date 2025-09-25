@@ -1,5 +1,6 @@
 import { IsString, IsEnum, IsOptional, IsUUID, IsArray } from 'class-validator';
 import { ComplaintType } from '../interfaces/complaint.interface';
+import { PaginationQueryDto } from '../utils/pagination.util';
 
 export class CreateComplaintDto {
   @IsOptional()
@@ -40,4 +41,22 @@ export class ComplaintResponseDto {
   createdAt: Date;
   updatedAt: Date;
   resolvedAt?: Date;
+}
+
+export class ComplaintListQueryDto extends PaginationQueryDto {
+  @IsOptional()
+  @IsEnum(ComplaintType)
+  type?: ComplaintType;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  priority?: string;
+
+  @IsOptional()
+  @IsUUID()
+  userId?: string;
 }

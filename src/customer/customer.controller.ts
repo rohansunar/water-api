@@ -1,8 +1,12 @@
 import {
   Controller,
   Get,
+  Post,
   Put,
+  Delete,
   Body,
+  Param,
+  Query,
   UseGuards,
   HttpStatus,
   HttpCode,
@@ -18,6 +22,13 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Customer } from '../common/interfaces/customer.interface';
 import { CustomerProfileDto } from '../common/dto/auth.dto';
+import {
+  CreateAddressDto,
+  UpdateAddressDto,
+  AddressResponseDto,
+  SetDefaultAddressDto,
+  PaginationQueryDto,
+} from '../common/dto/customer.dto';
 import { CustomLoggerService } from '../common/logger/logger.service';
 
 @ApiTags('Customers')
@@ -175,6 +186,870 @@ export class CustomerController {
       const duration = Date.now() - startTime;
       this.logger.logApiError(
         '/customers/monthly-payment-mode',
+        'PUT',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  // Address Management Endpoints
+  @Get('addresses')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get all customer addresses',
+    description: 'Retrieve all addresses associated with the authenticated customer',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Customer addresses retrieved successfully',
+    type: [AddressResponseDto],
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async getCustomerAddresses(
+    @CurrentUser() customer: Customer,
+  ): Promise<AddressResponseDto[]> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log(`Getting addresses for customer: ${customer.id}`);
+      const addresses = await this.customerService.getCustomerAddresses(
+        customer.id,
+      );
+
+      const duration = Date.now() - startTime;
+      this.logger.logApiRequest(
+        'GET',
+        '/customers/addresses',
+        HttpStatus.OK,
+        duration,
+        { userId: customer.id },
+      );
+
+      return addresses;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.logApiError(
+        '/customers/addresses',
+        'GET',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  @Post('addresses')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Add new address',
+    description: 'Add a new address for the authenticated customer',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Address created successfully',
+    type: AddressResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid input data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async createAddress(
+    @CurrentUser() customer: Customer,
+    @Body() createAddressDto: CreateAddressDto,
+  ): Promise<AddressResponseDto> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log(`Creating address for customer: ${customer.id}`);
+      const address = await this.customerService.createAddress(
+        customer.id,
+        createAddressDto,
+      );
+
+      const duration = Date.now() - startTime;
+      this.logger.logApiRequest(
+        'POST',
+        '/customers/addresses',
+        HttpStatus.CREATED,
+        duration,
+        { userId: customer.id },
+      );
+
+      return address;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.logApiError(
+        '/customers/addresses',
+        'POST',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  @Put('addresses/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update address',
+    description: 'Update an existing address for the authenticated customer',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Address updated successfully',
+    type: AddressResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid input data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Address not found',
+  })
+  async updateAddress(
+    @CurrentUser() customer: Customer,
+    @Param('id') addressId: string,
+    @Body() updateAddressDto: UpdateAddressDto,
+  ): Promise<AddressResponseDto> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log(
+        `Updating address ${addressId} for customer: ${customer.id}`,
+      );
+      const address = await this.customerService.updateAddress(
+        customer.id,
+        addressId,
+        updateAddressDto,
+      );
+
+      const duration = Date.now() - startTime;
+      this.logger.logApiRequest(
+        'PUT',
+        `/customers/addresses/${addressId}`,
+        HttpStatus.OK,
+        duration,
+        { userId: customer.id },
+      );
+
+      return address;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.logApiError(
+        `/customers/addresses/${addressId}`,
+        'PUT',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  @Delete('addresses/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Delete address',
+    description: 'Delete an existing address for the authenticated customer',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Address deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Address deleted successfully',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Address not found',
+  })
+  async deleteAddress(
+    @CurrentUser() customer: Customer,
+    @Param('id') addressId: string,
+  ): Promise<{ message: string }> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log(
+        `Deleting address ${addressId} for customer: ${customer.id}`,
+      );
+      await this.customerService.deleteAddress(customer.id, addressId);
+
+      const duration = Date.now() - startTime;
+      this.logger.logApiRequest(
+        'DELETE',
+        `/customers/addresses/${addressId}`,
+        HttpStatus.OK,
+        duration,
+        { userId: customer.id },
+      );
+
+      return { message: 'Address deleted successfully' };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.logApiError(
+        `/customers/addresses/${addressId}`,
+        'DELETE',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  @Put('addresses/:id/default')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Set default address',
+    description: 'Set a specific address as the default for the authenticated customer',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Default address set successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Default address set successfully',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid input data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Address not found',
+  })
+  async setDefaultAddress(
+    @CurrentUser() customer: Customer,
+    @Param('id') addressId: string,
+  ): Promise<{ message: string }> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log(
+        `Setting address ${addressId} as default for customer: ${customer.id}`,
+      );
+      await this.customerService.setDefaultAddress(customer.id, addressId);
+
+      const duration = Date.now() - startTime;
+      this.logger.logApiRequest(
+        'PUT',
+        `/customers/addresses/${addressId}/default`,
+        HttpStatus.OK,
+        duration,
+        { userId: customer.id },
+      );
+
+      return { message: 'Default address set successfully' };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.logApiError(
+        `/customers/addresses/${addressId}/default`,
+        'PUT',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  // Order History Endpoints
+  @Get('orders')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get customer order history',
+    description: 'Retrieve paginated order history for the authenticated customer',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Order history retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async getOrderHistory(
+    @CurrentUser() customer: Customer,
+    @Query() paginationQuery: PaginationQueryDto,
+  ): Promise<any> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log(`Getting order history for customer: ${customer.id}`);
+      const result = await this.customerService.getOrderHistory(
+        customer.id,
+        paginationQuery.page || 1,
+        paginationQuery.limit || 10,
+      );
+
+      const duration = Date.now() - startTime;
+      this.logger.logApiRequest(
+        'GET',
+        '/customers/orders',
+        HttpStatus.OK,
+        duration,
+        { userId: customer.id },
+      );
+
+      return result;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.logApiError(
+        '/customers/orders',
+        'GET',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  @Get('orders/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get specific order details',
+    description: 'Retrieve detailed information for a specific order',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Order details retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found',
+  })
+  async getOrderDetails(
+    @CurrentUser() customer: Customer,
+    @Param('id') orderId: string,
+  ): Promise<any> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log(
+        `Getting order details ${orderId} for customer: ${customer.id}`,
+      );
+      const order = await this.customerService.getOrderDetails(
+        customer.id,
+        orderId,
+      );
+
+      const duration = Date.now() - startTime;
+      this.logger.logApiRequest(
+        'GET',
+        `/customers/orders/${orderId}`,
+        HttpStatus.OK,
+        duration,
+        { userId: customer.id },
+      );
+
+      return order;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.logApiError(
+        `/customers/orders/${orderId}`,
+        'GET',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  @Post('orders/:id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Cancel order',
+    description: 'Cancel a specific order for the authenticated customer',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Order cancelled successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Order cannot be cancelled',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found',
+  })
+  async cancelOrder(
+    @CurrentUser() customer: Customer,
+    @Param('id') orderId: string,
+    @Body() cancelOrderDto: any,
+  ): Promise<{ message: string }> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log(
+        `Cancelling order ${orderId} for customer: ${customer.id}`,
+      );
+      await this.customerService.cancelOrder(customer.id, orderId, cancelOrderDto.reason);
+
+      const duration = Date.now() - startTime;
+      this.logger.logApiRequest(
+        'POST',
+        `/customers/orders/${orderId}/cancel`,
+        HttpStatus.OK,
+        duration,
+        { userId: customer.id },
+      );
+
+      return { message: 'Order cancelled successfully' };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.logApiError(
+        `/customers/orders/${orderId}/cancel`,
+        'POST',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  @Post('orders/:id/refund')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Request refund',
+    description: 'Request a refund for a specific order',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Refund request submitted successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Refund request cannot be processed',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found',
+  })
+  async requestRefund(
+    @CurrentUser() customer: Customer,
+    @Param('id') orderId: string,
+    @Body() refundRequestDto: any,
+  ): Promise<{ message: string }> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log(
+        `Requesting refund for order ${orderId} for customer: ${customer.id}`,
+      );
+      await this.customerService.requestRefund(
+        customer.id,
+        orderId,
+        refundRequestDto.reason,
+        refundRequestDto.description,
+      );
+
+      const duration = Date.now() - startTime;
+      this.logger.logApiRequest(
+        'POST',
+        `/customers/orders/${orderId}/refund`,
+        HttpStatus.OK,
+        duration,
+        { userId: customer.id },
+      );
+
+      return { message: 'Refund request submitted successfully' };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.logApiError(
+        `/customers/orders/${orderId}/refund`,
+        'POST',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  // Subscription Management Endpoints
+  @Get('subscriptions')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get customer subscriptions',
+    description: 'Retrieve all subscriptions for the authenticated customer',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Customer subscriptions retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async getCustomerSubscriptions(
+    @CurrentUser() customer: Customer,
+  ): Promise<any[]> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log(`Getting subscriptions for customer: ${customer.id}`);
+      const subscriptions = await this.customerService.getCustomerSubscriptions(
+        customer.id,
+      );
+
+      const duration = Date.now() - startTime;
+      this.logger.logApiRequest(
+        'GET',
+        '/customers/subscriptions',
+        HttpStatus.OK,
+        duration,
+        { userId: customer.id },
+      );
+
+      return subscriptions;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.logApiError(
+        '/customers/subscriptions',
+        'GET',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  @Post('subscriptions')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Subscribe to product',
+    description: 'Create a new subscription for a product',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Subscription created successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid input data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async createSubscription(
+    @CurrentUser() customer: Customer,
+    @Body() createSubscriptionDto: any,
+  ): Promise<any> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log(`Creating subscription for customer: ${customer.id}`);
+      const subscription = await this.customerService.createSubscription(
+        customer.id,
+        createSubscriptionDto,
+      );
+
+      const duration = Date.now() - startTime;
+      this.logger.logApiRequest(
+        'POST',
+        '/customers/subscriptions',
+        HttpStatus.CREATED,
+        duration,
+        { userId: customer.id },
+      );
+
+      return subscription;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.logApiError(
+        '/customers/subscriptions',
+        'POST',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  @Put('subscriptions/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update subscription',
+    description: 'Update an existing subscription',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription updated successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid input data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Subscription not found',
+  })
+  async updateSubscription(
+    @CurrentUser() customer: Customer,
+    @Param('id') subscriptionId: string,
+    @Body() updateSubscriptionDto: any,
+  ): Promise<any> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log(
+        `Updating subscription ${subscriptionId} for customer: ${customer.id}`,
+      );
+      const subscription = await this.customerService.updateSubscription(
+        customer.id,
+        subscriptionId,
+        updateSubscriptionDto,
+      );
+
+      const duration = Date.now() - startTime;
+      this.logger.logApiRequest(
+        'PUT',
+        `/customers/subscriptions/${subscriptionId}`,
+        HttpStatus.OK,
+        duration,
+        { userId: customer.id },
+      );
+
+      return subscription;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.logApiError(
+        `/customers/subscriptions/${subscriptionId}`,
+        'PUT',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  @Delete('subscriptions/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Cancel subscription',
+    description: 'Cancel an existing subscription',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription cancelled successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Subscription cannot be cancelled',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Subscription not found',
+  })
+  async cancelSubscription(
+    @CurrentUser() customer: Customer,
+    @Param('id') subscriptionId: string,
+    @Body() cancelSubscriptionDto: any,
+  ): Promise<{ message: string }> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log(
+        `Cancelling subscription ${subscriptionId} for customer: ${customer.id}`,
+      );
+      await this.customerService.cancelSubscription(
+        customer.id,
+        subscriptionId,
+        cancelSubscriptionDto.reason,
+      );
+
+      const duration = Date.now() - startTime;
+      this.logger.logApiRequest(
+        'DELETE',
+        `/customers/subscriptions/${subscriptionId}`,
+        HttpStatus.OK,
+        duration,
+        { userId: customer.id },
+      );
+
+      return { message: 'Subscription cancelled successfully' };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.logApiError(
+        `/customers/subscriptions/${subscriptionId}`,
+        'DELETE',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  // Profile Management Endpoints
+  @Put('profile')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update customer profile',
+    description: 'Update the profile information of the authenticated customer',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Profile updated successfully',
+    type: CustomerProfileDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid input data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Customer not found',
+  })
+  async updateProfile(
+    @CurrentUser() customer: Customer,
+    @Body() updateProfileDto: any,
+  ): Promise<CustomerProfileDto> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log(`Updating profile for customer: ${customer.id}`);
+      const profile = await this.customerService.updateProfile(
+        customer.id,
+        updateProfileDto,
+      );
+
+      const duration = Date.now() - startTime;
+      this.logger.logApiRequest(
+        'PUT',
+        '/customers/profile',
+        HttpStatus.OK,
+        duration,
+        { userId: customer.id },
+      );
+
+      return profile;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.logApiError(
+        '/customers/profile',
+        'PUT',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  @Put('preferences')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update customer preferences',
+    description: 'Update the preferences of the authenticated customer',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Preferences updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Preferences updated successfully',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid input data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Customer not found',
+  })
+  async updatePreferences(
+    @CurrentUser() customer: Customer,
+    @Body() updatePreferencesDto: any,
+  ): Promise<{ message: string }> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log(`Updating preferences for customer: ${customer.id}`);
+      await this.customerService.updatePreferences(
+        customer.id,
+        updatePreferencesDto,
+      );
+
+      const duration = Date.now() - startTime;
+      this.logger.logApiRequest(
+        'PUT',
+        '/customers/preferences',
+        HttpStatus.OK,
+        duration,
+        { userId: customer.id },
+      );
+
+      return { message: 'Preferences updated successfully' };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.logApiError(
+        '/customers/preferences',
         'PUT',
         HttpStatus.INTERNAL_SERVER_ERROR,
         error,

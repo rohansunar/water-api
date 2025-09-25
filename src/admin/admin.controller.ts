@@ -21,7 +21,17 @@ import {
   UserManagementDto,
   VendorApprovalDto,
 } from './admin.service';
-import { LedgerSummaryResponseDto } from '../common/dto/ledger.dto';
+import {
+  AdminPaginationQueryDto,
+  AdminUserListResponseDto,
+  AdminPaginatedResponseDto,
+  AdminTransactionListQueryDto,
+} from '../common/dto/admin.dto';
+import {
+  LedgerSummaryResponseDto,
+  LedgerEntryResponseDto,
+  PayoutResponseDto,
+} from '../common/dto/ledger.dto';
 import { ProductModerationService } from '../product/product-moderation.service';
 import {
   ProductModerationDto,
@@ -57,6 +67,14 @@ import {
   EscalationResponseDto,
   EscalationListQueryDto,
 } from '../common/dto/escalation.dto';
+import {
+  ComplaintResponseDto,
+  ComplaintListQueryDto,
+} from '../common/dto/complaint.dto';
+import {
+  ProductResponseDto,
+  ProductSearchDto,
+} from '../common/dto/product.dto';
 import {
   AdminUpdateOrderStatusDto,
   AdminOrderQueryDto,
@@ -103,13 +121,45 @@ export class AdminController {
   @Get('users')
   async getAllUsers(
     @AdminCurrentUser() user: any,
-    @Query('role') role?: UserRole,
-    @Query('status') status?: 'active' | 'inactive',
-  ): Promise<UserManagementDto[]> {
+    @Query() query: AdminPaginationQueryDto,
+  ): Promise<AdminPaginatedResponseDto<AdminUserListResponseDto>> {
     this.logger.log(
-      `Admin ${user.id} retrieving users with filters: role=${role}, status=${status}`,
+      `Admin ${user.id} retrieving users with filters: ${JSON.stringify(query)}`,
     );
-    return this.adminService.getAllUsers(role, status);
+    return this.adminService.getAllUsers(query);
+  }
+
+  @Get('customers')
+  async getAllCustomers(
+    @AdminCurrentUser() user: any,
+    @Query() query: AdminPaginationQueryDto,
+  ): Promise<AdminPaginatedResponseDto<AdminUserListResponseDto>> {
+    this.logger.log(
+      `Admin ${user.id} retrieving customers with filters: ${JSON.stringify(query)}`,
+    );
+    return this.adminService.getAllCustomers(query);
+  }
+
+  @Get('vendors')
+  async getAllVendors(
+    @AdminCurrentUser() user: any,
+    @Query() query: AdminPaginationQueryDto,
+  ): Promise<AdminPaginatedResponseDto<AdminUserListResponseDto>> {
+    this.logger.log(
+      `Admin ${user.id} retrieving vendors with filters: ${JSON.stringify(query)}`,
+    );
+    return this.adminService.getAllVendors(query);
+  }
+
+  @Get('riders')
+  async getAllRiders(
+    @AdminCurrentUser() user: any,
+    @Query() query: AdminPaginationQueryDto,
+  ): Promise<AdminPaginatedResponseDto<AdminUserListResponseDto>> {
+    this.logger.log(
+      `Admin ${user.id} retrieving riders with filters: ${JSON.stringify(query)}`,
+    );
+    return this.adminService.getAllRiders(query);
   }
 
   @Put('users/:userId/status')
@@ -271,12 +321,44 @@ export class AdminController {
   async getOrders(
     @AdminCurrentUser() user: any,
     @Query() query: AdminOrderQueryDto,
-  ): Promise<{ orders: AdminOrderResponseDto[]; total: number }> {
+  ): Promise<AdminPaginatedResponseDto<AdminOrderResponseDto>> {
     this.logger.log(
       `Admin ${user.id} retrieving orders with filters: ${JSON.stringify(query)}`,
     );
-    // TODO: Implement order listing with admin filters
-    return { orders: [], total: 0 };
+    return this.adminService.getOrders(query);
+  }
+
+  @Get('orders/pending')
+  async getPendingOrders(
+    @AdminCurrentUser() user: any,
+    @Query() query: AdminOrderQueryDto,
+  ): Promise<AdminPaginatedResponseDto<AdminOrderResponseDto>> {
+    this.logger.log(
+      `Admin ${user.id} retrieving pending orders with filters: ${JSON.stringify(query)}`,
+    );
+    return this.adminService.getPendingOrders(query);
+  }
+
+  @Get('orders/completed')
+  async getCompletedOrders(
+    @AdminCurrentUser() user: any,
+    @Query() query: AdminOrderQueryDto,
+  ): Promise<AdminPaginatedResponseDto<AdminOrderResponseDto>> {
+    this.logger.log(
+      `Admin ${user.id} retrieving completed orders with filters: ${JSON.stringify(query)}`,
+    );
+    return this.adminService.getCompletedOrders(query);
+  }
+
+  @Get('orders/cancelled')
+  async getCancelledOrders(
+    @AdminCurrentUser() user: any,
+    @Query() query: AdminOrderQueryDto,
+  ): Promise<AdminPaginatedResponseDto<AdminOrderResponseDto>> {
+    this.logger.log(
+      `Admin ${user.id} retrieving cancelled orders with filters: ${JSON.stringify(query)}`,
+    );
+    return this.adminService.getCancelledOrders(query);
   }
 
   @Put('orders/:orderId/status')
@@ -290,6 +372,40 @@ export class AdminController {
     );
     // TODO: Implement admin order status update
     return { message: 'Order status updated successfully' };
+  }
+
+  // Financial Management Endpoints
+  @Get('transactions')
+  async getTransactions(
+    @AdminCurrentUser() user: any,
+    @Query() query: AdminTransactionListQueryDto,
+  ): Promise<AdminPaginatedResponseDto<LedgerEntryResponseDto>> {
+    this.logger.log(
+      `Admin ${user.id} retrieving transactions with filters: ${JSON.stringify(query)}`,
+    );
+    return this.adminService.getTransactions(query);
+  }
+
+  @Get('payouts')
+  async getPayouts(
+    @AdminCurrentUser() user: any,
+    @Query() query: AdminTransactionListQueryDto,
+  ): Promise<AdminPaginatedResponseDto<PayoutResponseDto>> {
+    this.logger.log(
+      `Admin ${user.id} retrieving payouts with filters: ${JSON.stringify(query)}`,
+    );
+    return this.adminService.getPayouts(query);
+  }
+
+  @Get('commissions')
+  async getCommissions(
+    @AdminCurrentUser() user: any,
+    @Query() query: AdminTransactionListQueryDto,
+  ): Promise<AdminPaginatedResponseDto<LedgerEntryResponseDto>> {
+    this.logger.log(
+      `Admin ${user.id} retrieving commissions with filters: ${JSON.stringify(query)}`,
+    );
+    return this.adminService.getCommissions(query);
   }
 
   // Refund Management Endpoints
@@ -398,6 +514,44 @@ export class AdminController {
       dto.escalatedTo,
       dto.reason,
     );
+  }
+
+  // Complaint Management Endpoints
+  @Get('complaints')
+  async getComplaints(
+    @AdminCurrentUser() user: any,
+    @Query() query: ComplaintListQueryDto,
+  ): Promise<AdminPaginatedResponseDto<ComplaintResponseDto>> {
+    this.logger.log(`Admin ${user.id} retrieving complaints with filters: ${JSON.stringify(query)}`);
+    return this.adminService.getComplaints(query);
+  }
+
+  // Content Management Endpoints
+  @Get('products')
+  async getProducts(
+    @AdminCurrentUser() user: any,
+    @Query() query: ProductSearchDto,
+  ): Promise<AdminPaginatedResponseDto<ProductResponseDto>> {
+    this.logger.log(`Admin ${user.id} retrieving products with filters: ${JSON.stringify(query)}`);
+    return this.adminService.getProducts(query);
+  }
+
+  @Get('reviews')
+  async getReviews(
+    @AdminCurrentUser() user: any,
+    @Query() query: AdminPaginationQueryDto,
+  ): Promise<AdminPaginatedResponseDto<any>> {
+    this.logger.log(`Admin ${user.id} retrieving reviews with filters: ${JSON.stringify(query)}`);
+    return this.adminService.getReviews(query);
+  }
+
+  @Get('reports')
+  async getReports(
+    @AdminCurrentUser() user: any,
+    @Query() query: AdminPaginationQueryDto,
+  ): Promise<AdminPaginatedResponseDto<any>> {
+    this.logger.log(`Admin ${user.id} retrieving reports with filters: ${JSON.stringify(query)}`);
+    return this.adminService.getReports(query);
   }
 
   // Escalation Management Endpoints

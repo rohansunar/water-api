@@ -18,6 +18,30 @@ import {
   OrderResponseDto,
   UpdateOrderStatusDto,
 } from '../common/dto/order.dto';
+import {
+  UpdateStoreDto,
+  StoreResponseDto,
+  CreateStoreHoursDto,
+  UpdateStoreHoursDto,
+  StoreHoursResponseDto,
+  UpdateStoreStatusDto,
+  SalesAnalyticsDto,
+  SalesAnalyticsResponseDto,
+  ProductPerformanceDto,
+  CustomerInsightsDto,
+  DailyReportDto,
+  MonthlyReportDto,
+  InventoryStatusDto,
+  UpdateInventoryDto,
+  InventoryAdjustmentDto,
+  LowStockAlertDto,
+  OrderSummaryDto,
+  AcceptOrderDto,
+  RejectOrderDto,
+  PaginationQueryDto,
+  PaginatedResponseDto,
+  VendorProductVariantResponseDto,
+} from '../common/dto/vendor.dto';
 
 @Injectable()
 export class VendorService {
@@ -469,5 +493,803 @@ export class VendorService {
       default:
         return 20;
     }
+  }
+
+  // Store Management Methods
+  async getStoreDetails(userId: string): Promise<StoreResponseDto> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, fetch from database
+    // For now, return mock store data
+    return {
+      id: 'store-1',
+      vendor_id: vendor.id,
+      name: `${vendor.businessName} Store`,
+      address: vendor.businessAddress || 'Default Address',
+      phone: '9876543210',
+      active_hours: {
+        monday: { open: '09:00', close: '21:00' },
+        tuesday: { open: '09:00', close: '21:00' },
+        wednesday: { open: '09:00', close: '21:00' },
+        thursday: { open: '09:00', close: '21:00' },
+        friday: { open: '09:00', close: '21:00' },
+        saturday: { open: '09:00', close: '22:00' },
+        sunday: { open: '10:00', close: '20:00' },
+      },
+      is_active: true,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+  }
+
+  async updateStore(
+    userId: string,
+    updateStoreDto: UpdateStoreDto,
+  ): Promise<StoreResponseDto> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, update store in database
+    // For now, return updated mock data
+    const updatedStore: StoreResponseDto = {
+      id: 'store-1',
+      vendor_id: vendor.id,
+      name: updateStoreDto.name || `${vendor.businessName} Store`,
+      address: updateStoreDto.address || vendor.businessAddress || 'Default Address',
+      phone: updateStoreDto.phone || '9876543210',
+      active_hours: updateStoreDto.active_hours || {
+        monday: { open: '09:00', close: '21:00' },
+        tuesday: { open: '09:00', close: '21:00' },
+        wednesday: { open: '09:00', close: '21:00' },
+        thursday: { open: '09:00', close: '21:00' },
+        friday: { open: '09:00', close: '21:00' },
+        saturday: { open: '09:00', close: '22:00' },
+        sunday: { open: '10:00', close: '20:00' },
+      },
+      is_active: updateStoreDto.is_active ?? true,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    this.logger.log(`Updated store for vendor ${vendor.id}`);
+    return updatedStore;
+  }
+
+  async createStoreHours(
+    userId: string,
+    createStoreHoursDto: CreateStoreHoursDto,
+  ): Promise<StoreHoursResponseDto> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, save to database
+    // For now, return mock created hours
+    const storeHours: StoreHoursResponseDto = {
+      id: uuidv4(),
+      storeId: 'store-1',
+      day: createStoreHoursDto.day,
+      openTime: createStoreHoursDto.openTime,
+      closeTime: createStoreHoursDto.closeTime,
+      isClosed: createStoreHoursDto.isClosed,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    this.logger.log(`Created store hours ${storeHours.id} for vendor ${vendor.id}`);
+    return storeHours;
+  }
+
+  async updateStoreHours(
+    hoursId: string,
+    userId: string,
+    updateStoreHoursDto: UpdateStoreHoursDto,
+  ): Promise<StoreHoursResponseDto> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, update in database
+    // For now, return mock updated hours
+    const updatedHours: StoreHoursResponseDto = {
+      id: hoursId,
+      storeId: 'store-1',
+      day: 'monday', // Would be fetched from database
+      openTime: updateStoreHoursDto.openTime || '09:00',
+      closeTime: updateStoreHoursDto.closeTime || '21:00',
+      isClosed: updateStoreHoursDto.isClosed ?? false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    this.logger.log(`Updated store hours ${hoursId} for vendor ${vendor.id}`);
+    return updatedHours;
+  }
+
+  async deleteStoreHours(
+    hoursId: string,
+    userId: string,
+  ): Promise<{ message: string }> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, delete from database
+    this.logger.log(`Deleted store hours ${hoursId} for vendor ${vendor.id}`);
+    return { message: 'Store hours deleted successfully' };
+  }
+
+  async updateStoreStatus(
+    userId: string,
+    updateStoreStatusDto: UpdateStoreStatusDto,
+  ): Promise<{ message: string }> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, update store status in database
+    this.logger.log(
+      `Updated store status to ${updateStoreStatusDto.status} for vendor ${vendor.id}`,
+    );
+
+    return {
+      message: `Store status updated to ${updateStoreStatusDto.status}`,
+    };
+  }
+
+  // Product Management Methods
+  async getProductVariants(
+    productId: string,
+    userId: string,
+    paginationQuery: PaginationQueryDto,
+  ): Promise<PaginatedResponseDto<VendorProductVariantResponseDto>> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, fetch from database with pagination
+    // For now, return mock data
+    const mockVariants: VendorProductVariantResponseDto[] = [
+      {
+        id: 'variant-1',
+        product_id: productId,
+        variant_sku: 'PW-20L-MINERAL-001',
+        attributes: { type: 'mineral', brand: 'AquaPure' },
+        price_override: 55.00,
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+    ];
+
+    const total = mockVariants.length;
+    const page = paginationQuery.page || 1;
+    const limit = paginationQuery.limit || 20;
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    return {
+      data: mockVariants,
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext,
+      hasPrev,
+    };
+  }
+
+  async createProductVariant(
+    productId: string,
+    userId: string,
+    createVariantDto: any,
+  ): Promise<VendorProductVariantResponseDto> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, save to database
+    const newVariant: VendorProductVariantResponseDto = {
+      id: uuidv4(),
+      product_id: productId,
+      variant_sku: createVariantDto.variantSku,
+      attributes: createVariantDto.attributes,
+      price_override: createVariantDto.priceOverride,
+      is_active: true,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    this.logger.log(`Created product variant ${newVariant.id} for vendor ${vendor.id}`);
+    return newVariant;
+  }
+
+  async updateProductVariant(
+    productId: string,
+    variantId: string,
+    userId: string,
+    updateVariantDto: any,
+  ): Promise<VendorProductVariantResponseDto> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, update in database
+    const updatedVariant: VendorProductVariantResponseDto = {
+      id: variantId,
+      product_id: productId,
+      variant_sku: 'PW-20L-MINERAL-001', // Would be fetched from database
+      attributes: updateVariantDto.attributes,
+      price_override: updateVariantDto.priceOverride,
+      is_active: updateVariantDto.isActive ?? true,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    this.logger.log(`Updated product variant ${variantId} for vendor ${vendor.id}`);
+    return updatedVariant;
+  }
+
+  async deleteProductVariant(
+    productId: string,
+    variantId: string,
+    userId: string,
+  ): Promise<{ message: string }> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, delete from database
+    this.logger.log(`Deleted product variant ${variantId} for vendor ${vendor.id}`);
+    return { message: 'Product variant deleted successfully' };
+  }
+
+  async getProductCategories(userId: string): Promise<string[]> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, fetch unique categories from products
+    // For now, return mock categories
+    return ['water_jar', 'water_bottle', 'accessories', 'services'];
+  }
+
+  async bulkProductOperations(
+    userId: string,
+    bulkOperationsDto: any,
+  ): Promise<{ message: string; processed: number }> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, perform bulk operations on products
+    // For now, return mock result
+    this.logger.log(`Performed bulk operations for vendor ${vendor.id}`);
+    return { message: 'Bulk operations completed successfully', processed: 10 };
+  }
+
+  // Analytics & Reports Methods
+  async getSalesAnalytics(
+    userId: string,
+    analyticsQuery: SalesAnalyticsDto,
+  ): Promise<SalesAnalyticsResponseDto> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, calculate analytics from orders and sales data
+    // For now, return mock analytics
+    const mockAnalytics: SalesAnalyticsResponseDto = {
+      vendorId: vendor.id,
+      period: analyticsQuery.period,
+      totalSales: 15000.00,
+      totalOrders: 150,
+      averageOrderValue: 100.00,
+      salesData: [
+        { date: '2024-01-01', sales: 500, orders: 5 },
+        { date: '2024-01-02', sales: 750, orders: 8 },
+        { date: '2024-01-03', sales: 600, orders: 6 },
+      ],
+      topProducts: [
+        {
+          productId: 'prod-1',
+          productName: '20L Water Jar',
+          sales: 5000,
+          orders: 50,
+        },
+        {
+          productId: 'prod-2',
+          productName: '10L Water Jar',
+          sales: 3000,
+          orders: 60,
+        },
+      ],
+    };
+
+    this.logger.log(`Generated sales analytics for vendor ${vendor.id}`);
+    return mockAnalytics;
+  }
+
+  async getProductPerformance(
+    userId: string,
+    paginationQuery: PaginationQueryDto,
+  ): Promise<PaginatedResponseDto<ProductPerformanceDto>> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, calculate performance metrics from sales data
+    // For now, return mock performance data
+    const mockPerformance: ProductPerformanceDto[] = [
+      {
+        productId: 'prod-1',
+        productName: '20L Water Jar',
+        totalSales: 5000.00,
+        totalOrders: 50,
+        averageRating: 4.5,
+        reviewCount: 25,
+        currentStock: 100,
+        stockTurnoverRate: 2.5,
+      },
+      {
+        productId: 'prod-2',
+        productName: '10L Water Jar',
+        totalSales: 3000.00,
+        totalOrders: 60,
+        averageRating: 4.2,
+        reviewCount: 18,
+        currentStock: 75,
+        stockTurnoverRate: 3.2,
+      },
+    ];
+
+    const total = mockPerformance.length;
+    const page = paginationQuery.page || 1;
+    const limit = paginationQuery.limit || 20;
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    return {
+      data: mockPerformance,
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext,
+      hasPrev,
+    };
+  }
+
+  async getCustomerInsights(
+    userId: string,
+    paginationQuery: PaginationQueryDto,
+  ): Promise<PaginatedResponseDto<CustomerInsightsDto>> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, analyze customer behavior from order history
+    // For now, return mock customer insights
+    const mockInsights: CustomerInsightsDto[] = [
+      {
+        customerId: 'cust-1',
+        customerName: 'John Doe',
+        totalOrders: 15,
+        totalSpent: 1500.00,
+        averageOrderValue: 100.00,
+        firstOrderDate: new Date('2024-01-01'),
+        lastOrderDate: new Date('2024-01-15'),
+        loyaltyScore: 85,
+      },
+      {
+        customerId: 'cust-2',
+        customerName: 'Jane Smith',
+        totalOrders: 8,
+        totalSpent: 800.00,
+        averageOrderValue: 100.00,
+        firstOrderDate: new Date('2024-01-05'),
+        lastOrderDate: new Date('2024-01-12'),
+        loyaltyScore: 72,
+      },
+    ];
+
+    const total = mockInsights.length;
+    const page = paginationQuery.page || 1;
+    const limit = paginationQuery.limit || 20;
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    return {
+      data: mockInsights,
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext,
+      hasPrev,
+    };
+  }
+
+  async getDailyReport(
+    userId: string,
+    date?: string,
+  ): Promise<DailyReportDto> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    const reportDate = date ? new Date(date) : new Date();
+
+    // In real implementation, generate report from daily sales data
+    // For now, return mock daily report
+    const mockReport: DailyReportDto = {
+      date: reportDate.toISOString().split('T')[0],
+      totalSales: 5000.00,
+      totalOrders: 50,
+      newCustomers: 5,
+      topProducts: [
+        {
+          productId: 'prod-1',
+          productName: '20L Water Jar',
+          quantity: 25,
+          revenue: 2500,
+        },
+        {
+          productId: 'prod-2',
+          productName: '10L Water Jar',
+          quantity: 15,
+          revenue: 1500,
+        },
+      ],
+      orderStatusBreakdown: {
+        pending: 5,
+        confirmed: 20,
+        in_transit: 15,
+        delivered: 10,
+        cancelled: 0,
+      },
+    };
+
+    this.logger.log(`Generated daily report for vendor ${vendor.id}`);
+    return mockReport;
+  }
+
+  async getMonthlyReport(
+    userId: string,
+    month?: string,
+  ): Promise<MonthlyReportDto> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    const reportMonth = month || new Date().toISOString().slice(0, 7);
+
+    // In real implementation, generate report from monthly sales data
+    // For now, return mock monthly report
+    const mockReport: MonthlyReportDto = {
+      month: reportMonth,
+      totalSales: 150000.00,
+      totalOrders: 1500,
+      averageDailySales: 5000.00,
+      growthPercentage: 15.5,
+      dailyBreakdown: [
+        { day: 1, sales: 4500, orders: 45 },
+        { day: 2, sales: 5200, orders: 52 },
+        { day: 3, sales: 4800, orders: 48 },
+      ],
+    };
+
+    this.logger.log(`Generated monthly report for vendor ${vendor.id}`);
+    return mockReport;
+  }
+
+  // Inventory Management Methods
+  async getInventoryStatus(
+    userId: string,
+    paginationQuery: PaginationQueryDto,
+  ): Promise<PaginatedResponseDto<InventoryStatusDto>> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, fetch inventory data from database
+    // For now, return mock inventory status
+    const mockInventory: InventoryStatusDto[] = [
+      {
+        productId: 'prod-1',
+        productName: '20L Water Jar',
+        currentStock: 100,
+        reservedStock: 10,
+        availableStock: 90,
+        lowStockThreshold: 20,
+        isLowStock: false,
+        lastUpdated: new Date(),
+      },
+      {
+        productId: 'prod-2',
+        productName: '10L Water Jar',
+        currentStock: 15,
+        reservedStock: 5,
+        availableStock: 10,
+        lowStockThreshold: 20,
+        isLowStock: true,
+        lastUpdated: new Date(),
+      },
+    ];
+
+    const total = mockInventory.length;
+    const page = paginationQuery.page || 1;
+    const limit = paginationQuery.limit || 20;
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    return {
+      data: mockInventory,
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext,
+      hasPrev,
+    };
+  }
+
+  async updateInventory(
+    productId: string,
+    userId: string,
+    updateInventoryDto: UpdateInventoryDto,
+  ): Promise<InventoryStatusDto> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, update inventory in database
+    // For now, return mock updated inventory
+    const updatedInventory: InventoryStatusDto = {
+      productId,
+      productName: '20L Water Jar', // Would be fetched from database
+      currentStock: updateInventoryDto.quantity,
+      reservedStock: 0, // Would be calculated
+      availableStock: updateInventoryDto.quantity,
+      lowStockThreshold: 20,
+      isLowStock: updateInventoryDto.quantity < 20,
+      lastUpdated: new Date(),
+    };
+
+    this.logger.log(`Updated inventory for product ${productId} to ${updateInventoryDto.quantity}`);
+    return updatedInventory;
+  }
+
+  async adjustInventory(
+    userId: string,
+    adjustmentDto: InventoryAdjustmentDto,
+  ): Promise<{ message: string; newStock: number }> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, adjust inventory in database
+    // For now, return mock adjustment result
+    const newStock = 100 + adjustmentDto.adjustmentQuantity; // Mock calculation
+
+    this.logger.log(
+      `Adjusted inventory for product ${adjustmentDto.productId} by ${adjustmentDto.adjustmentQuantity}`,
+    );
+
+    return {
+      message: `Inventory adjusted successfully`,
+      newStock: Math.max(0, newStock),
+    };
+  }
+
+  async getLowStockAlerts(userId: string): Promise<LowStockAlertDto[]> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, fetch products with low stock
+    // For now, return mock alerts
+    const mockAlerts: LowStockAlertDto[] = [
+      {
+        productId: 'prod-2',
+        productName: '10L Water Jar',
+        currentStock: 15,
+        lowStockThreshold: 20,
+        severity: 'medium',
+        alertDate: new Date(),
+      },
+    ];
+
+    this.logger.log(`Retrieved low stock alerts for vendor ${vendor.id}`);
+    return mockAlerts;
+  }
+
+  // Order Management Methods
+  async getPendingOrders(
+    userId: string,
+    paginationQuery: PaginationQueryDto,
+  ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, fetch pending orders from database
+    // For now, return mock pending orders
+    const mockOrders: OrderSummaryDto[] = [
+      {
+        id: 'order-1',
+        customerId: 'cust-1',
+        customerName: 'John Doe',
+        status: 'pending',
+        totalAmount: 150.00,
+        createdAt: new Date(),
+        deliveryAddress: '123 Customer Street, Delhi, 110001',
+        contactPhone: '+91-9876543210',
+      },
+    ];
+
+    const total = mockOrders.length;
+    const page = paginationQuery.page || 1;
+    const limit = paginationQuery.limit || 20;
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    return {
+      data: mockOrders,
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext,
+      hasPrev,
+    };
+  }
+
+  async getCompletedOrders(
+    userId: string,
+    paginationQuery: PaginationQueryDto,
+  ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, fetch completed orders from database
+    // For now, return mock completed orders
+    const mockOrders: OrderSummaryDto[] = [
+      {
+        id: 'order-2',
+        customerId: 'cust-2',
+        customerName: 'Jane Smith',
+        status: 'delivered',
+        totalAmount: 200.00,
+        createdAt: new Date(),
+        deliveryAddress: '456 Customer Avenue, Delhi, 110002',
+        contactPhone: '+91-9876543211',
+      },
+    ];
+
+    const total = mockOrders.length;
+    const page = paginationQuery.page || 1;
+    const limit = paginationQuery.limit || 20;
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    return {
+      data: mockOrders,
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext,
+      hasPrev,
+    };
+  }
+
+  async getCancelledOrders(
+    userId: string,
+    paginationQuery: PaginationQueryDto,
+  ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, fetch cancelled orders from database
+    // For now, return empty array (no cancelled orders)
+    const mockOrders: OrderSummaryDto[] = [];
+
+    const total = mockOrders.length;
+    const page = paginationQuery.page || 1;
+    const limit = paginationQuery.limit || 20;
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    return {
+      data: mockOrders,
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext,
+      hasPrev,
+    };
+  }
+
+  async acceptOrder(
+    orderId: string,
+    userId: string,
+    acceptOrderDto: AcceptOrderDto,
+  ): Promise<OrderSummaryDto> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, update order status in database
+    // For now, return mock accepted order
+    const acceptedOrder: OrderSummaryDto = {
+      id: orderId,
+      customerId: 'cust-1',
+      customerName: 'John Doe',
+      status: 'confirmed',
+      totalAmount: 150.00,
+      createdAt: new Date(),
+      deliveryAddress: '123 Customer Street, Delhi, 110001',
+      contactPhone: '+91-9876543210',
+    };
+
+    this.logger.log(`Accepted order ${orderId} for vendor ${vendor.id}`);
+    return acceptedOrder;
+  }
+
+  async rejectOrder(
+    orderId: string,
+    userId: string,
+    rejectOrderDto: RejectOrderDto,
+  ): Promise<{ message: string }> {
+    const vendor = await this.findByUserId(userId);
+    if (!vendor) {
+      throw new NotFoundException('Vendor profile not found');
+    }
+
+    // In real implementation, update order status in database
+    this.logger.log(`Rejected order ${orderId} for vendor ${vendor.id} with reason: ${rejectOrderDto.reason}`);
+
+    return {
+      message: `Order rejected: ${rejectOrderDto.reason}`,
+    };
   }
 }

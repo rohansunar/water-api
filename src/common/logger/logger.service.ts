@@ -330,4 +330,321 @@ export class CustomLoggerService implements LoggerService {
       timestamp: new Date().toISOString(),
     });
   }
+
+
+  logAuditEvent(
+    action: string,
+    resourceType: string,
+    resourceId: string,
+    userId: string,
+    oldValues?: any,
+    newValues?: any,
+    metadata?: any,
+    ip?: string,
+    userAgent?: string,
+    requestId?: string,
+  ): void {
+    this.logger.info('Audit Event', {
+      type: 'audit_event',
+      action,
+      resourceType,
+      resourceId,
+      userId,
+      oldValues: oldValues ? JSON.stringify(oldValues) : undefined,
+      newValues: newValues ? JSON.stringify(newValues) : undefined,
+      metadata,
+      ip,
+      userAgent,
+      requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  logAuthenticationEvent(
+    event: 'LOGIN_SUCCESS' | 'LOGIN_FAILED' | 'LOGOUT' | 'TOKEN_REFRESH' | 'PASSWORD_CHANGE',
+    userId: string,
+    details: any,
+    ip?: string,
+    userAgent?: string,
+    requestId?: string,
+  ): void {
+    const logLevel = event === 'LOGIN_FAILED' ? 'warn' : 'info';
+    this.logger.log(logLevel, 'Authentication Event', {
+      type: 'auth_event',
+      event,
+      userId,
+      details,
+      ip,
+      userAgent,
+      requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  logAuthorizationEvent(
+    event: 'ACCESS_GRANTED' | 'ACCESS_DENIED' | 'PERMISSION_CHANGED',
+    userId: string,
+    resource: string,
+    details: any,
+    ip?: string,
+    userAgent?: string,
+    requestId?: string,
+  ): void {
+    const logLevel = event === 'ACCESS_DENIED' ? 'warn' : 'info';
+    this.logger.log(logLevel, 'Authorization Event', {
+      type: 'authz_event',
+      event,
+      userId,
+      resource,
+      details,
+      ip,
+      userAgent,
+      requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  logBusinessTransaction(
+    transactionType: string,
+    transactionId: string,
+    userId: string,
+    amount?: number,
+    currency?: string,
+    status: 'SUCCESS' | 'FAILED' | 'PENDING' | 'CANCELLED' = 'SUCCESS',
+    metadata?: any,
+    requestId?: string,
+  ): void {
+    const logLevel = status === 'FAILED' ? 'error' : 'info';
+    this.logger.log(logLevel, 'Business Transaction', {
+      type: 'business_transaction',
+      transactionType,
+      transactionId,
+      userId,
+      amount,
+      currency,
+      status,
+      metadata,
+      requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  logPaymentEvent(
+    event: 'PAYMENT_INITIATED' | 'PAYMENT_SUCCESS' | 'PAYMENT_FAILED' | 'REFUND_INITIATED' | 'REFUND_SUCCESS' | 'REFUND_FAILED',
+    paymentId: string,
+    userId: string,
+    amount: number,
+    currency: string,
+    gateway?: string,
+    metadata?: any,
+    requestId?: string,
+  ): void {
+    const logLevel = event.includes('FAILED') ? 'error' : 'info';
+    this.logger.log(logLevel, 'Payment Event', {
+      type: 'payment_event',
+      event,
+      paymentId,
+      userId,
+      amount,
+      currency,
+      gateway,
+      metadata,
+      requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  logOrderEvent(
+    event: 'ORDER_CREATED' | 'ORDER_UPDATED' | 'ORDER_CANCELLED' | 'ORDER_DELIVERED' | 'ORDER_RETURNED',
+    orderId: string,
+    userId: string,
+    details: any,
+    metadata?: any,
+    requestId?: string,
+  ): void {
+    this.logger.info('Order Event', {
+      type: 'order_event',
+      event,
+      orderId,
+      userId,
+      details,
+      metadata,
+      requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  logDeliveryEvent(
+    event: 'DELIVERY_SCHEDULED' | 'DELIVERY_STARTED' | 'DELIVERY_COMPLETED' | 'DELIVERY_FAILED',
+    deliveryId: string,
+    riderId: string,
+    orderId: string,
+    details: any,
+    metadata?: any,
+    requestId?: string,
+  ): void {
+    this.logger.info('Delivery Event', {
+      type: 'delivery_event',
+      event,
+      deliveryId,
+      riderId,
+      orderId,
+      details,
+      metadata,
+      requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  logErrorAggregation(
+    errorType: string,
+    errorCount: number,
+    timeWindow: string,
+    details: any,
+    threshold?: number,
+  ): void {
+    const shouldAlert = threshold && errorCount >= threshold;
+
+    this.logger.warn('Error Aggregation', {
+      type: 'error_aggregation',
+      errorType,
+      errorCount,
+      timeWindow,
+      details,
+      threshold,
+      alert: shouldAlert,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Log as error if threshold exceeded
+    if (shouldAlert) {
+      this.logger.error('Error Threshold Exceeded', {
+        type: 'error_threshold_exceeded',
+        errorType,
+        errorCount,
+        threshold,
+        timeWindow,
+        details,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  logPerformanceMetric(
+    metricName: string,
+    value: number,
+    unit: string,
+    context?: string,
+    metadata?: any,
+    requestId?: string,
+  ): void {
+    this.logger.info('Performance Metric', {
+      type: 'performance_metric',
+      metricName,
+      value,
+      unit,
+      context,
+      metadata,
+      requestId,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Log slow operations as warnings
+    if (metricName.includes('duration') || metricName.includes('response_time')) {
+      if (value > 5000) { // 5 seconds
+        this.logger.warn('Slow Operation Detected', {
+          type: 'slow_operation',
+          metricName,
+          value,
+          unit,
+          context,
+          metadata,
+          requestId,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+  }
+
+  logSystemHealth(
+    component: string,
+    status: 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY',
+    metrics: any,
+    details?: string,
+    requestId?: string,
+  ): void {
+    const logLevel = status === 'HEALTHY' ? 'info' : status === 'DEGRADED' ? 'warn' : 'error';
+
+    this.logger.log(logLevel, 'System Health', {
+      type: 'system_health',
+      component,
+      status,
+      metrics,
+      details,
+      requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  logRateLimitEvent(
+    identifier: string,
+    limit: number,
+    current: number,
+    resetTime: Date,
+    details?: any,
+    requestId?: string,
+  ): void {
+    this.logger.warn('Rate Limit Event', {
+      type: 'rate_limit_event',
+      identifier,
+      limit,
+      current,
+      resetTime: resetTime.toISOString(),
+      details,
+      requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  logComplianceEvent(
+    event: string,
+    complianceType: string,
+    userId: string,
+    details: any,
+    severity: 'INFO' | 'WARNING' | 'VIOLATION' = 'INFO',
+    requestId?: string,
+  ): void {
+    const logLevel = severity === 'VIOLATION' ? 'error' : severity === 'WARNING' ? 'warn' : 'info';
+
+    this.logger.log(logLevel, 'Compliance Event', {
+      type: 'compliance_event',
+      event,
+      complianceType,
+      userId,
+      details,
+      severity,
+      requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  logIntegrationEvent(
+    integration: string,
+    event: 'REQUEST_SENT' | 'RESPONSE_RECEIVED' | 'ERROR' | 'TIMEOUT' | 'RATE_LIMITED',
+    details: any,
+    duration?: number,
+    requestId?: string,
+  ): void {
+    const logLevel = event === 'ERROR' || event === 'TIMEOUT' ? 'error' : 'info';
+
+    this.logger.log(logLevel, 'Integration Event', {
+      type: 'integration_event',
+      integration,
+      event,
+      details,
+      duration,
+      requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
 }

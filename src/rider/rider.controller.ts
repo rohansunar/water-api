@@ -3,8 +3,10 @@ import {
   Get,
   Put,
   Post,
+  Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   Logger,
 } from '@nestjs/common';
@@ -31,6 +33,33 @@ import {
   UpdateAvailabilityDto,
   DeliveryRiderResponseDto,
   LocationUpdateResponseDto,
+  // Earnings Management DTOs
+  EarningsHistoryDto,
+  EarningsSummaryDto,
+  WithdrawalRequestDto,
+  WithdrawalHistoryDto,
+  // Delivery History DTOs
+  DeliveryHistoryDto,
+  DeliveryStatsDto,
+  RateDeliveryDto,
+  UpcomingDeliveryDto,
+  // Route Optimization DTOs
+  RouteOptimizationDto,
+  RoutePreferencesDto,
+  RouteHistoryDto,
+  // Performance Tracking DTOs
+  PerformanceMetricsDto,
+  RiderRatingDto,
+  LeaderboardPositionDto,
+  PerformanceGoalsDto,
+  // Availability & Scheduling DTOs
+  ScheduleSlotDto,
+  CreateScheduleDto,
+  UpdateScheduleDto,
+  AvailabilityStatusDto,
+  // Pagination DTOs
+  PaginationQueryDto,
+  PaginationResponseDto,
 } from '../common/dto/rider.dto';
 
 @ApiTags('Riders')
@@ -178,5 +207,513 @@ export class RiderController {
       user.id,
       availabilityDto.isAvailable,
     );
+  }
+
+  // ===== EARNINGS MANAGEMENT ENDPOINTS =====
+
+  @Get('earnings')
+  @ApiOperation({
+    summary: 'Get earnings history with pagination',
+    description: 'Retrieve paginated earnings history for the authenticated rider',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Earnings history retrieved successfully',
+    type: PaginationResponseDto<EarningsHistoryDto>,
+  })
+  async getEarningsHistory(
+    @CurrentUser() user: User,
+    @Query() paginationDto: PaginationQueryDto,
+  ): Promise<PaginationResponseDto<EarningsHistoryDto>> {
+    this.logger.log(`Getting earnings history for rider user: ${user.id}`);
+    return this.riderService.getEarningsHistory(user.id, paginationDto);
+  }
+
+  @Get('earnings/summary')
+  @ApiOperation({
+    summary: 'Get earnings summary',
+    description: 'Retrieve earnings summary for the current month',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Earnings summary retrieved successfully',
+    type: EarningsSummaryDto,
+  })
+  async getEarningsSummary(
+    @CurrentUser() user: User,
+  ): Promise<EarningsSummaryDto> {
+    this.logger.log(`Getting earnings summary for rider user: ${user.id}`);
+    return this.riderService.getEarningsSummary(user.id);
+  }
+
+  @Get('earnings/:id')
+  @ApiOperation({
+    summary: 'Get specific earning details',
+    description: 'Retrieve detailed information about a specific earning record',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique earning record identifier',
+    example: 'earning-123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Earning details retrieved successfully',
+    type: EarningsHistoryDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Earning record not found',
+  })
+  async getEarningDetails(
+    @Param('id') earningId: string,
+    @CurrentUser() user: User,
+  ): Promise<EarningsHistoryDto> {
+    this.logger.log(
+      `Getting earning details ${earningId} for rider user: ${user.id}`,
+    );
+    return this.riderService.getEarningDetails(user.id, earningId);
+  }
+
+  @Post('earnings/withdraw')
+  @ApiOperation({
+    summary: 'Request earnings withdrawal',
+    description: 'Submit a request to withdraw earnings to bank account',
+  })
+  @ApiBody({ type: WithdrawalRequestDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Withdrawal request submitted successfully',
+    type: WithdrawalHistoryDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid withdrawal request or insufficient balance',
+  })
+  async requestWithdrawal(
+    @CurrentUser() user: User,
+    @Body() withdrawalDto: WithdrawalRequestDto,
+  ): Promise<WithdrawalHistoryDto> {
+    this.logger.log(
+      `Processing withdrawal request for rider user: ${user.id}`,
+    );
+    return this.riderService.requestWithdrawal(user.id, withdrawalDto);
+  }
+
+  @Get('earnings/withdrawals')
+  @ApiOperation({
+    summary: 'Get withdrawal history',
+    description: 'Retrieve withdrawal history with pagination',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Withdrawal history retrieved successfully',
+    type: PaginationResponseDto<WithdrawalHistoryDto>,
+  })
+  async getWithdrawalHistory(
+    @CurrentUser() user: User,
+    @Query() paginationDto: PaginationQueryDto,
+  ): Promise<PaginationResponseDto<WithdrawalHistoryDto>> {
+    this.logger.log(
+      `Getting withdrawal history for rider user: ${user.id}`,
+    );
+    return this.riderService.getWithdrawalHistory(user.id, paginationDto);
+  }
+
+  // ===== DELIVERY HISTORY ENDPOINTS =====
+
+  @Get('deliveries')
+  @ApiOperation({
+    summary: 'Get delivery history with pagination',
+    description: 'Retrieve paginated delivery history for the authenticated rider',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Delivery history retrieved successfully',
+    type: PaginationResponseDto<DeliveryHistoryDto>,
+  })
+  async getDeliveryHistory(
+    @CurrentUser() user: User,
+    @Query() paginationDto: PaginationQueryDto,
+  ): Promise<PaginationResponseDto<DeliveryHistoryDto>> {
+    this.logger.log(`Getting delivery history for rider user: ${user.id}`);
+    return this.riderService.getDeliveryHistory(user.id, paginationDto);
+  }
+
+  @Get('deliveries/:id')
+  @ApiOperation({
+    summary: 'Get specific delivery details',
+    description: 'Retrieve detailed information about a specific delivery',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique delivery identifier',
+    example: 'delivery-123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Delivery details retrieved successfully',
+    type: DeliveryHistoryDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Delivery not found',
+  })
+  async getDeliveryDetails(
+    @Param('id') deliveryId: string,
+    @CurrentUser() user: User,
+  ): Promise<DeliveryHistoryDto> {
+    this.logger.log(
+      `Getting delivery details ${deliveryId} for rider user: ${user.id}`,
+    );
+    return this.riderService.getDeliveryDetails(user.id, deliveryId);
+  }
+
+  @Get('deliveries/stats')
+  @ApiOperation({
+    summary: 'Get delivery statistics',
+    description: 'Retrieve delivery performance statistics',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Delivery statistics retrieved successfully',
+    type: DeliveryStatsDto,
+  })
+  async getDeliveryStats(
+    @CurrentUser() user: User,
+  ): Promise<DeliveryStatsDto> {
+    this.logger.log(`Getting delivery stats for rider user: ${user.id}`);
+    return this.riderService.getDeliveryStats(user.id);
+  }
+
+  @Post('deliveries/:id/rate')
+  @ApiOperation({
+    summary: 'Rate delivery experience',
+    description: 'Submit rating and feedback for a completed delivery',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique delivery identifier',
+    example: 'delivery-123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiBody({ type: RateDeliveryDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Delivery rated successfully',
+    type: DeliveryHistoryDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid rating or delivery not eligible for rating',
+  })
+  async rateDelivery(
+    @Param('id') deliveryId: string,
+    @CurrentUser() user: User,
+    @Body() rateDto: RateDeliveryDto,
+  ): Promise<DeliveryHistoryDto> {
+    this.logger.log(
+      `Rating delivery ${deliveryId} for rider user: ${user.id}`,
+    );
+    return this.riderService.rateDelivery(user.id, deliveryId, rateDto);
+  }
+
+  @Get('deliveries/upcoming')
+  @ApiOperation({
+    summary: 'Get upcoming scheduled deliveries',
+    description: 'Retrieve upcoming deliveries scheduled for the rider',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Upcoming deliveries retrieved successfully',
+    type: [UpcomingDeliveryDto],
+  })
+  async getUpcomingDeliveries(
+    @CurrentUser() user: User,
+  ): Promise<UpcomingDeliveryDto[]> {
+    this.logger.log(
+      `Getting upcoming deliveries for rider user: ${user.id}`,
+    );
+    return this.riderService.getUpcomingDeliveries(user.id);
+  }
+
+  // ===== ROUTE OPTIMIZATION ENDPOINTS =====
+
+  @Get('routes/optimize')
+  @ApiOperation({
+    summary: 'Get optimized delivery route',
+    description: 'Retrieve optimized route for assigned deliveries',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Route optimized successfully',
+    type: RouteOptimizationDto,
+  })
+  async getOptimizedRoute(
+    @CurrentUser() user: User,
+  ): Promise<RouteOptimizationDto> {
+    this.logger.log(`Getting optimized route for rider user: ${user.id}`);
+    return this.riderService.getOptimizedRoute(user.id);
+  }
+
+  @Post('routes/preferences')
+  @ApiOperation({
+    summary: 'Set route preferences',
+    description: 'Update rider preferences for route optimization',
+  })
+  @ApiBody({ type: RoutePreferencesDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Route preferences updated successfully',
+    type: RoutePreferencesDto,
+  })
+  async setRoutePreferences(
+    @CurrentUser() user: User,
+    @Body() preferencesDto: RoutePreferencesDto,
+  ): Promise<RoutePreferencesDto> {
+    this.logger.log(
+      `Setting route preferences for rider user: ${user.id}`,
+    );
+    return this.riderService.setRoutePreferences(user.id, preferencesDto);
+  }
+
+  @Get('routes/history')
+  @ApiOperation({
+    summary: 'Get route history',
+    description: 'Retrieve route history with pagination',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Route history retrieved successfully',
+    type: PaginationResponseDto<RouteHistoryDto>,
+  })
+  async getRouteHistory(
+    @CurrentUser() user: User,
+    @Query() paginationDto: PaginationQueryDto,
+  ): Promise<PaginationResponseDto<RouteHistoryDto>> {
+    this.logger.log(`Getting route history for rider user: ${user.id}`);
+    return this.riderService.getRouteHistory(user.id, paginationDto);
+  }
+
+  @Post('routes/:id/complete')
+  @ApiOperation({
+    summary: 'Mark route as completed',
+    description: 'Mark a delivery route as completed',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique route identifier',
+    example: 'route-123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Route marked as completed successfully',
+    type: RouteHistoryDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid route or route not assigned to rider',
+  })
+  async completeRoute(
+    @Param('id') routeId: string,
+    @CurrentUser() user: User,
+  ): Promise<RouteHistoryDto> {
+    this.logger.log(
+      `Completing route ${routeId} for rider user: ${user.id}`,
+    );
+    return this.riderService.completeRoute(user.id, routeId);
+  }
+
+  // ===== PERFORMANCE TRACKING ENDPOINTS =====
+
+  @Get('performance')
+  @ApiOperation({
+    summary: 'Get performance metrics',
+    description: 'Retrieve comprehensive performance metrics for the rider',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Performance metrics retrieved successfully',
+    type: PerformanceMetricsDto,
+  })
+  async getPerformanceMetrics(
+    @CurrentUser() user: User,
+  ): Promise<PerformanceMetricsDto> {
+    this.logger.log(`Getting performance metrics for rider user: ${user.id}`);
+    return this.riderService.getPerformanceMetrics(user.id);
+  }
+
+  @Get('performance/rating')
+  @ApiOperation({
+    summary: 'Get rider rating details',
+    description: 'Retrieve detailed rating information and history',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Rating details retrieved successfully',
+    type: RiderRatingDto,
+  })
+  async getRiderRating(
+    @CurrentUser() user: User,
+  ): Promise<RiderRatingDto> {
+    this.logger.log(`Getting rating details for rider user: ${user.id}`);
+    return this.riderService.getRiderRating(user.id);
+  }
+
+  @Get('performance/leaderboard')
+  @ApiOperation({
+    summary: 'Get leaderboard position',
+    description: 'Retrieve rider position in the performance leaderboard',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Leaderboard position retrieved successfully',
+    type: LeaderboardPositionDto,
+  })
+  async getLeaderboardPosition(
+    @CurrentUser() user: User,
+  ): Promise<LeaderboardPositionDto> {
+    this.logger.log(
+      `Getting leaderboard position for rider user: ${user.id}`,
+    );
+    return this.riderService.getLeaderboardPosition(user.id);
+  }
+
+  @Get('performance/goals')
+  @ApiOperation({
+    summary: 'Get performance goals',
+    description: 'Retrieve current performance goals and progress',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Performance goals retrieved successfully',
+    type: PerformanceGoalsDto,
+  })
+  async getPerformanceGoals(
+    @CurrentUser() user: User,
+  ): Promise<PerformanceGoalsDto> {
+    this.logger.log(`Getting performance goals for rider user: ${user.id}`);
+    return this.riderService.getPerformanceGoals(user.id);
+  }
+
+  // ===== AVAILABILITY & SCHEDULING ENDPOINTS =====
+
+  @Get('schedule')
+  @ApiOperation({
+    summary: 'Get rider schedule',
+    description: 'Retrieve all schedule slots for the rider',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Schedule retrieved successfully',
+    type: [ScheduleSlotDto],
+  })
+  async getSchedule(
+    @CurrentUser() user: User,
+  ): Promise<ScheduleSlotDto[]> {
+    this.logger.log(`Getting schedule for rider user: ${user.id}`);
+    return this.riderService.getSchedule(user.id);
+  }
+
+  @Post('schedule')
+  @ApiOperation({
+    summary: 'Set availability schedule',
+    description: 'Create a new schedule slot for rider availability',
+  })
+  @ApiBody({ type: CreateScheduleDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Schedule slot created successfully',
+    type: ScheduleSlotDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid schedule slot or conflict with existing slot',
+  })
+  async createScheduleSlot(
+    @CurrentUser() user: User,
+    @Body() scheduleDto: CreateScheduleDto,
+  ): Promise<ScheduleSlotDto> {
+    this.logger.log(
+      `Creating schedule slot for rider user: ${user.id}`,
+    );
+    return this.riderService.createScheduleSlot(user.id, scheduleDto);
+  }
+
+  @Put('schedule/:id')
+  @ApiOperation({
+    summary: 'Update schedule slot',
+    description: 'Update an existing schedule slot',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique schedule slot identifier',
+    example: 'schedule-123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiBody({ type: UpdateScheduleDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Schedule slot updated successfully',
+    type: ScheduleSlotDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Schedule slot not found',
+  })
+  async updateScheduleSlot(
+    @Param('id') slotId: string,
+    @CurrentUser() user: User,
+    @Body() updateDto: UpdateScheduleDto,
+  ): Promise<ScheduleSlotDto> {
+    this.logger.log(
+      `Updating schedule slot ${slotId} for rider user: ${user.id}`,
+    );
+    return this.riderService.updateScheduleSlot(user.id, slotId, updateDto);
+  }
+
+  @Delete('schedule/:id')
+  @ApiOperation({
+    summary: 'Remove schedule slot',
+    description: 'Delete a schedule slot',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique schedule slot identifier',
+    example: 'schedule-123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Schedule slot deleted successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Schedule slot not found',
+  })
+  async deleteScheduleSlot(
+    @Param('id') slotId: string,
+    @CurrentUser() user: User,
+  ): Promise<{ message: string }> {
+    this.logger.log(
+      `Deleting schedule slot ${slotId} for rider user: ${user.id}`,
+    );
+    return this.riderService.deleteScheduleSlot(user.id, slotId);
+  }
+
+  @Get('schedule/availability')
+  @ApiOperation({
+    summary: 'Check availability status',
+    description: 'Check current availability status and schedule information',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Availability status retrieved successfully',
+    type: AvailabilityStatusDto,
+  })
+  async getAvailabilityStatus(
+    @CurrentUser() user: User,
+  ): Promise<AvailabilityStatusDto> {
+    this.logger.log(
+      `Getting availability status for rider user: ${user.id}`,
+    );
+    return this.riderService.getAvailabilityStatus(user.id);
   }
 }
