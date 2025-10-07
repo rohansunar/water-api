@@ -52,15 +52,18 @@ export class AdminExceptionFilter implements ExceptionFilter {
 
       // Add admin-specific context for certain errors
       if (status === HttpStatus.FORBIDDEN) {
-        adminSpecificMessage = 'Admin access denied. Check your role permissions.';
+        adminSpecificMessage =
+          'Admin access denied. Check your role permissions.';
       } else if (status === HttpStatus.UNAUTHORIZED) {
-        adminSpecificMessage = 'Admin authentication required. Please log in again.';
+        adminSpecificMessage =
+          'Admin authentication required. Please log in again.';
       }
     } else if (exception instanceof Error) {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message = 'Admin operation failed';
       error = 'Admin Error';
-      adminSpecificMessage = 'An error occurred during admin operation. Please try again.';
+      adminSpecificMessage =
+        'An error occurred during admin operation. Please try again.';
 
       // Log admin errors with higher priority
       this.logger.error(
@@ -72,7 +75,8 @@ export class AdminExceptionFilter implements ExceptionFilter {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message = 'Admin operation failed';
       error = 'Admin Error';
-      adminSpecificMessage = 'An unexpected error occurred in admin operations.';
+      adminSpecificMessage =
+        'An unexpected error occurred in admin operations.';
     }
 
     // Enhanced logging for admin actions
@@ -101,7 +105,8 @@ export class AdminExceptionFilter implements ExceptionFilter {
       path: request.url,
       method: request.method,
       error,
-      message: adminSpecificMessage || this.formatAdminErrorMessage(message, status),
+      message:
+        adminSpecificMessage || this.formatAdminErrorMessage(message, status),
     };
 
     // Add request ID for tracing
@@ -126,13 +131,18 @@ export class AdminExceptionFilter implements ExceptionFilter {
     // Admin-specific user-friendly messages
     if (status >= 400 && status < 500) {
       const adminMessages = {
-        [HttpStatus.BAD_REQUEST]: 'Invalid admin request. Please check your input parameters.',
-        [HttpStatus.UNAUTHORIZED]: 'Admin authentication failed. Please log in.',
-        [HttpStatus.FORBIDDEN]: 'Insufficient admin permissions for this operation.',
+        [HttpStatus.BAD_REQUEST]:
+          'Invalid admin request. Please check your input parameters.',
+        [HttpStatus.UNAUTHORIZED]:
+          'Admin authentication failed. Please log in.',
+        [HttpStatus.FORBIDDEN]:
+          'Insufficient admin permissions for this operation.',
         [HttpStatus.NOT_FOUND]: 'Admin resource not found.',
-        [HttpStatus.CONFLICT]: 'Admin operation conflicts with current system state.',
+        [HttpStatus.CONFLICT]:
+          'Admin operation conflicts with current system state.',
         [HttpStatus.UNPROCESSABLE_ENTITY]: 'Admin request data is invalid.',
-        [HttpStatus.TOO_MANY_REQUESTS]: 'Too many admin requests. Please slow down.',
+        [HttpStatus.TOO_MANY_REQUESTS]:
+          'Too many admin requests. Please slow down.',
       };
 
       return adminMessages[status] || message;

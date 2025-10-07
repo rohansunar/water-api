@@ -4,7 +4,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaService } from '../common/database/prisma.service';
 import { RefundStatus } from '../common/interfaces/refund.interface';
 import {
   CreateRefundDto,
@@ -21,11 +21,11 @@ import { LedgerEntryType } from '../common/interfaces/ledger.interface';
 @Injectable()
 export class RefundService {
   private readonly logger = new Logger(RefundService.name);
-  private prisma = new PrismaClient();
 
   constructor(
     private readonly ledgerService: LedgerService,
     private readonly userService: UserService,
+    private readonly prismaService: PrismaService,
   ) {}
 
   async createRefund(
@@ -35,7 +35,7 @@ export class RefundService {
   ): Promise<RefundResponseDto> {
     try {
       // Find the order
-      const order = await this.prisma.order.findUnique({
+      const order = await this.prismaService.order.findUnique({
         where: { orderUuid: orderId },
       });
 
@@ -44,7 +44,7 @@ export class RefundService {
       }
 
       // Check if refund already exists for this order
-      const existingRefund = await this.prisma.refund.findFirst({
+      const existingRefund = await this.prismaService.refund.findFirst({
         where: {
           orderId: order.id,
           orderCreatedAt: order.createdAt,
@@ -59,12 +59,14 @@ export class RefundService {
       }
 
       // Validate refund amount
-      if (createRefundDto.amount > order.totalAmount.toNumber()) {
-        throw new BadRequestException('Refund amount cannot exceed order total');
+      if (createRefundDto.amount > Number(order.totalAmount)) {
+        throw new BadRequestException(
+          'Refund amount cannot exceed order total',
+        );
       }
 
       // Create refund
-      const refund = await this.prisma.refund.create({
+      const refund = await this.prismaService.refund.create({
         data: {
           orderId: order.id,
           orderCreatedAt: order.createdAt,
@@ -90,7 +92,7 @@ export class RefundService {
     approvedBy: bigint,
   ): Promise<RefundResponseDto> {
     try {
-      const refund = await this.prisma.refund.findUnique({
+      const refund = await this.prismaService.refund.findUnique({
         where: { id: refundId },
         include: { order: true },
       });
@@ -104,7 +106,7 @@ export class RefundService {
       }
 
       // Update refund status
-      const updatedRefund = await this.prisma.refund.update({
+      const updatedRefund = await this.prismaService.refund.update({
         where: { id: refundId },
         data: {
           status: RefundStatus.APPROVED,
@@ -129,7 +131,7 @@ export class RefundService {
     rejectedBy: bigint,
   ): Promise<RefundResponseDto> {
     try {
-      const refund = await this.prisma.refund.findUnique({
+      const refund = await this.prismaService.refund.findUnique({
         where: { id: refundId },
       });
 
@@ -142,7 +144,7 @@ export class RefundService {
       }
 
       // Update refund status
-      const updatedRefund = await this.prisma.refund.update({
+      const updatedRefund = await this.prismaService.refund.update({
         where: { id: refundId },
         data: {
           status: RefundStatus.REJECTED,
@@ -150,7 +152,9 @@ export class RefundService {
         },
       });
 
-      this.logger.log(`Rejected refund ${refundId} by admin ${rejectedBy}: ${rejectDto.reason}`);
+      this.logger.log(
+        `Rejected refund ${refundId} by admin ${rejectedBy}: ${rejectDto.reason}`,
+      );
 
       return this.mapToResponseDto(updatedRefund);
     } catch (error) {
@@ -165,7 +169,7 @@ export class RefundService {
     processedBy: bigint,
   ): Promise<RefundResponseDto> {
     try {
-      const refund = await this.prisma.refund.findUnique({
+      const refund = await this.prismaService.refund.findUnique({
         where: { id: refundId },
         include: { order: true },
       });
@@ -175,14 +179,16 @@ export class RefundService {
       }
 
       if (refund.status !== RefundStatus.APPROVED) {
-        throw new BadRequestException('Refund must be approved before processing');
+        throw new BadRequestException(
+          'Refund must be approved before processing',
+        );
       }
 
       // Process the refund based on payment method
       await this.executeRefund(refund, processDto);
 
       // Update refund status
-      const updatedRefund = await this.prisma.refund.update({
+      const updatedRefund = await this.prismaService.refund.update({
         where: { id: refundId },
         data: {
           status: RefundStatus.PROCESSING,
@@ -199,7 +205,7 @@ export class RefundService {
         vendorId: refund.order.vendorId!.toString(),
         orderId: refund.order.id.toString(),
         userId: refund.order.customerId.toString(),
-        amount: Number(refund.amount.neg()),
+        amount: -Number(refund.amount),
         type: LedgerEntryType.REFUND,
         description: `Refund processed: ${refund.reason}`,
         metadata: {
@@ -208,7 +214,9 @@ export class RefundService {
         },
       });
 
-      this.logger.log(`Processing refund ${refundId} via ${processDto.refundMethod}`);
+      this.logger.log(
+        `Processing refund ${refundId} via ${processDto.refundMethod}`,
+      );
 
       return this.mapToResponseDto(updatedRefund);
     } catch (error) {
@@ -222,7 +230,7 @@ export class RefundService {
     transactionId?: string,
   ): Promise<RefundResponseDto> {
     try {
-      const refund = await this.prisma.refund.findUnique({
+      const refund = await this.prismaService.refund.findUnique({
         where: { id: refundId },
         include: { order: true },
       });
@@ -236,7 +244,7 @@ export class RefundService {
       }
 
       // Update refund status to completed
-      const updatedRefund = await this.prisma.refund.update({
+      const updatedRefund = await this.prismaService.refund.update({
         where: { id: refundId },
         data: {
           status: RefundStatus.COMPLETED,
@@ -245,7 +253,7 @@ export class RefundService {
       });
 
       // Update order payment status if this was the final refund
-      await this.prisma.order.update({
+      await this.prismaService.order.update({
         where: {
           id_createdAt: {
             id: refund.order.id,
@@ -261,7 +269,7 @@ export class RefundService {
       if (refund.order.paymentMethod === 'wallet') {
         await this.userService.updateWalletBalance(
           refund.order.customerId.toString(),
-          refund.amount.toNumber(),
+          Number(refund.amount),
         );
       }
 
@@ -286,7 +294,7 @@ export class RefundService {
       }
 
       if (query.orderId) {
-        const order = await this.prisma.order.findUnique({
+        const order = await this.prismaService.order.findUnique({
           where: { orderUuid: query.orderId },
         });
         if (order) {
@@ -296,7 +304,7 @@ export class RefundService {
       }
 
       const [refunds, total] = await Promise.all([
-        this.prisma.refund.findMany({
+        this.prismaService.refund.findMany({
           where,
           include: {
             order: {
@@ -310,11 +318,11 @@ export class RefundService {
           skip: ((query.page || 1) - 1) * (query.limit || 10),
           take: query.limit || 10,
         }),
-        this.prisma.refund.count({ where }),
+        this.prismaService.refund.count({ where }),
       ]);
 
       return {
-        refunds: refunds.map(refund => this.mapToResponseDto(refund)),
+        refunds: refunds.map((refund) => this.mapToResponseDto(refund)),
         total,
       };
     } catch (error) {
@@ -324,7 +332,7 @@ export class RefundService {
   }
 
   async getRefundById(refundId: bigint): Promise<RefundResponseDto> {
-    const refund = await this.prisma.refund.findUnique({
+    const refund = await this.prismaService.refund.findUnique({
       where: { id: refundId },
       include: {
         order: {
@@ -368,7 +376,7 @@ export class RefundService {
     return {
       id: refund.id,
       orderId: refund.orderId,
-      amount: refund.amount.toNumber(),
+      amount: Number(refund.amount),
       reason: refund.reason,
       status: refund.status,
       refundMethod: refund.refundMethod,

@@ -12,7 +12,13 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { VendorStoreService } from './vendor-store.service';
 import {
   CreateStoreDto,
@@ -73,7 +79,10 @@ export class VendorStoreController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 409 },
-        message: { type: 'string', example: 'Store with this name already exists for this vendor' },
+        message: {
+          type: 'string',
+          example: 'Store with this name already exists for this vendor',
+        },
         error: { type: 'string', example: 'Conflict' },
       },
     },
@@ -82,7 +91,9 @@ export class VendorStoreController {
     @Body() createStoreDto: CreateStoreDto,
     @CurrentUser('sub') vendorId: string,
   ): Promise<StoreResponseDto> {
-    this.logger.log(`Store creation attempt for vendor: ${vendorId}, store name: ${createStoreDto.name}`);
+    this.logger.log(
+      `Store creation attempt for vendor: ${vendorId}, store name: ${createStoreDto.name}`,
+    );
     return this.vendorStoreService.createStore(vendorId, createStoreDto);
   }
 
@@ -90,7 +101,8 @@ export class VendorStoreController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get all stores',
-    description: 'Retrieve all stores for the authenticated vendor with pagination and filtering',
+    description:
+      'Retrieve all stores for the authenticated vendor with pagination and filtering',
   })
   @ApiQuery({
     name: 'page',
@@ -146,20 +158,34 @@ export class VendorStoreController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('isActive') isActive?: string,
-  ): Promise<{ stores: StoreResponseDto[]; total: number; page: number; limit: number }> {
+  ): Promise<{
+    stores: StoreResponseDto[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
-    const isActiveBool = isActive !== undefined ? isActive === 'true' : undefined;
+    const isActiveBool =
+      isActive !== undefined ? isActive === 'true' : undefined;
 
-    this.logger.log(`Stores retrieval attempt for vendor: ${vendorId}, page: ${pageNum}, limit: ${limitNum}`);
-    return this.vendorStoreService.getStores(vendorId, pageNum, limitNum, isActiveBool);
+    this.logger.log(
+      `Stores retrieval attempt for vendor: ${vendorId}, page: ${pageNum}, limit: ${limitNum}`,
+    );
+    return this.vendorStoreService.getStores(
+      vendorId,
+      pageNum,
+      limitNum,
+      isActiveBool,
+    );
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get store by ID',
-    description: 'Retrieve a specific store by its ID for the authenticated vendor',
+    description:
+      'Retrieve a specific store by its ID for the authenticated vendor',
   })
   @ApiResponse({
     status: 200,
@@ -194,7 +220,9 @@ export class VendorStoreController {
     @Param('id') storeId: string,
     @CurrentUser('sub') vendorId: string,
   ): Promise<StoreResponseDto> {
-    this.logger.log(`Store retrieval attempt for vendor: ${vendorId}, store ID: ${storeId}`);
+    this.logger.log(
+      `Store retrieval attempt for vendor: ${vendorId}, store ID: ${storeId}`,
+    );
     return this.vendorStoreService.getStoreById(vendorId, storeId);
   }
 
@@ -229,7 +257,10 @@ export class VendorStoreController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 409 },
-        message: { type: 'string', example: 'Store with this name already exists for this vendor' },
+        message: {
+          type: 'string',
+          example: 'Store with this name already exists for this vendor',
+        },
         error: { type: 'string', example: 'Conflict' },
       },
     },
@@ -251,8 +282,14 @@ export class VendorStoreController {
     @Body() updateStoreDto: UpdateStoreDto,
     @CurrentUser('sub') vendorId: string,
   ): Promise<StoreResponseDto> {
-    this.logger.log(`Store update attempt for vendor: ${vendorId}, store ID: ${storeId}`);
-    return this.vendorStoreService.updateStore(vendorId, storeId, updateStoreDto);
+    this.logger.log(
+      `Store update attempt for vendor: ${vendorId}, store ID: ${storeId}`,
+    );
+    return this.vendorStoreService.updateStore(
+      vendorId,
+      storeId,
+      updateStoreDto,
+    );
   }
 
   @Delete(':id')
@@ -293,7 +330,9 @@ export class VendorStoreController {
     @Param('id') storeId: string,
     @CurrentUser('sub') vendorId: string,
   ): Promise<void> {
-    this.logger.log(`Store deletion attempt for vendor: ${vendorId}, store ID: ${storeId}`);
+    this.logger.log(
+      `Store deletion attempt for vendor: ${vendorId}, store ID: ${storeId}`,
+    );
     await this.vendorStoreService.deleteStore(vendorId, storeId);
   }
 }

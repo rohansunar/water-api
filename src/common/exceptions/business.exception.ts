@@ -463,7 +463,10 @@ export class RateLimitException extends BusinessException {
 }
 
 export class CircuitBreakerException extends BusinessException {
-  constructor(service: string, message: string = 'Service temporarily unavailable') {
+  constructor(
+    service: string,
+    message: string = 'Service temporarily unavailable',
+  ) {
     super(
       `${service}: ${message}`,
       HttpStatus.SERVICE_UNAVAILABLE,

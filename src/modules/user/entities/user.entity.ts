@@ -25,6 +25,8 @@ export interface Address {
 
 @Schema({ timestamps: true })
 export class User {
+  @Prop({ type: String, required: true })
+  _id: string;
   @Prop({ required: true, unique: true, index: true })
   phone: string;
 

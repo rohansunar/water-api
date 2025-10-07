@@ -29,6 +29,7 @@ model Customer {
   addresses         CustomerAddress[]
   orders            Order[]
   subscriptions     Subscription[]
+  deliveryTasks     DeliveryTask[]
 
   @@map("customers")
 }
@@ -60,6 +61,9 @@ model Vendor {
   subscriptions     Subscription[]
   ledgerEntries     LedgerEntry[]
   payouts           Payout[]
+  deliveryTasks     DeliveryTask[]
+  staff             VendorStaff[]
+  cashTransactions  CashTransaction[]
 
   @@map("vendors")
 }
@@ -85,6 +89,9 @@ model Rider {
 
   // Relations
   orders            Order[]
+  deliveryTasks     DeliveryTask[]
+  deliveryEvents    DeliveryEvent[]
+  cashTransactions  CashTransaction[]
 
   @@map("riders")
 }
@@ -133,6 +140,7 @@ model VendorStore {
   productMappings   ProductStoreMapping[]
   orders            Order[]
   subscriptions     Subscription[]
+  deliveryTasks     DeliveryTask[]
 
   @@map("vendor_stores")
 }
@@ -269,6 +277,8 @@ model Order {
   ledgerEntries     LedgerEntry[]
   refunds           Refund[]
   disputes          Dispute[]
+  deliveryTask      DeliveryTask?
+  cashTransactions  CashTransaction[]
 
   @@id([id, createdAt])
   @@map("orders")
@@ -530,9 +540,165 @@ model CommissionRule {
     ipAddress         String?
     userAgent         String?
     createdAt         DateTime @default(now()) @db.Timestamptz
-  
+
     // Relations
     admin             Admin    @relation(fields: [adminId], references: [id])
-  
+
     @@map("audit_logs")
+  }
+
+  // ===== DELIVERY SYSTEM TABLES =====
+
+  enum TaskStatus {
+    ASSIGNED
+    ACCEPTED
+    PICKED_UP
+    DELIVERED
+    FAILED
+    CANCELLED
+  }
+
+  enum TaskPriority {
+    LOW
+    NORMAL
+    HIGH
+    URGENT
+  }
+
+  model DeliveryTask {
+    id                BigInt   @id @default(autoincrement())
+    taskUuid          String   @unique @default(uuid())
+    orderId           BigInt
+    orderCreatedAt    DateTime @db.Timestamptz
+    riderId           BigInt?
+    vendorId          BigInt
+    storeId           BigInt?
+    customerId        BigInt
+    status            TaskStatus @default(ASSIGNED)
+    priority          TaskPriority @default(NORMAL)
+    scheduledPickup   DateTime? @db.Timestamptz
+    scheduledDelivery DateTime? @db.Timestamptz
+    actualPickup      DateTime? @db.Timestamptz
+    actualDelivery    DateTime? @db.Timestamptz
+    pickupLocation    Json?    // GPS coordinates and address
+    deliveryLocation  Json?    // GPS coordinates and address
+    deliveryOtp       String?  // 6-digit OTP for delivery verification
+    proofPhotoUrl     String?  // Photo proof of delivery
+    failureReason     String?
+    notes             String?
+    estimatedDistance Decimal? @db.Decimal(8, 2) // in km
+    estimatedDuration Int?     // in minutes
+    actualDistance    Decimal? @db.Decimal(8, 2)
+    actualDuration    Int?     // in minutes
+    createdAt         DateTime @default(now()) @db.Timestamptz
+    updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
+    assignedAt        DateTime? @db.Timestamptz
+    acceptedAt        DateTime? @db.Timestamptz
+    pickedUpAt        DateTime? @db.Timestamptz
+    deliveredAt       DateTime? @db.Timestamptz
+    failedAt          DateTime? @db.Timestamptz
+
+    // Relations
+    order             Order     @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt])
+    rider             Rider?    @relation(fields: [riderId], references: [id])
+    vendor            Vendor    @relation(fields: [vendorId], references: [id])
+    store             VendorStore? @relation(fields: [storeId], references: [id])
+    customer          Customer  @relation(fields: [customerId], references: [id])
+    events            DeliveryEvent[]
+
+    @@unique([orderId, orderCreatedAt])
+    @@map("delivery_tasks")
+  }
+
+  model DeliveryEvent {
+    id                BigInt   @id @default(autoincrement())
+    taskId            BigInt
+    eventType         String   // 'task_assigned', 'task_accepted', 'pickup_started', 'delivered', etc.
+    eventData         Json?    // Event-specific data
+    riderId           BigInt?
+    location          Json?    // GPS coordinates at event time
+    metadata          Json?    // Additional context
+    createdAt         DateTime @default(now()) @db.Timestamptz
+
+    // Relations
+    task              DeliveryTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+    rider             Rider?       @relation(fields: [riderId], references: [id])
+
+    @@map("delivery_events")
+  }
+
+  model VendorStaff {
+    id                BigInt   @id @default(autoincrement())
+    uuid              String   @unique @default(uuid())
+    vendorId          BigInt
+    name              String
+    phone             String?  @unique
+    email             String?  @unique
+    role              String   // 'manager', 'staff', 'delivery_coordinator'
+    permissions       Json?    // Specific permissions for this staff member
+    isActive          Boolean  @default(true)
+    isDeleted         Boolean  @default(false)
+    createdAt         DateTime @default(now()) @db.Timestamptz
+    updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
+    lastActiveAt      DateTime? @db.Timestamptz
+
+    // Relations
+    vendor            Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+    @@map("vendor_staff")
+  }
+
+  model CashTransaction {
+    id                BigInt   @id @default(autoincrement())
+    transactionUuid   String   @unique @default(uuid())
+    orderId           BigInt?
+    orderCreatedAt    DateTime? @db.Timestamptz
+    riderId           BigInt?
+    vendorId          BigInt?
+    type              String   // 'delivery_payment', 'rider_earning', 'refund', 'adjustment'
+    amount            Decimal  @db.Decimal(10, 2)
+    paymentMethod     String   // 'cash', 'online', 'wallet'
+    status            String   @default("pending") // 'pending', 'completed', 'failed', 'cancelled'
+    reference         String?  // Order number, transaction ID, etc.
+    notes             String?
+    processedBy       BigInt?  // Admin or staff who processed
+    processedAt       DateTime? @db.Timestamptz
+    createdAt         DateTime @default(now()) @db.Timestamptz
+    updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
+
+    // Relations
+    order             Order?   @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt])
+    rider             Rider?   @relation(fields: [riderId], references: [id])
+    vendor            Vendor?  @relation(fields: [vendorId], references: [id])
+
+    @@map("cash_transactions")
+  }
+
+  model OtpCode {
+    id                BigInt   @id @default(autoincrement())
+    phone             String   @unique
+    code              String   // Hashed OTP code
+    purpose           String   // 'rider_login', 'delivery_verification', 'password_reset'
+    expiresAt         DateTime @db.Timestamptz
+    attempts          Int      @default(0)
+    isUsed            Boolean  @default(false)
+    createdAt         DateTime @default(now()) @db.Timestamptz
+    usedAt            DateTime? @db.Timestamptz
+
+    @@map("otp_codes")
+  }
+
+  model OutboxEvent {
+    id                BigInt   @id @default(autoincrement())
+    eventUuid         String   @unique @default(uuid())
+    eventType         String   // 'order_placed', 'delivery_assigned', 'delivery_completed', etc.
+    aggregateId       String   // ID of the aggregate that triggered the event
+    aggregateType     String   // 'order', 'delivery_task', 'rider', etc.
+    payload           Json     // Event data
+    published         Boolean  @default(false)
+    publishedAt       DateTime? @db.Timestamptz
+    createdAt         DateTime @default(now()) @db.Timestamptz
+    retryCount        Int      @default(0)
+
+    @@map("outbox_events")
   }

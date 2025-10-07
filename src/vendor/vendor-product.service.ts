@@ -8,7 +8,10 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Product, ProductDocument } from '../common/schemas/product.schema';
-import { VendorStore, VendorStoreDocument } from '../common/schemas/vendor-store.schema';
+import {
+  VendorStore,
+  VendorStoreDocument,
+} from '../common/schemas/vendor-store.schema';
 import { CustomLoggerService } from '../common/logger/logger.service';
 import { VendorService } from './vendor.service';
 import {
@@ -42,7 +45,15 @@ export class VendorProductService {
   ): Promise<VendorProductResponseDto> {
     const startTime = Date.now();
     try {
-      const { title, sku, description, category, attributes, base_price, unit } = createProductDto;
+      const {
+        title,
+        sku,
+        description,
+        category,
+        attributes,
+        base_price,
+        unit,
+      } = createProductDto;
 
       // Log product creation attempt
       this.customLogger.logBusinessEvent(
@@ -74,7 +85,9 @@ export class VendorProductService {
           { vendorId, productTitle: title, reason: 'product_name_exists' },
           vendorId,
         );
-        throw new ConflictException('Product with this name already exists for this vendor');
+        throw new ConflictException(
+          'Product with this name already exists for this vendor',
+        );
       }
 
       // Create product
@@ -118,7 +131,10 @@ export class VendorProductService {
         { vendorId, error: error.message },
         vendorId,
       );
-      this.logger.error(`Product creation failed for vendor ${vendorId}:`, error);
+      this.logger.error(
+        `Product creation failed for vendor ${vendorId}:`,
+        error,
+      );
       throw new BadRequestException('Product creation failed');
     }
   }
@@ -129,7 +145,12 @@ export class VendorProductService {
     limit: number = 10,
     isActive?: boolean,
     category?: string,
-  ): Promise<{ products: VendorProductResponseDto[]; total: number; page: number; limit: number }> {
+  ): Promise<{
+    products: VendorProductResponseDto[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const startTime = Date.now();
     try {
       const skip = (page - 1) * limit;
@@ -161,7 +182,9 @@ export class VendorProductService {
       );
 
       return {
-        products: products.map((product) => this.mapProductToResponseDto(product)),
+        products: products.map((product) =>
+          this.mapProductToResponseDto(product),
+        ),
         total,
         page,
         limit,
@@ -172,12 +195,18 @@ export class VendorProductService {
         { vendorId, error: error.message },
         vendorId,
       );
-      this.logger.error(`Products retrieval failed for vendor ${vendorId}:`, error);
+      this.logger.error(
+        `Products retrieval failed for vendor ${vendorId}:`,
+        error,
+      );
       throw new BadRequestException('Failed to retrieve products');
     }
   }
 
-  async getProductById(vendorId: string, productId: string): Promise<VendorProductResponseDto> {
+  async getProductById(
+    vendorId: string,
+    productId: string,
+  ): Promise<VendorProductResponseDto> {
     const startTime = Date.now();
     try {
       const product = await this.productModel.findOne({
@@ -210,7 +239,10 @@ export class VendorProductService {
         { vendorId, productId, error: error.message },
         vendorId,
       );
-      this.logger.error(`Product retrieval failed for vendor ${vendorId}, product ${productId}:`, error);
+      this.logger.error(
+        `Product retrieval failed for vendor ${vendorId}, product ${productId}:`,
+        error,
+      );
       throw new BadRequestException('Failed to retrieve product');
     }
   }
@@ -222,7 +254,16 @@ export class VendorProductService {
   ): Promise<VendorProductResponseDto> {
     const startTime = Date.now();
     try {
-      const { title, sku, description, category, attributes, base_price, unit, is_active } = updateProductDto;
+      const {
+        title,
+        sku,
+        description,
+        category,
+        attributes,
+        base_price,
+        unit,
+        is_active,
+      } = updateProductDto;
 
       // Check if product exists and belongs to vendor
       const existingProduct = await this.productModel.findOne({
@@ -253,7 +294,9 @@ export class VendorProductService {
             { vendorId, productId, reason: 'name_conflict' },
             vendorId,
           );
-          throw new ConflictException('Product with this name already exists for this vendor');
+          throw new ConflictException(
+            'Product with this name already exists for this vendor',
+          );
         }
       }
 
@@ -264,7 +307,8 @@ export class VendorProductService {
       if (base_price !== undefined) updateData.price = base_price;
       if (description !== undefined) updateData.description = description;
       if (unit !== undefined) updateData.capacity = unit;
-      if (attributes?.imageUrl !== undefined) updateData.images = [attributes.imageUrl];
+      if (attributes?.imageUrl !== undefined)
+        updateData.images = [attributes.imageUrl];
       if (is_active !== undefined) updateData.isActive = is_active;
 
       const updatedProduct = await this.productModel
@@ -290,7 +334,10 @@ export class VendorProductService {
         { vendorId, productId, error: error.message },
         vendorId,
       );
-      this.logger.error(`Product update failed for vendor ${vendorId}, product ${productId}:`, error);
+      this.logger.error(
+        `Product update failed for vendor ${vendorId}, product ${productId}:`,
+        error,
+      );
       throw new BadRequestException('Product update failed');
     }
   }
@@ -332,7 +379,10 @@ export class VendorProductService {
         { vendorId, productId, error: error.message },
         vendorId,
       );
-      this.logger.error(`Product deletion failed for vendor ${vendorId}, product ${productId}:`, error);
+      this.logger.error(
+        `Product deletion failed for vendor ${vendorId}, product ${productId}:`,
+        error,
+      );
       throw new BadRequestException('Product deletion failed');
     }
   }
@@ -344,7 +394,8 @@ export class VendorProductService {
   ): Promise<VendorProductVariantResponseDto> {
     const startTime = Date.now();
     try {
-      const { variant_sku, attributes, price_override } = createProductVariantDto;
+      const { variant_sku, attributes, price_override } =
+        createProductVariantDto;
 
       // Check if product exists and belongs to vendor
       const product = await this.productModel.findOne({
@@ -397,7 +448,10 @@ export class VendorProductService {
       ) {
         throw error;
       }
-      this.logger.error(`Product variant creation failed for vendor ${vendorId}, product ${productId}:`, error);
+      this.logger.error(
+        `Product variant creation failed for vendor ${vendorId}, product ${productId}:`,
+        error,
+      );
       throw new BadRequestException('Product variant creation failed');
     }
   }
@@ -447,12 +501,18 @@ export class VendorProductService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Product variant update failed for vendor ${vendorId}, variant ${variantId}:`, error);
+      this.logger.error(
+        `Product variant update failed for vendor ${vendorId}, variant ${variantId}:`,
+        error,
+      );
       throw new BadRequestException('Product variant update failed');
     }
   }
 
-  async deleteProductVariant(vendorId: string, variantId: string): Promise<void> {
+  async deleteProductVariant(
+    vendorId: string,
+    variantId: string,
+  ): Promise<void> {
     const startTime = Date.now();
     try {
       // Check if product exists and belongs to vendor
@@ -483,7 +543,10 @@ export class VendorProductService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Product variant deletion failed for vendor ${vendorId}, variant ${variantId}:`, error);
+      this.logger.error(
+        `Product variant deletion failed for vendor ${vendorId}, variant ${variantId}:`,
+        error,
+      );
       throw new BadRequestException('Product variant deletion failed');
     }
   }
@@ -494,7 +557,8 @@ export class VendorProductService {
   ): Promise<VendorProductMappingResponseDto> {
     const startTime = Date.now();
     try {
-      const { store_id, product_variant_id, price, stock, area_pincodes } = createProductMappingDto;
+      const { store_id, product_variant_id, price, stock, area_pincodes } =
+        createProductMappingDto;
 
       // Check if store exists and belongs to vendor
       const store = await this.storeModel.findOne({
@@ -523,7 +587,9 @@ export class VendorProductService {
       });
 
       if (existingMapping) {
-        throw new ConflictException('Product mapping already exists for this store');
+        throw new ConflictException(
+          'Product mapping already exists for this store',
+        );
       }
 
       // Create product mapping by updating product with store mapping
@@ -540,7 +606,7 @@ export class VendorProductService {
         .findByIdAndUpdate(
           product_variant_id,
           { $push: { storeMappings: mappingData } },
-          { new: true }
+          { new: true },
         )
         .exec();
 
@@ -558,7 +624,10 @@ export class VendorProductService {
       ) {
         throw error;
       }
-      this.logger.error(`Product mapping creation failed for vendor ${vendorId}:`, error);
+      this.logger.error(
+        `Product mapping creation failed for vendor ${vendorId}:`,
+        error,
+      );
       throw new BadRequestException('Product mapping creation failed');
     }
   }
@@ -570,7 +639,8 @@ export class VendorProductService {
   ): Promise<VendorProductMappingResponseDto> {
     const startTime = Date.now();
     try {
-      const { price, stock, area_pincodes, is_active } = updateProductMappingDto;
+      const { price, stock, area_pincodes, is_active } =
+        updateProductMappingDto;
 
       // Check if product exists and belongs to vendor
       const existingProduct = await this.productModel.findOne({
@@ -604,7 +674,10 @@ export class VendorProductService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Product mapping update failed for vendor ${vendorId}, mapping ${mappingId}:`, error);
+      this.logger.error(
+        `Product mapping update failed for vendor ${vendorId}, mapping ${mappingId}:`,
+        error,
+      );
       throw new BadRequestException('Product mapping update failed');
     }
   }
@@ -613,7 +686,12 @@ export class VendorProductService {
     vendorId: string,
     page: number = 1,
     limit: number = 10,
-  ): Promise<{ mappings: VendorProductMappingResponseDto[]; total: number; page: number; limit: number }> {
+  ): Promise<{
+    mappings: VendorProductMappingResponseDto[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const startTime = Date.now();
     try {
       const skip = (page - 1) * limit;
@@ -639,7 +717,9 @@ export class VendorProductService {
       products.forEach((product) => {
         if (product.storeMappings && product.storeMappings.length > 0) {
           product.storeMappings.forEach((mapping) => {
-            mappings.push(this.mapMappingToResponseDto(product, mapping.storeId));
+            mappings.push(
+              this.mapMappingToResponseDto(product, mapping.storeId),
+            );
           });
         }
       });
@@ -651,17 +731,24 @@ export class VendorProductService {
         limit,
       };
     } catch (error) {
-      this.logger.error(`Product mappings retrieval failed for vendor ${vendorId}:`, error);
+      this.logger.error(
+        `Product mappings retrieval failed for vendor ${vendorId}:`,
+        error,
+      );
       throw new BadRequestException('Failed to retrieve product mappings');
     }
   }
 
-  private mapProductToResponseDto(product: ProductDocument): VendorProductResponseDto {
+  private mapProductToResponseDto(
+    product: ProductDocument,
+  ): VendorProductResponseDto {
     return {
       id: product._id.toString(),
       vendor_id: product.vendorId,
       title: product.name,
-      sku: product.specifications?.sku || product.name.toLowerCase().replace(/\s+/g, '-'),
+      sku:
+        product.specifications?.sku ||
+        product.name.toLowerCase().replace(/\s+/g, '-'),
       description: product.description,
       category: product.category,
       attributes: {
@@ -678,11 +765,15 @@ export class VendorProductService {
     };
   }
 
-  private mapVariantToResponseDto(product: ProductDocument, productId: string): VendorProductVariantResponseDto {
+  private mapVariantToResponseDto(
+    product: ProductDocument,
+    productId: string,
+  ): VendorProductVariantResponseDto {
     return {
       id: product._id.toString(),
       product_id: productId,
-      variant_sku: product.specifications?.sku || `VARIANT-${product._id.toString()}`,
+      variant_sku:
+        product.specifications?.sku || `VARIANT-${product._id.toString()}`,
       attributes: product.specifications || {},
       price_override: product.price,
       is_active: product.isActive,
@@ -691,8 +782,11 @@ export class VendorProductService {
     };
   }
 
-  private mapMappingToResponseDto(product: ProductDocument, storeId: string): VendorProductMappingResponseDto {
-    const mapping = product.storeMappings?.find(m => m.storeId === storeId);
+  private mapMappingToResponseDto(
+    product: ProductDocument,
+    storeId: string,
+  ): VendorProductMappingResponseDto {
+    const mapping = product.storeMappings?.find((m) => m.storeId === storeId);
     return {
       id: `${product._id.toString()}-${storeId}`,
       product_id: product._id.toString(),

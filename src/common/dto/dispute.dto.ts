@@ -69,7 +69,8 @@ export class CreateDisputeDto {
 
   @ApiProperty({
     description: 'Detailed description of the dispute',
-    example: 'The product was supposed to be delivered by 2 PM but arrived at 6 PM',
+    example:
+      'The product was supposed to be delivered by 2 PM but arrived at 6 PM',
   })
   @IsString()
   @IsNotEmpty()
@@ -194,7 +195,8 @@ export class DisputeResponseDto {
 
   @ApiProperty({
     description: 'Dispute description',
-    example: 'The product was supposed to be delivered by 2 PM but arrived at 6 PM',
+    example:
+      'The product was supposed to be delivered by 2 PM but arrived at 6 PM',
   })
   description: string;
 

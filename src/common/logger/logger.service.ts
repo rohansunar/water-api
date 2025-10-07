@@ -331,7 +331,6 @@ export class CustomLoggerService implements LoggerService {
     });
   }
 
-
   logAuditEvent(
     action: string,
     resourceType: string,
@@ -361,7 +360,12 @@ export class CustomLoggerService implements LoggerService {
   }
 
   logAuthenticationEvent(
-    event: 'LOGIN_SUCCESS' | 'LOGIN_FAILED' | 'LOGOUT' | 'TOKEN_REFRESH' | 'PASSWORD_CHANGE',
+    event:
+      | 'LOGIN_SUCCESS'
+      | 'LOGIN_FAILED'
+      | 'LOGOUT'
+      | 'TOKEN_REFRESH'
+      | 'PASSWORD_CHANGE',
     userId: string,
     details: any,
     ip?: string,
@@ -430,7 +434,13 @@ export class CustomLoggerService implements LoggerService {
   }
 
   logPaymentEvent(
-    event: 'PAYMENT_INITIATED' | 'PAYMENT_SUCCESS' | 'PAYMENT_FAILED' | 'REFUND_INITIATED' | 'REFUND_SUCCESS' | 'REFUND_FAILED',
+    event:
+      | 'PAYMENT_INITIATED'
+      | 'PAYMENT_SUCCESS'
+      | 'PAYMENT_FAILED'
+      | 'REFUND_INITIATED'
+      | 'REFUND_SUCCESS'
+      | 'REFUND_FAILED',
     paymentId: string,
     userId: string,
     amount: number,
@@ -455,7 +465,12 @@ export class CustomLoggerService implements LoggerService {
   }
 
   logOrderEvent(
-    event: 'ORDER_CREATED' | 'ORDER_UPDATED' | 'ORDER_CANCELLED' | 'ORDER_DELIVERED' | 'ORDER_RETURNED',
+    event:
+      | 'ORDER_CREATED'
+      | 'ORDER_UPDATED'
+      | 'ORDER_CANCELLED'
+      | 'ORDER_DELIVERED'
+      | 'ORDER_RETURNED',
     orderId: string,
     userId: string,
     details: any,
@@ -475,7 +490,11 @@ export class CustomLoggerService implements LoggerService {
   }
 
   logDeliveryEvent(
-    event: 'DELIVERY_SCHEDULED' | 'DELIVERY_STARTED' | 'DELIVERY_COMPLETED' | 'DELIVERY_FAILED',
+    event:
+      | 'DELIVERY_SCHEDULED'
+      | 'DELIVERY_STARTED'
+      | 'DELIVERY_COMPLETED'
+      | 'DELIVERY_FAILED',
     deliveryId: string,
     riderId: string,
     orderId: string,
@@ -550,8 +569,12 @@ export class CustomLoggerService implements LoggerService {
     });
 
     // Log slow operations as warnings
-    if (metricName.includes('duration') || metricName.includes('response_time')) {
-      if (value > 5000) { // 5 seconds
+    if (
+      metricName.includes('duration') ||
+      metricName.includes('response_time')
+    ) {
+      if (value > 5000) {
+        // 5 seconds
         this.logger.warn('Slow Operation Detected', {
           type: 'slow_operation',
           metricName,
@@ -573,7 +596,8 @@ export class CustomLoggerService implements LoggerService {
     details?: string,
     requestId?: string,
   ): void {
-    const logLevel = status === 'HEALTHY' ? 'info' : status === 'DEGRADED' ? 'warn' : 'error';
+    const logLevel =
+      status === 'HEALTHY' ? 'info' : status === 'DEGRADED' ? 'warn' : 'error';
 
     this.logger.log(logLevel, 'System Health', {
       type: 'system_health',
@@ -614,7 +638,12 @@ export class CustomLoggerService implements LoggerService {
     severity: 'INFO' | 'WARNING' | 'VIOLATION' = 'INFO',
     requestId?: string,
   ): void {
-    const logLevel = severity === 'VIOLATION' ? 'error' : severity === 'WARNING' ? 'warn' : 'info';
+    const logLevel =
+      severity === 'VIOLATION'
+        ? 'error'
+        : severity === 'WARNING'
+          ? 'warn'
+          : 'info';
 
     this.logger.log(logLevel, 'Compliance Event', {
       type: 'compliance_event',
@@ -630,12 +659,18 @@ export class CustomLoggerService implements LoggerService {
 
   logIntegrationEvent(
     integration: string,
-    event: 'REQUEST_SENT' | 'RESPONSE_RECEIVED' | 'ERROR' | 'TIMEOUT' | 'RATE_LIMITED',
+    event:
+      | 'REQUEST_SENT'
+      | 'RESPONSE_RECEIVED'
+      | 'ERROR'
+      | 'TIMEOUT'
+      | 'RATE_LIMITED',
     details: any,
     duration?: number,
     requestId?: string,
   ): void {
-    const logLevel = event === 'ERROR' || event === 'TIMEOUT' ? 'error' : 'info';
+    const logLevel =
+      event === 'ERROR' || event === 'TIMEOUT' ? 'error' : 'info';
 
     this.logger.log(logLevel, 'Integration Event', {
       type: 'integration_event',

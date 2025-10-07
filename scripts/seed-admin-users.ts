@@ -1,9 +1,11 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { CustomLoggerService } from '../src/common/logger/logger.service';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../src/common/database/prisma.service';
 
-const prisma = new PrismaClient();
-const logger = new CustomLoggerService();
+const configService = new ConfigService();
+const prismaService = new PrismaService(configService);
+const logger = console;
 
 async function main() {
   logger.log('Seeding admin users...');
@@ -12,7 +14,7 @@ async function main() {
   const hashedPassword = await bcrypt.hash('Admin123!', 12);
 
   // Create super admin
-  const superAdmin = await prisma.admin.upsert({
+  const superAdmin = await prismaService.admin.upsert({
     where: { email: 'superadmin@platform.com' },
     update: {},
     create: {
@@ -35,7 +37,7 @@ async function main() {
   });
 
   // Create finance admin
-  const financeAdmin = await prisma.admin.upsert({
+  const financeAdmin = await prismaService.admin.upsert({
     where: { email: 'finance@platform.com' },
     update: {},
     create: {
@@ -58,7 +60,7 @@ async function main() {
   });
 
   // Create support admin
-  const supportAdmin = await prisma.admin.upsert({
+  const supportAdmin = await prismaService.admin.upsert({
     where: { email: 'support@platform.com' },
     update: {},
     create: {
@@ -94,5 +96,5 @@ main()
     process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect();
+    await prismaService.$disconnect();
   });

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CustomerRole } from '../common/interfaces/customer.interface';
@@ -302,16 +306,17 @@ export class CustomerService {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       // Run queries in parallel for better performance
-      const [totalCustomers, activeCustomers, roleStats, recentSignups] = await Promise.all([
-        this.customerModel.countDocuments().exec(),
-        this.customerModel.countDocuments({ isActive: true }).exec(),
-        this.customerModel
-          .aggregate([{ $group: { _id: '$role', count: { $sum: 1 } } }])
-          .exec(),
-        this.customerModel
-          .countDocuments({ createdAt: { $gte: thirtyDaysAgo } })
-          .exec(),
-      ]);
+      const [totalCustomers, activeCustomers, roleStats, recentSignups] =
+        await Promise.all([
+          this.customerModel.countDocuments().exec(),
+          this.customerModel.countDocuments({ isActive: true }).exec(),
+          this.customerModel
+            .aggregate([{ $group: { _id: '$role', count: { $sum: 1 } } }])
+            .exec(),
+          this.customerModel
+            .countDocuments({ createdAt: { $gte: thirtyDaysAgo } })
+            .exec(),
+        ]);
 
       const customersByRole = roleStats.reduce((acc, stat) => {
         acc[stat._id] = stat.count;
@@ -382,7 +387,9 @@ export class CustomerService {
   }
 
   // Address Management Methods
-  async getCustomerAddresses(customerId: string): Promise<AddressResponseDto[]> {
+  async getCustomerAddresses(
+    customerId: string,
+  ): Promise<AddressResponseDto[]> {
     try {
       const customer = await this.customerModel.findById(customerId).exec();
       if (!customer) {
@@ -409,7 +416,10 @@ export class CustomerService {
         updatedAt: address.updatedAt,
       }));
     } catch (error) {
-      this.logger.error(`Error getting addresses for customer ${customerId}:`, error);
+      this.logger.error(
+        `Error getting addresses for customer ${customerId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -442,10 +452,15 @@ export class CustomerService {
         $push: { addresses: address._id },
       });
 
-      this.logger.log(`Created address ${address._id} for customer ${customerId}`);
+      this.logger.log(
+        `Created address ${address._id} for customer ${customerId}`,
+      );
       return this.getAddressResponse(address);
     } catch (error) {
-      this.logger.error(`Error creating address for customer ${customerId}:`, error);
+      this.logger.error(
+        `Error creating address for customer ${customerId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -477,10 +492,15 @@ export class CustomerService {
         .findByIdAndUpdate(addressId, updateAddressDto, { new: true })
         .exec();
 
-      this.logger.log(`Updated address ${addressId} for customer ${customerId}`);
+      this.logger.log(
+        `Updated address ${addressId} for customer ${customerId}`,
+      );
       return this.getAddressResponse(updatedAddress);
     } catch (error) {
-      this.logger.error(`Error updating address ${addressId} for customer ${customerId}:`, error);
+      this.logger.error(
+        `Error updating address ${addressId} for customer ${customerId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -503,14 +523,22 @@ export class CustomerService {
         $pull: { addresses: addressId },
       });
 
-      this.logger.log(`Deleted address ${addressId} for customer ${customerId}`);
+      this.logger.log(
+        `Deleted address ${addressId} for customer ${customerId}`,
+      );
     } catch (error) {
-      this.logger.error(`Error deleting address ${addressId} for customer ${customerId}:`, error);
+      this.logger.error(
+        `Error deleting address ${addressId} for customer ${customerId}:`,
+        error,
+      );
       throw error;
     }
   }
 
-  async setDefaultAddress(customerId: string, addressId: string): Promise<void> {
+  async setDefaultAddress(
+    customerId: string,
+    addressId: string,
+  ): Promise<void> {
     try {
       const address = await this.addressModel.findOne({
         _id: addressId,
@@ -522,17 +550,19 @@ export class CustomerService {
       }
 
       // Unset all other default addresses
-      await this.addressModel.updateMany(
-        { customerId },
-        { isDefault: false },
-      );
+      await this.addressModel.updateMany({ customerId }, { isDefault: false });
 
       // Set this address as default
       await this.addressModel.findByIdAndUpdate(addressId, { isDefault: true });
 
-      this.logger.log(`Set address ${addressId} as default for customer ${customerId}`);
+      this.logger.log(
+        `Set address ${addressId} as default for customer ${customerId}`,
+      );
     } catch (error) {
-      this.logger.error(`Error setting default address ${addressId} for customer ${customerId}:`, error);
+      this.logger.error(
+        `Error setting default address ${addressId} for customer ${customerId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -576,7 +606,10 @@ export class CustomerService {
         totalPages: Math.ceil(total / limit),
       };
     } catch (error) {
-      this.logger.error(`Error getting order history for customer ${customerId}:`, error);
+      this.logger.error(
+        `Error getting order history for customer ${customerId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -587,17 +620,29 @@ export class CustomerService {
       // For now, returning a mock structure
       return {};
     } catch (error) {
-      this.logger.error(`Error getting order details ${orderId} for customer ${customerId}:`, error);
+      this.logger.error(
+        `Error getting order details ${orderId} for customer ${customerId}:`,
+        error,
+      );
       throw error;
     }
   }
 
-  async cancelOrder(customerId: string, orderId: string, reason: string): Promise<void> {
+  async cancelOrder(
+    customerId: string,
+    orderId: string,
+    reason: string,
+  ): Promise<void> {
     try {
       // This would typically integrate with an Order service
-      this.logger.log(`Cancelled order ${orderId} for customer ${customerId} with reason: ${reason}`);
+      this.logger.log(
+        `Cancelled order ${orderId} for customer ${customerId} with reason: ${reason}`,
+      );
     } catch (error) {
-      this.logger.error(`Error cancelling order ${orderId} for customer ${customerId}:`, error);
+      this.logger.error(
+        `Error cancelling order ${orderId} for customer ${customerId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -614,7 +659,10 @@ export class CustomerService {
         `Requested refund for order ${orderId} for customer ${customerId} with reason: ${reason}`,
       );
     } catch (error) {
-      this.logger.error(`Error requesting refund for order ${orderId} for customer ${customerId}:`, error);
+      this.logger.error(
+        `Error requesting refund for order ${orderId} for customer ${customerId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -626,18 +674,27 @@ export class CustomerService {
       // For now, returning an empty array
       return [];
     } catch (error) {
-      this.logger.error(`Error getting subscriptions for customer ${customerId}:`, error);
+      this.logger.error(
+        `Error getting subscriptions for customer ${customerId}:`,
+        error,
+      );
       throw error;
     }
   }
 
-  async createSubscription(customerId: string, subscriptionData: any): Promise<any> {
+  async createSubscription(
+    customerId: string,
+    subscriptionData: any,
+  ): Promise<any> {
     try {
       // This would typically integrate with a Subscription service
       this.logger.log(`Created subscription for customer ${customerId}`);
       return {};
     } catch (error) {
-      this.logger.error(`Error creating subscription for customer ${customerId}:`, error);
+      this.logger.error(
+        `Error creating subscription for customer ${customerId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -649,10 +706,15 @@ export class CustomerService {
   ): Promise<any> {
     try {
       // This would typically integrate with a Subscription service
-      this.logger.log(`Updated subscription ${subscriptionId} for customer ${customerId}`);
+      this.logger.log(
+        `Updated subscription ${subscriptionId} for customer ${customerId}`,
+      );
       return {};
     } catch (error) {
-      this.logger.error(`Error updating subscription ${subscriptionId} for customer ${customerId}:`, error);
+      this.logger.error(
+        `Error updating subscription ${subscriptionId} for customer ${customerId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -668,13 +730,19 @@ export class CustomerService {
         `Cancelled subscription ${subscriptionId} for customer ${customerId} with reason: ${reason}`,
       );
     } catch (error) {
-      this.logger.error(`Error cancelling subscription ${subscriptionId} for customer ${customerId}:`, error);
+      this.logger.error(
+        `Error cancelling subscription ${subscriptionId} for customer ${customerId}:`,
+        error,
+      );
       throw error;
     }
   }
 
   // Profile Management Methods
-  async updateProfile(customerId: string, updateData: any): Promise<CustomerProfileDto> {
+  async updateProfile(
+    customerId: string,
+    updateData: any,
+  ): Promise<CustomerProfileDto> {
     try {
       const customer = await this.customerModel
         .findByIdAndUpdate(customerId, updateData, { new: true })
@@ -688,7 +756,10 @@ export class CustomerService {
       this.logger.log(`Updated profile for customer ${customerId}`);
       return this.getCustomerProfile(customerId);
     } catch (error) {
-      this.logger.error(`Error updating profile for customer ${customerId}:`, error);
+      this.logger.error(
+        `Error updating profile for customer ${customerId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -698,7 +769,10 @@ export class CustomerService {
       // This would typically update customer preferences in the database
       this.logger.log(`Updated preferences for customer ${customerId}`);
     } catch (error) {
-      this.logger.error(`Error updating preferences for customer ${customerId}:`, error);
+      this.logger.error(
+        `Error updating preferences for customer ${customerId}:`,
+        error,
+      );
       throw error;
     }
   }

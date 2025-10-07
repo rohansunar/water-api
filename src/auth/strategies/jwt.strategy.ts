@@ -3,7 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from '../auth.service';
-import { User } from '../../modules/user/entities/user.entity';
+import { User as UserEntity } from '../../modules/user/entities/user.entity';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 
 export interface JwtPayload {
@@ -31,26 +31,37 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: JwtPayload): Promise<User> {
+  async validate(payload: JwtPayload): Promise<UserEntity> {
     try {
       const user = await this.authService.validateUser(payload.sub);
       return user;
     } catch (error) {
       // Log JWT validation errors
-      this.customLogger.logSecurityEvent('jwt_validation_failure', {
-        userId: payload.sub,
-        phone: payload.phone,
-        error: error.message,
-        errorName: error.name,
-      }, undefined, undefined);
+      this.customLogger.logSecurityEvent(
+        'jwt_validation_failure',
+        {
+          userId: payload.sub,
+          phone: payload.phone,
+          error: error.message,
+          errorName: error.name,
+        },
+        undefined,
+        undefined,
+      );
 
       // Handle specific JWT errors with clear messages
       if (error.name === 'TokenExpiredError') {
-        throw new UnauthorizedException('Token has expired. Please login again.');
+        throw new UnauthorizedException(
+          'Token has expired. Please login again.',
+        );
       } else if (error.name === 'JsonWebTokenError') {
-        throw new UnauthorizedException('Invalid token format. Please login again.');
+        throw new UnauthorizedException(
+          'Invalid token format. Please login again.',
+        );
       } else if (error.name === 'NotBeforeError') {
-        throw new UnauthorizedException('Token not active yet. Please try again later.');
+        throw new UnauthorizedException(
+          'Token not active yet. Please try again later.',
+        );
       } else {
         throw new UnauthorizedException('Invalid token or user not found');
       }

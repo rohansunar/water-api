@@ -11,10 +11,7 @@ import {
   VendorStore,
   VendorStoreSchema,
 } from '../common/schemas/vendor-store.schema';
-import {
-  Product,
-  ProductSchema,
-} from '../common/schemas/product.schema';
+import { Product, ProductSchema } from '../common/schemas/product.schema';
 
 @Module({
   imports: [
@@ -24,7 +21,11 @@ import {
       { name: Product.name, schema: ProductSchema },
     ]),
   ],
-  controllers: [VendorController, VendorStoreController, VendorProductController],
+  controllers: [
+    VendorController,
+    VendorStoreController,
+    VendorProductController,
+  ],
   providers: [VendorService, VendorStoreService, VendorProductService],
   exports: [VendorService, VendorStoreService, VendorProductService],
 })

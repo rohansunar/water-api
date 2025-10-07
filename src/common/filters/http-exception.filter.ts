@@ -286,7 +286,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
   private getErrorCategory(status: number): ErrorCategory {
     if (status === HttpStatus.UNAUTHORIZED || status === HttpStatus.FORBIDDEN) {
       return ErrorCategory.AUTHENTICATION;
-    } else if (status === HttpStatus.BAD_REQUEST || status === HttpStatus.UNPROCESSABLE_ENTITY) {
+    } else if (
+      status === HttpStatus.BAD_REQUEST ||
+      status === HttpStatus.UNPROCESSABLE_ENTITY
+    ) {
       return ErrorCategory.VALIDATION;
     } else if (status === HttpStatus.NOT_FOUND) {
       return ErrorCategory.BUSINESS_LOGIC;
@@ -300,13 +303,22 @@ export class HttpExceptionFilter implements ExceptionFilter {
    * Get error severity based on HTTP status
    */
   private getErrorSeverity(status: number): ErrorSeverity {
-    if (status === HttpStatus.INTERNAL_SERVER_ERROR || status === HttpStatus.BAD_GATEWAY) {
+    if (
+      status === HttpStatus.INTERNAL_SERVER_ERROR ||
+      status === HttpStatus.BAD_GATEWAY
+    ) {
       return ErrorSeverity.CRITICAL;
-    } else if (status === HttpStatus.UNAUTHORIZED || status === HttpStatus.FORBIDDEN) {
+    } else if (
+      status === HttpStatus.UNAUTHORIZED ||
+      status === HttpStatus.FORBIDDEN
+    ) {
       return ErrorSeverity.HIGH;
     } else if (status >= 500) {
       return ErrorSeverity.HIGH;
-    } else if (status === HttpStatus.NOT_FOUND || status === HttpStatus.CONFLICT) {
+    } else if (
+      status === HttpStatus.NOT_FOUND ||
+      status === HttpStatus.CONFLICT
+    ) {
       return ErrorSeverity.MEDIUM;
     }
     return ErrorSeverity.LOW;

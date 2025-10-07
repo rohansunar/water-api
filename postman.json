@@ -1,7 +1,11 @@
 {
   "info": {
     "name": "Water Delivery API Collection",
-    "description": "Complete API collection for the Water Delivery Platform including authentication, admin, vendor, store, product, customer, and order management endpoints.",
+    "description": "Complete API collection for the Water Delivery Platform including Phase 1 core features, Phase 1.5 enhanced features, Phase 2 security enhancements, and Phase 3 infrastructure endpoints.\n\n**Phase 1 Features:**\n- Authentication & Authorization\n- Admin Management\n- Product Moderation\n- Order Management\n- Refund Management\n- Dispute Management\n- Escalation Management\n- Vendor Products\n- Store Management\n- Product Discovery\n- Customer Management
+- Commission Management (admin commission rules and calculations)
+- Subscription Management (customer recurring delivery subscriptions)
+- Wallet Management (customer wallet operations and balance management)
+- Enhanced Store Management (comprehensive vendor store operations)\n\n**Phase 2 Security Enhancements:**\n- Rider Authentication (OTP-based login, JWT tokens)\n- Task Management (accept, pickup, deliver, fail)\n- Shift Management (shift end, cash reconciliation)\n- Notifications & Support (notification history, support tickets)\n- Security Features (rate limiting, session management)\n\n**Phase 3 Infrastructure:**\n- Background Worker Status (worker monitoring, queue metrics)\n- Cache Management (cache statistics, invalidation)\n- Offline Support (connectivity monitoring, sync status)\n- System Monitoring (health checks, performance metrics)\n\n**Security Features:**\n- JWT-based authentication for all protected endpoints\n- Rate limiting on authentication endpoints\n- Session management with automatic expiration\n- Role-based access control (Admin, Vendor, Customer, Rider)\n- Input validation and sanitization\n- Error response standardization\n\n**Environment Variables:**\n- baseUrl: Base URL for the API server\n- adminToken: JWT token for admin operations\n- vendorToken: JWT token for vendor operations\n- customerToken: JWT token for customer operations\n- riderToken: JWT token for rider operations",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -27,6 +31,12 @@
       "value": "",
       "type": "string",
       "description": "JWT token for authenticated customer requests"
+    },
+    {
+      "key": "riderToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT token for authenticated rider requests"
     }
   ],
   "item": [
@@ -183,6 +193,1113 @@
                     "    var jsonData = pm.response.json();",
                     "    pm.collectionVariables.set('vendorToken', jsonData.token);",
                     "}"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rider Authentication",
+      "description": "Phase 2 Security Endpoints - Rider authentication and profile management",
+      "item": [
+        {
+          "name": "Rider Login (Send OTP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/riders/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["riders", "auth", "login"]
+            },
+            "description": "Initiate rider login by sending OTP to phone number",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has success message\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "    pm.expect(jsonData).to.have.property('success');",
+                    "    pm.expect(jsonData.success).to.be.true;",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Rider Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\",\n  \"otp\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/riders/auth/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["riders", "auth", "verify"]
+            },
+            "description": "Verify OTP and complete rider authentication",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has JWT token\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('token');",
+                    "    pm.expect(jsonData).to.have.property('rider');",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "});",
+                    "",
+                    "if (pm.response.code === 200) {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.collectionVariables.set('riderToken', jsonData.token);",
+                    "}"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Rider Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{riderToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/riders/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["riders", "auth", "me"]
+            },
+            "description": "Get authenticated rider profile information",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has rider profile\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('phone');",
+                    "    pm.expect(jsonData).to.have.property('name');",
+                    "    pm.expect(jsonData).to.have.property('isActive');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Task Management",
+      "description": "Phase 2 Security Endpoints - Delivery task management for riders",
+      "item": [
+        {
+          "name": "Get Rider Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{riderToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/riders/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["riders", "orders"]
+            },
+            "description": "Get all orders assigned to the authenticated rider",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response is array of orders\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.be.an('array');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{riderToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"picked_up\",\n  \"location\": {\n    \"lat\": 19.0760,\n    \"lng\": 72.8777\n  },\n  \"notes\": \"Order picked up from vendor\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/riders/orders/:orderId/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["riders", "orders", ":orderId", "status"],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "order123"
+                }
+              ]
+            },
+            "description": "Update delivery status of an assigned order",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has updated order\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('status');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Complete Delivery",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{riderToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deliveryNotes\": \"Delivered successfully to customer\",\n  \"customerSignature\": \"base64_encoded_signature\",\n  \"photoRequired\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/riders/me/tasks/:taskId/deliver",
+              "host": ["{{baseUrl}}"],
+              "path": ["riders", "me", "tasks", ":taskId", "deliver"],
+              "variable": [
+                {
+                  "key": "taskId",
+                  "value": "task123"
+                }
+              ]
+            },
+            "description": "Mark delivery as completed with photo and notes",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has completion details\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('taskId');",
+                    "    pm.expect(jsonData).to.have.property('status');",
+                    "    pm.expect(jsonData).to.have.property('completedAt');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Fail Delivery",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{riderToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Customer not available\",\n  \"details\": \"Customer phone switched off, attempted 3 times\",\n  \"retryable\": true,\n  \"customerContacted\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/riders/me/tasks/:taskId/fail",
+              "host": ["{{baseUrl}}"],
+              "path": ["riders", "me", "tasks", ":taskId", "fail"],
+              "variable": [
+                {
+                  "key": "taskId",
+                  "value": "task123"
+                }
+              ]
+            },
+            "description": "Mark delivery as failed with reason and details",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has failure details\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('taskId');",
+                    "    pm.expect(jsonData).to.have.property('status');",
+                    "    pm.expect(jsonData).to.have.property('reason');",
+                    "    pm.expect(jsonData).to.have.property('canRetry');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rider Operations",
+      "description": "Phase 2 Security Endpoints - Rider location, availability, and delivery operations",
+      "item": [
+        {
+          "name": "Update Rider Location",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{riderToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 19.0760,\n  \"longitude\": 72.8777,\n  \"accuracy\": 10,\n  \"heading\": 45,\n  \"speed\": 25\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/riders/location",
+              "host": ["{{baseUrl}}"],
+              "path": ["riders", "location"]
+            },
+            "description": "Update current GPS location of the delivery rider",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has location update confirmation\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "    pm.expect(jsonData).to.have.property('location');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update Rider Availability",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{riderToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isAvailable\": true,\n  \"availabilityNotes\": \"Available for deliveries\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/riders/availability",
+              "host": ["{{baseUrl}}"],
+              "path": ["riders", "availability"]
+            },
+            "description": "Update rider availability for new delivery assignments",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has updated availability\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('isAvailable');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Rider Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{riderToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/riders/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["riders", "profile"]
+            },
+            "description": "Get rider profile information",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has rider profile\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('phone');",
+                    "    pm.expect(jsonData).to.have.property('name');",
+                    "    pm.expect(jsonData).to.have.property('isActive');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Earnings & Performance",
+      "description": "Phase 2 Security Endpoints - Rider earnings, performance, and analytics",
+      "item": [
+        {
+          "name": "Get Earnings History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{riderToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/riders/earnings?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["riders", "earnings"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get paginated earnings history for the rider",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has earnings data\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('data');",
+                    "    pm.expect(jsonData).to.have.property('total');",
+                    "    pm.expect(jsonData).to.have.property('page');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Earnings Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{riderToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/riders/earnings/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["riders", "earnings", "summary"]
+            },
+            "description": "Get earnings summary for the current month",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has earnings summary\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('totalEarnings');",
+                    "    pm.expect(jsonData).to.have.property('totalDeliveries');",
+                    "    pm.expect(jsonData).to.have.property('averagePerDelivery');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Request Earnings Withdrawal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{riderToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 500.00,\n  \"bankAccountId\": \"acc_123456\",\n  \"notes\": \"Weekly earnings withdrawal\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/riders/earnings/withdraw",
+              "host": ["{{baseUrl}}"],
+              "path": ["riders", "earnings", "withdraw"]
+            },
+            "description": "Submit a request to withdraw earnings to bank account",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 201\", function () {",
+                    "    pm.response.to.have.status(201);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has withdrawal request\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('withdrawalId');",
+                    "    pm.expect(jsonData).to.have.property('status');",
+                    "    pm.expect(jsonData).to.have.property('amount');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Performance Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{riderToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/riders/performance",
+              "host": ["{{baseUrl}}"],
+              "path": ["riders", "performance"]
+            },
+            "description": "Get comprehensive performance metrics for the rider",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has performance metrics\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('totalDeliveries');",
+                    "    pm.expect(jsonData).to.have.property('onTimeDeliveryRate');",
+                    "    pm.expect(jsonData).to.have.property('averageRating');",
+                    "    pm.expect(jsonData).to.have.property('completionRate');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shift Management",
+      "description": "Phase 2 Security Endpoints - Rider shift and cash reconciliation",
+      "item": [
+        {
+          "name": "End Shift with Cash Reconciliation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{riderToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cashCollected\": 1250.00,\n  \"totalDeliveries\": 8,\n  \"notes\": \"Completed all deliveries successfully\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/riders/me/shift/end",
+              "host": ["{{baseUrl}}"],
+              "path": ["riders", "me", "shift", "end"]
+            },
+            "description": "End current shift and reconcile collected cash",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has shift summary\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "    pm.expect(jsonData).to.have.property('shiftSummary');",
+                    "    pm.expect(jsonData.shiftSummary).to.have.property('shiftId');",
+                    "    pm.expect(jsonData.shiftSummary).to.have.property('totalDeliveries');",
+                    "    pm.expect(jsonData.shiftSummary).to.have.property('cashCollected');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications & Support",
+      "description": "Phase 2 Security Endpoints - Rider notifications and support system",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{riderToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/riders/me/notifications?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["riders", "me", "notifications"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get notification history for the rider",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has notifications and count\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('notifications');",
+                    "    pm.expect(jsonData).to.have.property('unreadCount');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Create Support Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{riderToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"App navigation issue\",\n  \"message\": \"Navigation is not working properly in the app\",\n  \"priority\": \"medium\",\n  \"category\": \"technical\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/riders/me/support",
+              "host": ["{{baseUrl}}"],
+              "path": ["riders", "me", "support"]
+            },
+            "description": "Create a support ticket for rider assistance",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 201\", function () {",
+                    "    pm.response.to.have.status(201);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has ticket details\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('ticketId');",
+                    "    pm.expect(jsonData).to.have.property('status');",
+                    "    pm.expect(jsonData).to.have.property('createdAt');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "System Monitoring",
+      "description": "Phase 3 Infrastructure Endpoints - System health and monitoring",
+      "item": [
+        {
+          "name": "Get System Health",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["monitoring", "health"]
+            },
+            "description": "Get comprehensive system health status",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has health information\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('status');",
+                    "    pm.expect(jsonData).to.have.property('score');",
+                    "    pm.expect(jsonData).to.have.property('metrics');",
+                    "    pm.expect(jsonData).to.have.property('connectivity');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Performance Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/performance",
+              "host": ["{{baseUrl}}"],
+              "path": ["monitoring", "performance"]
+            },
+            "description": "Get detailed performance metrics and recommendations",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has performance data\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('system');",
+                    "    pm.expect(jsonData).to.have.property('business');",
+                    "    pm.expect(jsonData).to.have.property('alerts');",
+                    "    pm.expect(jsonData).to.have.property('recommendations');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Connectivity Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/connectivity",
+              "host": ["{{baseUrl}}"],
+              "path": ["monitoring", "connectivity"]
+            },
+            "description": "Get current connectivity and sync status",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has connectivity metrics\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('connectivity');",
+                    "    pm.expect(jsonData).to.have.property('sync');",
+                    "    pm.expect(jsonData.connectivity).to.have.property('isOnline');",
+                    "    pm.expect(jsonData.connectivity).to.have.property('lastCheck');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Background Services",
+      "description": "Phase 3 Infrastructure Endpoints - Background worker management",
+      "item": [
+        {
+          "name": "Get Worker Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workers/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["workers", "status"]
+            },
+            "description": "Get status of all background workers",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has worker information\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('totalWorkers');",
+                    "    pm.expect(jsonData).to.have.property('activeWorkers');",
+                    "    pm.expect(jsonData).to.have.property('workers');",
+                    "    pm.expect(jsonData).to.have.property('timestamp');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Worker Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workers/metrics",
+              "host": ["{{baseUrl}}"],
+              "path": ["workers", "metrics"]
+            },
+            "description": "Get detailed metrics for all workers",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has worker metrics\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('workers');",
+                    "    pm.expect(jsonData.workers).to.be.an('array');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Retry Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workers/retry-metrics",
+              "host": ["{{baseUrl}}"],
+              "path": ["workers", "retry-metrics"]
+            },
+            "description": "Get retry queue metrics and failed jobs",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has retry metrics\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('deadLetterLength');",
+                    "    pm.expect(jsonData).to.have.property('retryJobs');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cache Management",
+      "description": "Phase 3 Infrastructure Endpoints - Cache operations and management",
+      "item": [
+        {
+          "name": "Get Cache Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cache/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["cache", "stats"]
+            },
+            "description": "Get cache performance statistics and memory usage",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has cache statistics\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('isActive');",
+                    "    pm.expect(jsonData).to.have.property('memory');",
+                    "    pm.expect(jsonData).to.have.property('keyspace');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Invalidate Cache Pattern",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pattern\": \"user:profile:*\",\n  \"confirm\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cache/invalidate",
+              "host": ["{{baseUrl}}"],
+              "path": ["cache", "invalidate"]
+            },
+            "description": "Invalidate cache keys matching a pattern",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has invalidation result\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "    pm.expect(jsonData).to.have.property('deletedKeys');",
+                    "});"
                   ]
                 }
               }
@@ -2392,8 +3509,1189 @@
           }
         }
       ]
+    },
+    {
+      "name": "Commission Management",
+      "description": "Admin endpoints for commission rule management",
+      "item": [
+        {
+          "name": "Get Commission Rules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/commissions/rules?scope=GLOBAL&isActive=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "commissions", "rules"],
+              "query": [
+                {
+                  "key": "scope",
+                  "value": "GLOBAL",
+                  "description": "Filter by commission scope (GLOBAL, CATEGORY, VENDOR, PRODUCT)"
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "description": "Filter by active status"
+                }
+              ]
+            },
+            "description": "Get commission rules with optional scope and active status filters",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response is array of commission rules\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.be.an('array');",
+                    "    if (jsonData.length > 0) {",
+                    "        pm.expect(jsonData[0]).to.have.property('id');",
+                    "        pm.expect(jsonData[0]).to.have.property('scope');",
+                    "        pm.expect(jsonData[0]).to.have.property('percentage');",
+                    "        pm.expect(jsonData[0]).to.have.property('isActive');",
+                    "    }",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Create Commission Rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scope\": \"GLOBAL\",\n  \"percentage\": 5.0,\n  \"priority\": 1,\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/commissions/rules",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "commissions", "rules"]
+            },
+            "description": "Create a new commission rule",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 201\", function () {",
+                    "    pm.response.to.have.status(201);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has commission rule fields\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('scope');",
+                    "    pm.expect(jsonData).to.have.property('percentage');",
+                    "    pm.expect(jsonData).to.have.property('priority');",
+                    "    pm.expect(jsonData).to.have.property('isActive');",
+                    "    pm.expect(jsonData).to.have.property('createdBy');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Commission Rule by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/commissions/rules/:ruleId",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "commissions", "rules", ":ruleId"],
+              "variable": [
+                {
+                  "key": "ruleId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Get a specific commission rule by ID",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has commission rule fields\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('scope');",
+                    "    pm.expect(jsonData).to.have.property('percentage');",
+                    "    pm.expect(jsonData).to.have.property('priority');",
+                    "    pm.expect(jsonData).to.have.property('isActive');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update Commission Rule",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"percentage\": 7.5,\n  \"priority\": 2,\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/commissions/rules/:ruleId",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "commissions", "rules", ":ruleId"],
+              "variable": [
+                {
+                  "key": "ruleId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Update a specific commission rule",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has updated commission rule\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('percentage');",
+                    "    pm.expect(jsonData).to.have.property('priority');",
+                    "    pm.expect(jsonData).to.have.property('isActive');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Delete Commission Rule",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/commissions/rules/:ruleId",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "commissions", "rules", ":ruleId"],
+              "variable": [
+                {
+                  "key": "ruleId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Delete a specific commission rule",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has success message\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscription Management",
+      "description": "Customer subscription management endpoints",
+      "item": [
+        {
+          "name": "Create Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": \"product123\",\n  \"frequency\": \"weekly\",\n  \"start_date\": \"2024-10-01\",\n  \"quantity\": 2,\n  \"special_instructions\": \"Please deliver in the morning\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions"]
+            },
+            "description": "Create a new subscription for recurring deliveries",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 201\", function () {",
+                    "    pm.response.to.have.status(201);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has subscription fields\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('userId');",
+                    "    pm.expect(jsonData).to.have.property('productId');",
+                    "    pm.expect(jsonData).to.have.property('frequency');",
+                    "    pm.expect(jsonData).to.have.property('quantity');",
+                    "    pm.expect(jsonData).to.have.property('status');",
+                    "    pm.expect(jsonData).to.have.property('nextDeliveryDate');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get User Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions"]
+            },
+            "description": "Get all subscriptions for the authenticated user",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response is array of subscriptions\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.be.an('array');",
+                    "    if (jsonData.length > 0) {",
+                    "        pm.expect(jsonData[0]).to.have.property('id');",
+                    "        pm.expect(jsonData[0]).to.have.property('productId');",
+                    "        pm.expect(jsonData[0]).to.have.property('frequency');",
+                    "        pm.expect(jsonData[0]).to.have.property('status');",
+                    "    }",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update Subscription",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"frequency\": \"daily\",\n  \"quantity\": 1,\n  \"special_instructions\": \"Updated delivery instructions\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/:subscriptionId",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", ":subscriptionId"],
+              "variable": [
+                {
+                  "key": "subscriptionId",
+                  "value": "subscription123"
+                }
+              ]
+            },
+            "description": "Update an existing subscription",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has updated subscription\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('frequency');",
+                    "    pm.expect(jsonData).to.have.property('quantity');",
+                    "    pm.expect(jsonData).to.have.property('status');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/:subscriptionId/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", ":subscriptionId", "cancel"],
+              "variable": [
+                {
+                  "key": "subscriptionId",
+                  "value": "subscription123"
+                }
+              ]
+            },
+            "description": "Cancel an active subscription",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has cancelled subscription\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('status');",
+                    "    pm.expect(jsonData.status).to.eql('cancelled');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Pause Subscription",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/:subscriptionId/pause",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", ":subscriptionId", "pause"],
+              "variable": [
+                {
+                  "key": "subscriptionId",
+                  "value": "subscription123"
+                }
+              ]
+            },
+            "description": "Pause an active subscription",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has paused subscription\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('status');",
+                    "    pm.expect(jsonData.status).to.eql('paused');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Resume Subscription",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/:subscriptionId/resume",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", ":subscriptionId", "resume"],
+              "variable": [
+                {
+                  "key": "subscriptionId",
+                  "value": "subscription123"
+                }
+              ]
+            },
+            "description": "Resume a paused subscription",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has resumed subscription\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('status');",
+                    "    pm.expect(jsonData.status).to.eql('active');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Subscription Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/:subscriptionId/analytics",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", ":subscriptionId", "analytics"],
+              "variable": [
+                {
+                  "key": "subscriptionId",
+                  "value": "subscription123"
+                }
+              ]
+            },
+            "description": "Get analytics and insights for a subscription",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has analytics data\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('subscriptionId');",
+                    "    pm.expect(jsonData).to.have.property('totalDeliveries');",
+                    "    pm.expect(jsonData).to.have.property('averageDeliveryTime');",
+                    "    pm.expect(jsonData).to.have.property('totalSpent');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wallet Management",
+      "description": "Customer wallet operations for payments and balance management",
+      "item": [
+        {
+          "name": "Get Wallet Balance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wallet",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallet"]
+            },
+            "description": "Get wallet balance and transaction history",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has wallet information\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('userId');",
+                    "    pm.expect(jsonData).to.have.property('balance');",
+                    "    pm.expect(jsonData).to.have.property('currency');",
+                    "    pm.expect(jsonData).to.have.property('isActive');",
+                    "    pm.expect(jsonData).to.have.property('transactions');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Top Up Wallet",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 500.00,\n  \"payment_method\": \"upi\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wallet/topup",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallet", "topup"]
+            },
+            "description": "Add money to wallet using various payment methods",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has transaction details\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "    pm.expect(jsonData).to.have.property('transactionId');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Enhanced Store Management",
+      "description": "Comprehensive vendor store management endpoints",
+      "item": [
+        {
+          "name": "Create Store",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Downtown Water Store\",\n  \"address\": \"123 Main Street, Downtown, Mumbai, 400001\",\n  \"phone\": \"+91-9876543210\",\n  \"active_hours\": {\n    \"monday\": {\"open\": \"09:00\", \"close\": \"21:00\"},\n    \"tuesday\": {\"open\": \"09:00\", \"close\": \"21:00\"},\n    \"wednesday\": {\"open\": \"09:00\", \"close\": \"21:00\"},\n    \"thursday\": {\"open\": \"09:00\", \"close\": \"21:00\"},\n    \"friday\": {\"open\": \"09:00\", \"close\": \"21:00\"},\n    \"saturday\": {\"open\": \"09:00\", \"close\": \"22:00\"},\n    \"sunday\": {\"open\": \"10:00\", \"close\": \"20:00\"}\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vendors/me/stores",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "me", "stores"]
+            },
+            "description": "Create a new store for the authenticated vendor",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 201\", function () {",
+                    "    pm.response.to.have.status(201);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has store fields\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('vendor_id');",
+                    "    pm.expect(jsonData).to.have.property('name');",
+                    "    pm.expect(jsonData).to.have.property('address');",
+                    "    pm.expect(jsonData).to.have.property('is_active');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get All Stores",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/me/stores?page=1&limit=10&isActive=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "me", "stores"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page"
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "description": "Filter by active status"
+                }
+              ]
+            },
+            "description": "Get all stores for the authenticated vendor with pagination and filtering",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has stores array and pagination\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('stores');",
+                    "    pm.expect(jsonData).to.have.property('total');",
+                    "    pm.expect(jsonData).to.have.property('page');",
+                    "    pm.expect(jsonData).to.have.property('limit');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Store by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/me/stores/:storeId",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "me", "stores", ":storeId"],
+              "variable": [
+                {
+                  "key": "storeId",
+                  "value": "store123"
+                }
+              ]
+            },
+            "description": "Get a specific store by ID",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has store fields\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('vendor_id');",
+                    "    pm.expect(jsonData).to.have.property('name');",
+                    "    pm.expect(jsonData).to.have.property('address');",
+                    "    pm.expect(jsonData).to.have.property('is_active');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update Store",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Downtown Water Store\",\n  \"phone\": \"+91-9876543211\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vendors/me/stores/:storeId",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "me", "stores", ":storeId"],
+              "variable": [
+                {
+                  "key": "storeId",
+                  "value": "store123"
+                }
+              ]
+            },
+            "description": "Update a specific store",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has updated store\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('name');",
+                    "    pm.expect(jsonData).to.have.property('is_active');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Delete Store",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/me/stores/:storeId",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "me", "stores", ":storeId"],
+              "variable": [
+                {
+                  "key": "storeId",
+                  "value": "store123"
+                }
+              ]
+            },
+            "description": "Soft delete a specific store",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 204\", function () {",
+                    "    pm.response.to.have.status(204);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
     }
   ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{riderToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "documentation": {
+    "overview": "Water Delivery Platform API - Complete Documentation",
+    "phases": {
+      "phase1": {
+        "name": "Core Features",
+        "description": "Basic authentication, product management, order processing, and customer services",
+        "endpoints": [
+          "Authentication & Authorization",
+          "Admin Management",
+          "Product Moderation",
+          "Order Management",
+          "Refund Management",
+          "Dispute Management",
+          "Escalation Management",
+          "Vendor Products",
+          "Store Management",
+          "Product Discovery",
+          "Customer Management",
+          "Commission Management",
+          "Subscription Management",
+          "Wallet Management",
+          "Enhanced Store Management"
+        ]
+      },
+      "phase2": {
+        "name": "Security Enhancements",
+        "description": "Rider authentication, task management, shift operations, and support systems",
+        "endpoints": [
+          "Rider Authentication",
+          "Task Management",
+          "Rider Operations",
+          "Earnings & Performance",
+          "Shift Management",
+          "Notifications & Support"
+        ]
+      },
+      "phase3": {
+        "name": "Infrastructure",
+        "description": "Background services, monitoring, caching, and system resilience",
+        "endpoints": [
+          "System Monitoring",
+          "Background Services",
+          "Cache Management"
+        ]
+      }
+    },
+    "authentication": {
+      "jwt": {
+        "description": "JWT-based authentication for all protected endpoints",
+        "tokenFormat": "Bearer <token>",
+        "expiration": "24 hours for regular tokens, 7 days for refresh tokens",
+        "roles": ["admin", "vendor", "customer", "rider"]
+      },
+      "otp": {
+        "description": "OTP-based authentication for riders",
+        "method": "SMS-based verification",
+        "validity": "5 minutes",
+        "length": "6 digits"
+      },
+      "rateLimiting": {
+        "loginAttempts": "5 attempts per 15 minutes",
+        "otpRequests": "3 requests per minute per phone number"
+      }
+    },
+    "requestResponseSchemas": {
+      "errorResponse": {
+        "400": {
+          "description": "Bad Request - Invalid input data",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "statusCode": { "type": "number", "example": 400 },
+              "message": { "type": "string", "example": "Validation failed" },
+              "error": { "type": "string", "example": "Bad Request" },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Unauthorized - Invalid or missing authentication",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "statusCode": { "type": "number", "example": 401 },
+              "message": { "type": "string", "example": "Unauthorized" },
+              "error": { "type": "string", "example": "Unauthorized" }
+            }
+          }
+        },
+        "403": {
+          "description": "Forbidden - Insufficient permissions",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "statusCode": { "type": "number", "example": 403 },
+              "message": { "type": "string", "example": "Insufficient permissions" },
+              "error": { "type": "string", "example": "Forbidden" }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found - Resource not found",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "statusCode": { "type": "number", "example": 404 },
+              "message": { "type": "string", "example": "Resource not found" },
+              "error": { "type": "string", "example": "Not Found" }
+            }
+          }
+        },
+        "500": {
+          "description": "Internal Server Error",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "statusCode": { "type": "number", "example": 500 },
+              "message": { "type": "string", "example": "Internal server error" },
+              "error": { "type": "string", "example": "Internal Server Error" }
+            }
+          }
+        }
+      },
+      "pagination": {
+        "description": "Standard pagination response format",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "data": { "type": "array", "description": "Array of items" },
+            "total": { "type": "number", "description": "Total number of items" },
+            "page": { "type": "number", "description": "Current page number" },
+            "limit": { "type": "number", "description": "Items per page" },
+            "totalPages": { "type": "number", "description": "Total number of pages" }
+          }
+        }
+      }
+    },
+    "environmentVariables": {
+      "baseUrl": {
+        "description": "Base URL for the API server",
+        "example": "http://localhost:4242",
+        "required": true
+      },
+      "adminToken": {
+        "description": "JWT token for admin operations",
+        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "required": true
+      },
+      "vendorToken": {
+        "description": "JWT token for vendor operations",
+        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "required": true
+      },
+      "customerToken": {
+        "description": "JWT token for customer operations",
+        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "required": true
+      },
+      "riderToken": {
+        "description": "JWT token for rider operations",
+        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "required": true
+      }
+    },
+    "securityConsiderations": {
+      "rateLimiting": {
+        "description": "Rate limiting is applied to prevent abuse",
+        "limits": {
+          "authentication": "5 attempts per 15 minutes",
+          "otp": "3 requests per minute per phone number",
+          "general": "100 requests per minute per user"
+        }
+      },
+      "inputValidation": {
+        "description": "All inputs are validated and sanitized",
+        "methods": ["SQL injection prevention", "XSS protection", "Input sanitization"]
+      },
+      "sessionManagement": {
+        "description": "Secure session management with automatic expiration",
+        "tokenExpiration": "24 hours for regular tokens",
+        "refreshTokenExpiration": "7 days"
+      },
+      "dataProtection": {
+        "description": "Sensitive data protection measures",
+        "methods": ["Encryption at rest", "TLS encryption in transit", "Secure token storage"]
+      }
+    },
+    "endpointCategories": {
+      "authentication": {
+        "description": "User authentication and authorization endpoints",
+        "security": "Rate limited, JWT-based authentication"
+      },
+      "taskManagement": {
+        "description": "Delivery task assignment and management",
+        "security": "Rider authentication required"
+      },
+      "deliveryOperations": {
+        "description": "Real-time delivery tracking and updates",
+        "security": "Rider authentication required"
+      },
+      "cashReconciliation": {
+        "description": "Cash collection and reconciliation processes",
+        "security": "Rider authentication required"
+      },
+      "notifications": {
+        "description": "Notification delivery and support ticket management",
+        "security": "User-specific authentication required"
+      },
+      "systemMonitoring": {
+        "description": "System health and performance monitoring",
+        "security": "Admin authentication required"
+      },
+      "backgroundServices": {
+        "description": "Background worker and queue management",
+        "security": "Admin authentication required"
+      }
+    },
+    "configuration": {
+      "redis": {
+        "description": "Redis configuration for caching and sessions",
+        "ttl": {
+          "session": "24 hours",
+          "cache": "1 hour",
+          "otp": "5 minutes"
+        }
+      },
+      "database": {
+        "description": "Database configuration and connection settings",
+        "connectionPool": "10-50 connections",
+        "timeout": "30 seconds"
+      },
+      "monitoring": {
+        "description": "System monitoring and alerting configuration",
+        "healthCheckInterval": "30 seconds",
+        "metricsCollection": "60 seconds"
+      }
+    },
+    "apiUsageExamples": {
+      "riderLogin": {
+        "description": "Complete rider authentication flow",
+        "steps": [
+          "Send OTP to phone number",
+          "Verify OTP to get JWT token",
+          "Use token for subsequent requests"
+        ]
+      },
+      "orderManagement": {
+        "description": "Complete order lifecycle",
+        "steps": [
+          "Customer creates order",
+          "System assigns to rider",
+          "Rider accepts and picks up",
+          "Rider delivers and collects payment",
+          "Rider reconciles cash at shift end"
+        ]
+      },
+      "errorHandling": {
+        "description": "Proper error handling patterns",
+        "examples": [
+          "Check response status codes",
+          "Handle rate limiting with exponential backoff",
+          "Implement retry logic for transient failures"
+        ]
+      }
+    }
+  },
   "event": [
     {
       "listen": "prerequest",

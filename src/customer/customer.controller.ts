@@ -20,7 +20,7 @@ import {
 import { CustomerService } from './customer.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { Customer } from '../common/interfaces/customer.interface';
+import { User as UserEntity } from '../modules/user/entities/user.entity';
 import { CustomerProfileDto } from '../common/dto/auth.dto';
 import {
   CreateAddressDto,
@@ -78,14 +78,14 @@ export class CustomerController {
     },
   })
   async getProfile(
-    @CurrentUser() customer: Customer,
+    @CurrentUser() customer: UserEntity,
   ): Promise<CustomerProfileDto> {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Getting profile for customer: ${customer.id}`);
+      this.logger.log(`Getting profile for customer: ${customer._id}`);
       const profile = await this.customerService.getCustomerProfile(
-        customer.id,
+        customer._id.toString(),
       );
 
       const duration = Date.now() - startTime;
@@ -94,7 +94,7 @@ export class CustomerController {
         '/customers/me',
         HttpStatus.OK,
         duration,
-        { userId: customer.id },
+        { userId: customer._id.toString() },
       );
 
       return profile;
@@ -154,18 +154,18 @@ export class CustomerController {
     description: 'Customer not found',
   })
   async updateMonthlyPaymentMode(
-    @CurrentUser() customer: Customer,
+    @CurrentUser() customer: UserEntity,
     @Body() updateDto: { monthlyPaymentMode: boolean },
   ): Promise<{ message: string; monthlyPaymentMode: boolean }> {
     const startTime = Date.now();
 
     try {
       this.logger.log(
-        `Updating monthly payment mode for customer: ${customer.id} to ${updateDto.monthlyPaymentMode}`,
+        `Updating monthly payment mode for customer: ${customer._id.toString()} to ${updateDto.monthlyPaymentMode}`,
       );
 
       await this.customerService.updateMonthlyPaymentMode(
-        customer.id,
+        customer._id.toString(),
         updateDto.monthlyPaymentMode,
       );
 
@@ -175,7 +175,7 @@ export class CustomerController {
         '/customers/monthly-payment-mode',
         HttpStatus.OK,
         duration,
-        { userId: customer.id },
+        { userId: customer._id.toString() },
       );
 
       return {
@@ -199,7 +199,8 @@ export class CustomerController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get all customer addresses',
-    description: 'Retrieve all addresses associated with the authenticated customer',
+    description:
+      'Retrieve all addresses associated with the authenticated customer',
   })
   @ApiResponse({
     status: 200,
@@ -211,14 +212,14 @@ export class CustomerController {
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   async getCustomerAddresses(
-    @CurrentUser() customer: Customer,
+    @CurrentUser() customer: UserEntity,
   ): Promise<AddressResponseDto[]> {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Getting addresses for customer: ${customer.id}`);
+      this.logger.log(`Getting addresses for customer: ${customer._id.toString()}`);
       const addresses = await this.customerService.getCustomerAddresses(
-        customer.id,
+        customer._id.toString(),
       );
 
       const duration = Date.now() - startTime;
@@ -227,7 +228,7 @@ export class CustomerController {
         '/customers/addresses',
         HttpStatus.OK,
         duration,
-        { userId: customer.id },
+        { userId: customer._id.toString() },
       );
 
       return addresses;
@@ -263,15 +264,15 @@ export class CustomerController {
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   async createAddress(
-    @CurrentUser() customer: Customer,
+    @CurrentUser() customer: UserEntity,
     @Body() createAddressDto: CreateAddressDto,
   ): Promise<AddressResponseDto> {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Creating address for customer: ${customer.id}`);
+      this.logger.log(`Creating address for customer: ${customer._id.toString()}`);
       const address = await this.customerService.createAddress(
-        customer.id,
+        customer._id.toString(),
         createAddressDto,
       );
 
@@ -281,7 +282,7 @@ export class CustomerController {
         '/customers/addresses',
         HttpStatus.CREATED,
         duration,
-        { userId: customer.id },
+        { userId: customer._id.toString() },
       );
 
       return address;
@@ -321,7 +322,7 @@ export class CustomerController {
     description: 'Address not found',
   })
   async updateAddress(
-    @CurrentUser() customer: Customer,
+    @CurrentUser() customer: UserEntity,
     @Param('id') addressId: string,
     @Body() updateAddressDto: UpdateAddressDto,
   ): Promise<AddressResponseDto> {
@@ -329,10 +330,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Updating address ${addressId} for customer: ${customer.id}`,
+        `Updating address ${addressId} for customer: ${customer._id.toString()}`,
       );
       const address = await this.customerService.updateAddress(
-        customer.id,
+        customer._id.toString(),
         addressId,
         updateAddressDto,
       );
@@ -343,7 +344,7 @@ export class CustomerController {
         `/customers/addresses/${addressId}`,
         HttpStatus.OK,
         duration,
-        { userId: customer.id },
+        { userId: customer._id.toString() },
       );
 
       return address;
@@ -387,16 +388,16 @@ export class CustomerController {
     description: 'Address not found',
   })
   async deleteAddress(
-    @CurrentUser() customer: Customer,
+    @CurrentUser() customer: UserEntity,
     @Param('id') addressId: string,
   ): Promise<{ message: string }> {
     const startTime = Date.now();
 
     try {
       this.logger.log(
-        `Deleting address ${addressId} for customer: ${customer.id}`,
+        `Deleting address ${addressId} for customer: ${customer._id.toString()}`,
       );
-      await this.customerService.deleteAddress(customer.id, addressId);
+      await this.customerService.deleteAddress(customer._id.toString(), addressId);
 
       const duration = Date.now() - startTime;
       this.logger.logApiRequest(
@@ -404,7 +405,7 @@ export class CustomerController {
         `/customers/addresses/${addressId}`,
         HttpStatus.OK,
         duration,
-        { userId: customer.id },
+        { userId: customer._id.toString() },
       );
 
       return { message: 'Address deleted successfully' };
@@ -424,7 +425,8 @@ export class CustomerController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Set default address',
-    description: 'Set a specific address as the default for the authenticated customer',
+    description:
+      'Set a specific address as the default for the authenticated customer',
   })
   @ApiResponse({
     status: 200,
@@ -452,16 +454,16 @@ export class CustomerController {
     description: 'Address not found',
   })
   async setDefaultAddress(
-    @CurrentUser() customer: Customer,
+    @CurrentUser() customer: UserEntity,
     @Param('id') addressId: string,
   ): Promise<{ message: string }> {
     const startTime = Date.now();
 
     try {
       this.logger.log(
-        `Setting address ${addressId} as default for customer: ${customer.id}`,
+        `Setting address ${addressId} as default for customer: ${customer._id.toString()}`,
       );
-      await this.customerService.setDefaultAddress(customer.id, addressId);
+      await this.customerService.setDefaultAddress(customer._id.toString(), addressId);
 
       const duration = Date.now() - startTime;
       this.logger.logApiRequest(
@@ -469,7 +471,7 @@ export class CustomerController {
         `/customers/addresses/${addressId}/default`,
         HttpStatus.OK,
         duration,
-        { userId: customer.id },
+        { userId: customer._id.toString() },
       );
 
       return { message: 'Default address set successfully' };
@@ -490,7 +492,8 @@ export class CustomerController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get customer order history',
-    description: 'Retrieve paginated order history for the authenticated customer',
+    description:
+      'Retrieve paginated order history for the authenticated customer',
   })
   @ApiResponse({
     status: 200,
@@ -501,15 +504,15 @@ export class CustomerController {
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   async getOrderHistory(
-    @CurrentUser() customer: Customer,
+    @CurrentUser() customer: UserEntity,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<any> {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Getting order history for customer: ${customer.id}`);
+      this.logger.log(`Getting order history for customer: ${customer._id.toString()}`);
       const result = await this.customerService.getOrderHistory(
-        customer.id,
+        customer._id.toString(),
         paginationQuery.page || 1,
         paginationQuery.limit || 10,
       );
@@ -520,7 +523,7 @@ export class CustomerController {
         '/customers/orders',
         HttpStatus.OK,
         duration,
-        { userId: customer.id },
+        { userId: customer._id.toString() },
       );
 
       return result;
@@ -555,17 +558,17 @@ export class CustomerController {
     description: 'Order not found',
   })
   async getOrderDetails(
-    @CurrentUser() customer: Customer,
+    @CurrentUser() customer: UserEntity,
     @Param('id') orderId: string,
   ): Promise<any> {
     const startTime = Date.now();
 
     try {
       this.logger.log(
-        `Getting order details ${orderId} for customer: ${customer.id}`,
+        `Getting order details ${orderId} for customer: ${customer._id.toString()}`,
       );
       const order = await this.customerService.getOrderDetails(
-        customer.id,
+        customer._id.toString(),
         orderId,
       );
 
@@ -575,7 +578,7 @@ export class CustomerController {
         `/customers/orders/${orderId}`,
         HttpStatus.OK,
         duration,
-        { userId: customer.id },
+        { userId: customer._id.toString() },
       );
 
       return order;
@@ -614,7 +617,7 @@ export class CustomerController {
     description: 'Order not found',
   })
   async cancelOrder(
-    @CurrentUser() customer: Customer,
+    @CurrentUser() customer: UserEntity,
     @Param('id') orderId: string,
     @Body() cancelOrderDto: any,
   ): Promise<{ message: string }> {
@@ -622,9 +625,13 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Cancelling order ${orderId} for customer: ${customer.id}`,
+        `Cancelling order ${orderId} for customer: ${customer._id.toString()}`,
       );
-      await this.customerService.cancelOrder(customer.id, orderId, cancelOrderDto.reason);
+      await this.customerService.cancelOrder(
+        customer._id.toString(),
+        orderId,
+        cancelOrderDto.reason,
+      );
 
       const duration = Date.now() - startTime;
       this.logger.logApiRequest(
@@ -632,7 +639,7 @@ export class CustomerController {
         `/customers/orders/${orderId}/cancel`,
         HttpStatus.OK,
         duration,
-        { userId: customer.id },
+        { userId: customer._id.toString() },
       );
 
       return { message: 'Order cancelled successfully' };
@@ -671,7 +678,7 @@ export class CustomerController {
     description: 'Order not found',
   })
   async requestRefund(
-    @CurrentUser() customer: Customer,
+    @CurrentUser() customer: UserEntity,
     @Param('id') orderId: string,
     @Body() refundRequestDto: any,
   ): Promise<{ message: string }> {
@@ -679,10 +686,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Requesting refund for order ${orderId} for customer: ${customer.id}`,
+        `Requesting refund for order ${orderId} for customer: ${customer._id.toString()}`,
       );
       await this.customerService.requestRefund(
-        customer.id,
+        customer._id.toString(),
         orderId,
         refundRequestDto.reason,
         refundRequestDto.description,
@@ -694,7 +701,7 @@ export class CustomerController {
         `/customers/orders/${orderId}/refund`,
         HttpStatus.OK,
         duration,
-        { userId: customer.id },
+        { userId: customer._id.toString() },
       );
 
       return { message: 'Refund request submitted successfully' };
@@ -726,14 +733,14 @@ export class CustomerController {
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   async getCustomerSubscriptions(
-    @CurrentUser() customer: Customer,
+    @CurrentUser() customer: UserEntity,
   ): Promise<any[]> {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Getting subscriptions for customer: ${customer.id}`);
+      this.logger.log(`Getting subscriptions for customer: ${customer._id.toString()}`);
       const subscriptions = await this.customerService.getCustomerSubscriptions(
-        customer.id,
+        customer._id.toString(),
       );
 
       const duration = Date.now() - startTime;
@@ -742,7 +749,7 @@ export class CustomerController {
         '/customers/subscriptions',
         HttpStatus.OK,
         duration,
-        { userId: customer.id },
+        { userId: customer._id.toString() },
       );
 
       return subscriptions;
@@ -777,15 +784,15 @@ export class CustomerController {
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   async createSubscription(
-    @CurrentUser() customer: Customer,
+    @CurrentUser() customer: UserEntity,
     @Body() createSubscriptionDto: any,
   ): Promise<any> {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Creating subscription for customer: ${customer.id}`);
+      this.logger.log(`Creating subscription for customer: ${customer._id.toString()}`);
       const subscription = await this.customerService.createSubscription(
-        customer.id,
+        customer._id.toString(),
         createSubscriptionDto,
       );
 
@@ -795,7 +802,7 @@ export class CustomerController {
         '/customers/subscriptions',
         HttpStatus.CREATED,
         duration,
-        { userId: customer.id },
+        { userId: customer._id.toString() },
       );
 
       return subscription;
@@ -834,7 +841,7 @@ export class CustomerController {
     description: 'Subscription not found',
   })
   async updateSubscription(
-    @CurrentUser() customer: Customer,
+    @CurrentUser() customer: UserEntity,
     @Param('id') subscriptionId: string,
     @Body() updateSubscriptionDto: any,
   ): Promise<any> {
@@ -842,10 +849,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Updating subscription ${subscriptionId} for customer: ${customer.id}`,
+        `Updating subscription ${subscriptionId} for customer: ${customer._id.toString()}`,
       );
       const subscription = await this.customerService.updateSubscription(
-        customer.id,
+        customer._id.toString(),
         subscriptionId,
         updateSubscriptionDto,
       );
@@ -856,7 +863,7 @@ export class CustomerController {
         `/customers/subscriptions/${subscriptionId}`,
         HttpStatus.OK,
         duration,
-        { userId: customer.id },
+        { userId: customer._id.toString() },
       );
 
       return subscription;
@@ -895,7 +902,7 @@ export class CustomerController {
     description: 'Subscription not found',
   })
   async cancelSubscription(
-    @CurrentUser() customer: Customer,
+    @CurrentUser() customer: UserEntity,
     @Param('id') subscriptionId: string,
     @Body() cancelSubscriptionDto: any,
   ): Promise<{ message: string }> {
@@ -903,10 +910,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Cancelling subscription ${subscriptionId} for customer: ${customer.id}`,
+        `Cancelling subscription ${subscriptionId} for customer: ${customer._id.toString()}`,
       );
       await this.customerService.cancelSubscription(
-        customer.id,
+        customer._id.toString(),
         subscriptionId,
         cancelSubscriptionDto.reason,
       );
@@ -917,7 +924,7 @@ export class CustomerController {
         `/customers/subscriptions/${subscriptionId}`,
         HttpStatus.OK,
         duration,
-        { userId: customer.id },
+        { userId: customer._id.toString() },
       );
 
       return { message: 'Subscription cancelled successfully' };
@@ -958,15 +965,15 @@ export class CustomerController {
     description: 'Customer not found',
   })
   async updateProfile(
-    @CurrentUser() customer: Customer,
+    @CurrentUser() customer: UserEntity,
     @Body() updateProfileDto: any,
   ): Promise<CustomerProfileDto> {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Updating profile for customer: ${customer.id}`);
+      this.logger.log(`Updating profile for customer: ${customer._id.toString()}`);
       const profile = await this.customerService.updateProfile(
-        customer.id,
+        customer._id.toString(),
         updateProfileDto,
       );
 
@@ -976,7 +983,7 @@ export class CustomerController {
         '/customers/profile',
         HttpStatus.OK,
         duration,
-        { userId: customer.id },
+        { userId: customer._id.toString() },
       );
 
       return profile;
@@ -1024,15 +1031,15 @@ export class CustomerController {
     description: 'Customer not found',
   })
   async updatePreferences(
-    @CurrentUser() customer: Customer,
+    @CurrentUser() customer: UserEntity,
     @Body() updatePreferencesDto: any,
   ): Promise<{ message: string }> {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Updating preferences for customer: ${customer.id}`);
+      this.logger.log(`Updating preferences for customer: ${customer._id.toString()}`);
       await this.customerService.updatePreferences(
-        customer.id,
+        customer._id.toString(),
         updatePreferencesDto,
       );
 
@@ -1042,7 +1049,7 @@ export class CustomerController {
         '/customers/preferences',
         HttpStatus.OK,
         duration,
-        { userId: customer.id },
+        { userId: customer._id.toString() },
       );
 
       return { message: 'Preferences updated successfully' };

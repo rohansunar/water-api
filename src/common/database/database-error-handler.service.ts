@@ -78,7 +78,11 @@ export class DatabaseErrorHandlerService {
     const isRetryable = this.isRetryableError(error, config);
 
     // Convert to appropriate business exception
-    const businessException = this.convertToBusinessException(error, context, isRetryable);
+    const businessException = this.convertToBusinessException(
+      error,
+      context,
+      isRetryable,
+    );
 
     // Log the business exception
     this.customLogger.logDatabaseOperation(
@@ -359,7 +363,9 @@ export class DatabaseErrorHandlerService {
     ];
 
     const errorMessage = error.message || '';
-    return connectionErrorPatterns.some((pattern) => pattern.test(errorMessage));
+    return connectionErrorPatterns.some((pattern) =>
+      pattern.test(errorMessage),
+    );
   }
 
   /**

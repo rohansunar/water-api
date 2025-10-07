@@ -4,7 +4,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaService } from '../common/database/prisma.service';
 import { CustomLoggerService } from '../common/logger/logger.service';
 import {
   ProductModerationDto,
@@ -25,7 +25,6 @@ enum ProductModerationStatus {
 @Injectable()
 export class ProductModerationService {
   private readonly logger = new Logger(ProductModerationService.name);
-  private prisma = new PrismaClient();
 
   // Keywords that trigger auto-flagging
   private readonly flaggedKeywords = [
@@ -57,7 +56,21 @@ export class ProductModerationService {
 
   constructor(
     private readonly customLogger: CustomLoggerService,
+    private readonly prismaService: PrismaService,
   ) {}
+
+  private safeBigIntConversion(id: string | bigint | number): bigint {
+    if (typeof id === 'bigint') {
+      return id;
+    }
+    if (typeof id === 'number') {
+      return BigInt(id);
+    }
+    if (typeof id === 'string') {
+      return BigInt(id);
+    }
+    throw new BadRequestException(`Invalid ID format: ${id}`);
+  }
 
   async getProductsForModeration(
     query: ProductModerationListQueryDto,
@@ -68,11 +81,11 @@ export class ProductModerationService {
 
       const where: any = {};
       if (status) where.moderationStatus = status;
-      if (vendorId) where.vendorId = BigInt(vendorId);
+      if (vendorId) where.vendorId = this.safeBigIntConversion(vendorId);
       if (category) where.category = category;
 
       const [products, total] = await Promise.all([
-        this.prisma.product.findMany({
+        this.prismaService.product.findMany({
           where,
           include: {
             vendor: {
@@ -86,7 +99,7 @@ export class ProductModerationService {
           take: limit,
           orderBy: { createdAt: 'desc' },
         }),
-        this.prisma.product.count({ where }),
+        this.prismaService.product.count({ where }),
       ]);
 
       const productDtos: ProductModerationDto[] = products.map((product) => ({
@@ -102,7 +115,7 @@ export class ProductModerationService {
         moderationStatus: product.moderationStatus,
         flaggedReason: product.flaggedReason || undefined,
         autoFlagged: product.autoFlagged,
-        complianceIssues: product.complianceIssues as any[] || undefined,
+        complianceIssues: (product.complianceIssues as any[]) || undefined,
         createdAt: product.createdAt,
         moderatedAt: product.moderatedAt || undefined,
         moderatedBy: product.moderator?.name || undefined,
@@ -114,7 +127,9 @@ export class ProductModerationService {
       return { products: productDtos, total };
     } catch (error) {
       this.logger.error('Error retrieving products for moderation:', error);
-      throw new BadRequestException('Failed to retrieve products for moderation');
+      throw new BadRequestException(
+        'Failed to retrieve products for moderation',
+      );
     }
   }
 
@@ -124,8 +139,8 @@ export class ProductModerationService {
     dto: ApproveProductDto,
   ): Promise<{ message: string }> {
     try {
-      const product = await this.prisma.product.findUnique({
-        where: { id: BigInt(productId) },
+      const product = await this.prismaService.product.findUnique({
+        where: { id: this.safeBigIntConversion(productId) },
         include: { vendor: true },
       });
 
@@ -137,11 +152,11 @@ export class ProductModerationService {
         throw new BadRequestException('Product is already approved');
       }
 
-      await this.prisma.product.update({
-        where: { id: BigInt(productId) },
+      await this.prismaService.product.update({
+        where: { id: this.safeBigIntConversion(productId) },
         data: {
           moderationStatus: ProductModerationStatus.APPROVED,
-          moderatedBy: BigInt(adminId),
+          moderatedBy: this.safeBigIntConversion(adminId),
           moderatedAt: new Date(),
           flaggedReason: null,
           complianceIssues: null,
@@ -160,7 +175,10 @@ export class ProductModerationService {
       return { message: 'Product approved successfully' };
     } catch (error) {
       this.logger.error(`Error approving product ${productId}:`, error);
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new BadRequestException('Failed to approve product');
@@ -173,8 +191,8 @@ export class ProductModerationService {
     dto: RejectProductDto,
   ): Promise<{ message: string }> {
     try {
-      const product = await this.prisma.product.findUnique({
-        where: { id: BigInt(productId) },
+      const product = await this.prismaService.product.findUnique({
+        where: { id: this.safeBigIntConversion(productId) },
         include: { vendor: true },
       });
 
@@ -186,17 +204,19 @@ export class ProductModerationService {
         throw new BadRequestException('Product is already rejected');
       }
 
-      await this.prisma.product.update({
-        where: { id: BigInt(productId) },
+      await this.prismaService.product.update({
+        where: { id: this.safeBigIntConversion(productId) },
         data: {
           moderationStatus: ProductModerationStatus.REJECTED,
-          moderatedBy: BigInt(adminId),
+          moderatedBy: this.safeBigIntConversion(adminId),
           moderatedAt: new Date(),
           flaggedReason: dto.reason,
         },
       });
 
-      this.logger.log(`Rejected product ${productId} by admin ${adminId} with reason: ${dto.reason}`);
+      this.logger.log(
+        `Rejected product ${productId} by admin ${adminId} with reason: ${dto.reason}`,
+      );
       this.customLogger.logBusinessEvent('product_rejected', {
         productId,
         adminId,
@@ -209,7 +229,10 @@ export class ProductModerationService {
       return { message: 'Product rejected successfully' };
     } catch (error) {
       this.logger.error(`Error rejecting product ${productId}:`, error);
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new BadRequestException('Failed to reject product');
@@ -227,13 +250,14 @@ export class ProductModerationService {
         throw new BadRequestException('Reason is required for rejection');
       }
 
-      const products = await this.prisma.product.findMany({
+      const products = await this.prismaService.product.findMany({
         where: {
-          id: { in: productIds.map(id => BigInt(id)) },
+          id: { in: productIds.map((id) => this.safeBigIntConversion(id)) },
           moderationStatus: {
-            notIn: action === 'approve'
-              ? [ProductModerationStatus.APPROVED]
-              : [ProductModerationStatus.REJECTED],
+            notIn:
+              action === 'approve'
+                ? [ProductModerationStatus.APPROVED]
+                : [ProductModerationStatus.REJECTED],
           },
         },
         include: { vendor: true },
@@ -243,23 +267,24 @@ export class ProductModerationService {
         return { message: 'No products to process', processed: 0 };
       }
 
-      const updateData = action === 'approve'
-        ? {
-            moderationStatus: ProductModerationStatus.APPROVED,
-            moderatedBy: BigInt(adminId),
-            moderatedAt: new Date(),
-            flaggedReason: null,
-            complianceIssues: null,
-          }
-        : {
-            moderationStatus: ProductModerationStatus.REJECTED,
-            moderatedBy: BigInt(adminId),
-            moderatedAt: new Date(),
-            flaggedReason: reason,
-          };
+      const updateData =
+        action === 'approve'
+          ? {
+              moderationStatus: ProductModerationStatus.APPROVED,
+              moderatedBy: this.safeBigIntConversion(adminId),
+              moderatedAt: new Date(),
+              flaggedReason: null,
+              complianceIssues: null,
+            }
+          : {
+              moderationStatus: ProductModerationStatus.REJECTED,
+              moderatedBy: BigInt(adminId),
+              moderatedAt: new Date(),
+              flaggedReason: reason,
+            };
 
-      await this.prisma.product.updateMany({
-        where: { id: { in: products.map(p => p.id) } },
+      await this.prismaService.product.updateMany({
+        where: { id: { in: products.map((p) => p.id) } },
         data: updateData,
       });
 
@@ -279,7 +304,9 @@ export class ProductModerationService {
         );
       }
 
-      this.logger.log(`Bulk ${action} processed ${products.length} products by admin ${adminId}`);
+      this.logger.log(
+        `Bulk ${action} processed ${products.length} products by admin ${adminId}`,
+      );
       return {
         message: `Successfully ${action}d ${products.length} product(s)`,
         processed: products.length,
@@ -309,23 +336,31 @@ export class ProductModerationService {
         approvedToday,
         rejectedToday,
       ] = await Promise.all([
-        this.prisma.product.count({ where: { moderationStatus: ProductModerationStatus.PENDING } }),
-        this.prisma.product.count({ where: { moderationStatus: ProductModerationStatus.APPROVED } }),
-        this.prisma.product.count({ where: { moderationStatus: ProductModerationStatus.REJECTED } }),
-        this.prisma.product.count({ where: { moderationStatus: ProductModerationStatus.FLAGGED } }),
-        this.prisma.product.count({
+        this.prismaService.product.count({
+          where: { moderationStatus: ProductModerationStatus.PENDING },
+        }),
+        this.prismaService.product.count({
+          where: { moderationStatus: ProductModerationStatus.APPROVED },
+        }),
+        this.prismaService.product.count({
+          where: { moderationStatus: ProductModerationStatus.REJECTED },
+        }),
+        this.prismaService.product.count({
+          where: { moderationStatus: ProductModerationStatus.FLAGGED },
+        }),
+        this.prismaService.product.count({
           where: {
             moderationStatus: ProductModerationStatus.PENDING,
             createdAt: { gte: today, lt: tomorrow },
           },
         }),
-        this.prisma.product.count({
+        this.prismaService.product.count({
           where: {
             moderationStatus: ProductModerationStatus.APPROVED,
             moderatedAt: { gte: today, lt: tomorrow },
           },
         }),
-        this.prisma.product.count({
+        this.prismaService.product.count({
           where: {
             moderationStatus: ProductModerationStatus.REJECTED,
             moderatedAt: { gte: today, lt: tomorrow },
@@ -353,8 +388,8 @@ export class ProductModerationService {
 
   async autoFlagProduct(productId: string): Promise<void> {
     try {
-      const product = await this.prisma.product.findUnique({
-        where: { id: BigInt(productId) },
+      const product = await this.prismaService.product.findUnique({
+        where: { id: this.safeBigIntConversion(productId) },
       });
 
       if (!product) {
@@ -368,12 +403,13 @@ export class ProductModerationService {
       const shouldFlag = hasIssues || flaggedKeywords.length > 0;
 
       if (shouldFlag) {
-        const reason = flaggedKeywords.length > 0
-          ? `Contains flagged keywords: ${flaggedKeywords.join(', ')}`
-          : 'Compliance issues detected';
+        const reason =
+          flaggedKeywords.length > 0
+            ? `Contains flagged keywords: ${flaggedKeywords.join(', ')}`
+            : 'Compliance issues detected';
 
-        await this.prisma.product.update({
-          where: { id: BigInt(productId) },
+        await this.prismaService.product.update({
+          where: { id: this.safeBigIntConversion(productId) },
           data: {
             moderationStatus: ProductModerationStatus.FLAGGED,
             flaggedReason: reason,
@@ -391,8 +427,8 @@ export class ProductModerationService {
         });
       } else {
         // Set to pending for manual review
-        await this.prisma.product.update({
-          where: { id: BigInt(productId) },
+        await this.prismaService.product.update({
+          where: { id: this.safeBigIntConversion(productId) },
           data: {
             moderationStatus: ProductModerationStatus.PENDING,
             autoFlagged: false,
@@ -410,7 +446,7 @@ export class ProductModerationService {
 
   private checkForFlaggedKeywords(product: any): string[] {
     const text = `${product.name} ${product.description || ''}`.toLowerCase();
-    return this.flaggedKeywords.filter(keyword => text.includes(keyword));
+    return this.flaggedKeywords.filter((keyword) => text.includes(keyword));
   }
 
   private checkCompliance(product: any): any[] {

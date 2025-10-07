@@ -172,7 +172,10 @@ export class AdminController {
       `Admin ${user.id} updating user ${userId} status to ${updateDto.isActive}`,
     );
 
-    const result = await this.adminService.updateUserStatus(userId, updateDto.isActive);
+    const result = await this.adminService.updateUserStatus(
+      userId,
+      updateDto.isActive,
+    );
 
     await this.auditUserStatusUpdate(user.id, userId, updateDto.isActive);
 
@@ -295,11 +298,7 @@ export class AdminController {
     this.logger.log(
       `Admin ${user.id} rejecting product ${productId} with reason: ${dto.reason}`,
     );
-    return this.productModerationService.rejectProduct(
-      productId,
-      user.id,
-      dto,
-    );
+    return this.productModerationService.rejectProduct(productId, user.id, dto);
   }
 
   @Post('products/bulk-moderate')
@@ -310,10 +309,7 @@ export class AdminController {
     this.logger.log(
       `Admin ${user.id} performing bulk ${dto.action} on ${dto.productIds.length} products`,
     );
-    return this.productModerationService.bulkModerateProducts(
-      user.id,
-      dto,
-    );
+    return this.productModerationService.bulkModerateProducts(user.id, dto);
   }
 
   // Order Management Endpoints
@@ -414,7 +410,9 @@ export class AdminController {
     @Body() dto: CreateRefundDto,
     @AdminCurrentUser() user: any,
   ): Promise<RefundResponseDto> {
-    this.logger.log(`Admin ${user.id} creating refund for order ${dto.orderId}`);
+    this.logger.log(
+      `Admin ${user.id} creating refund for order ${dto.orderId}`,
+    );
     return this.refundService.createRefund(dto.orderId, dto, BigInt(user.id));
   }
 
@@ -434,7 +432,11 @@ export class AdminController {
     @AdminCurrentUser() user: any,
   ): Promise<RefundResponseDto> {
     this.logger.log(`Admin ${user.id} approving refund ${refundId}`);
-    return this.refundService.approveRefund(BigInt(refundId), dto, BigInt(user.id));
+    return this.refundService.approveRefund(
+      BigInt(refundId),
+      dto,
+      BigInt(user.id),
+    );
   }
 
   @Put('refunds/:refundId/reject')
@@ -444,7 +446,11 @@ export class AdminController {
     @AdminCurrentUser() user: any,
   ): Promise<RefundResponseDto> {
     this.logger.log(`Admin ${user.id} rejecting refund ${refundId}`);
-    return this.refundService.rejectRefund(BigInt(refundId), dto, BigInt(user.id));
+    return this.refundService.rejectRefund(
+      BigInt(refundId),
+      dto,
+      BigInt(user.id),
+    );
   }
 
   @Put('refunds/:refundId/process')
@@ -454,7 +460,11 @@ export class AdminController {
     @AdminCurrentUser() user: any,
   ): Promise<RefundResponseDto> {
     this.logger.log(`Admin ${user.id} processing refund ${refundId}`);
-    return this.refundService.processRefund(BigInt(refundId), dto, BigInt(user.id));
+    return this.refundService.processRefund(
+      BigInt(refundId),
+      dto,
+      BigInt(user.id),
+    );
   }
 
   // Dispute Management Endpoints
@@ -463,7 +473,9 @@ export class AdminController {
     @Body() dto: CreateDisputeDto,
     @AdminCurrentUser() user: any,
   ): Promise<DisputeResponseDto> {
-    this.logger.log(`Admin ${user.id} creating dispute for order ${dto.orderId}`);
+    this.logger.log(
+      `Admin ${user.id} creating dispute for order ${dto.orderId}`,
+    );
     return this.disputeService.createDispute(
       dto.orderId,
       BigInt(user.id),
@@ -488,7 +500,11 @@ export class AdminController {
     @AdminCurrentUser() user: any,
   ): Promise<DisputeResponseDto> {
     this.logger.log(`Admin ${user.id} resolving dispute ${disputeId}`);
-    return this.disputeService.resolveDispute(BigInt(disputeId), dto, BigInt(user.id));
+    return this.disputeService.resolveDispute(
+      BigInt(disputeId),
+      dto,
+      BigInt(user.id),
+    );
   }
 
   @Put('disputes/:disputeId/status')
@@ -498,7 +514,11 @@ export class AdminController {
     @AdminCurrentUser() user: any,
   ): Promise<DisputeResponseDto> {
     this.logger.log(`Admin ${user.id} updating dispute ${disputeId} status`);
-    return this.disputeService.updateDisputeStatus(BigInt(disputeId), dto, BigInt(user.id));
+    return this.disputeService.updateDisputeStatus(
+      BigInt(disputeId),
+      dto,
+      BigInt(user.id),
+    );
   }
 
   @Post('disputes/:disputeId/escalate')
@@ -522,7 +542,9 @@ export class AdminController {
     @AdminCurrentUser() user: any,
     @Query() query: ComplaintListQueryDto,
   ): Promise<AdminPaginatedResponseDto<ComplaintResponseDto>> {
-    this.logger.log(`Admin ${user.id} retrieving complaints with filters: ${JSON.stringify(query)}`);
+    this.logger.log(
+      `Admin ${user.id} retrieving complaints with filters: ${JSON.stringify(query)}`,
+    );
     return this.adminService.getComplaints(query);
   }
 
@@ -532,7 +554,9 @@ export class AdminController {
     @AdminCurrentUser() user: any,
     @Query() query: ProductSearchDto,
   ): Promise<AdminPaginatedResponseDto<ProductResponseDto>> {
-    this.logger.log(`Admin ${user.id} retrieving products with filters: ${JSON.stringify(query)}`);
+    this.logger.log(
+      `Admin ${user.id} retrieving products with filters: ${JSON.stringify(query)}`,
+    );
     return this.adminService.getProducts(query);
   }
 
@@ -541,7 +565,9 @@ export class AdminController {
     @AdminCurrentUser() user: any,
     @Query() query: AdminPaginationQueryDto,
   ): Promise<AdminPaginatedResponseDto<any>> {
-    this.logger.log(`Admin ${user.id} retrieving reviews with filters: ${JSON.stringify(query)}`);
+    this.logger.log(
+      `Admin ${user.id} retrieving reviews with filters: ${JSON.stringify(query)}`,
+    );
     return this.adminService.getReviews(query);
   }
 
@@ -550,7 +576,9 @@ export class AdminController {
     @AdminCurrentUser() user: any,
     @Query() query: AdminPaginationQueryDto,
   ): Promise<AdminPaginatedResponseDto<any>> {
-    this.logger.log(`Admin ${user.id} retrieving reports with filters: ${JSON.stringify(query)}`);
+    this.logger.log(
+      `Admin ${user.id} retrieving reports with filters: ${JSON.stringify(query)}`,
+    );
     return this.adminService.getReports(query);
   }
 
@@ -571,7 +599,11 @@ export class AdminController {
     @AdminCurrentUser() user: any,
   ): Promise<EscalationResponseDto> {
     this.logger.log(`Admin ${user.id} resolving escalation ${escalationId}`);
-    return this.escalationService.resolveEscalation(BigInt(escalationId), dto, BigInt(user.id));
+    return this.escalationService.resolveEscalation(
+      BigInt(escalationId),
+      dto,
+      BigInt(user.id),
+    );
   }
 
   @Put('escalations/:escalationId/status')
@@ -580,7 +612,13 @@ export class AdminController {
     @Body() dto: UpdateEscalationStatusDto,
     @AdminCurrentUser() user: any,
   ): Promise<EscalationResponseDto> {
-    this.logger.log(`Admin ${user.id} updating escalation ${escalationId} status`);
-    return this.escalationService.updateEscalationStatus(BigInt(escalationId), dto, BigInt(user.id));
+    this.logger.log(
+      `Admin ${user.id} updating escalation ${escalationId} status`,
+    );
+    return this.escalationService.updateEscalationStatus(
+      BigInt(escalationId),
+      dto,
+      BigInt(user.id),
+    );
   }
 }

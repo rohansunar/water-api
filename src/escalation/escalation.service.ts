@@ -4,7 +4,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaService } from '../common/database/prisma.service';
 import { EscalationStatus } from '../common/interfaces/escalation.interface';
 import {
   CreateEscalationDto,
@@ -17,9 +17,21 @@ import {
 @Injectable()
 export class EscalationService {
   private readonly logger = new Logger(EscalationService.name);
-  private prisma = new PrismaClient();
 
-  constructor() {}
+  constructor(private readonly prismaService: PrismaService) {}
+
+  private safeBigIntConversion(id: string | bigint | number): bigint {
+    if (typeof id === 'bigint') {
+      return id;
+    }
+    if (typeof id === 'number') {
+      return BigInt(id);
+    }
+    if (typeof id === 'string') {
+      return BigInt(id);
+    }
+    throw new BadRequestException(`Invalid ID format: ${id}`);
+  }
 
   async createEscalation(
     createEscalationDto: CreateEscalationDto,
@@ -27,8 +39,8 @@ export class EscalationService {
   ): Promise<EscalationResponseDto> {
     try {
       // Find the dispute
-      const dispute = await this.prisma.dispute.findUnique({
-        where: { id: BigInt(createEscalationDto.disputeId) },
+      const dispute = await this.prismaService.dispute.findUnique({
+        where: { id: this.safeBigIntConversion(createEscalationDto.disputeId) },
       });
 
       if (!dispute) {
@@ -36,9 +48,9 @@ export class EscalationService {
       }
 
       // Check if escalation already exists for this dispute
-      const existingEscalation = await this.prisma.escalation.findFirst({
+      const existingEscalation = await this.prismaService.escalation.findFirst({
         where: {
-          disputeId: BigInt(createEscalationDto.disputeId),
+          disputeId: this.safeBigIntConversion(createEscalationDto.disputeId),
           status: {
             notIn: [EscalationStatus.RESOLVED, EscalationStatus.CLOSED],
           },
@@ -46,13 +58,15 @@ export class EscalationService {
       });
 
       if (existingEscalation) {
-        throw new BadRequestException('Escalation already exists for this dispute');
+        throw new BadRequestException(
+          'Escalation already exists for this dispute',
+        );
       }
 
       // Create escalation
-      const escalation = await this.prisma.escalation.create({
+      const escalation = await this.prismaService.escalation.create({
         data: {
-          disputeId: BigInt(createEscalationDto.disputeId),
+          disputeId: this.safeBigIntConversion(createEscalationDto.disputeId),
           escalatedBy,
           escalatedTo: createEscalationDto.escalatedTo,
           reason: createEscalationDto.reason,
@@ -62,16 +76,21 @@ export class EscalationService {
       });
 
       // Update dispute status to escalated
-      await this.prisma.dispute.update({
-        where: { id: BigInt(createEscalationDto.disputeId) },
+      await this.prismaService.dispute.update({
+        where: { id: this.safeBigIntConversion(createEscalationDto.disputeId) },
         data: { status: 'ESCALATED' },
       });
 
-      this.logger.log(`Created escalation ${escalation.id} for dispute ${createEscalationDto.disputeId}`);
+      this.logger.log(
+        `Created escalation ${escalation.id} for dispute ${createEscalationDto.disputeId}`,
+      );
 
       return this.mapToResponseDto(escalation);
     } catch (error) {
-      this.logger.error(`Failed to create escalation for dispute ${createEscalationDto.disputeId}:`, error);
+      this.logger.error(
+        `Failed to create escalation for dispute ${createEscalationDto.disputeId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -82,7 +101,7 @@ export class EscalationService {
     resolvedBy: bigint,
   ): Promise<EscalationResponseDto> {
     try {
-      const escalation = await this.prisma.escalation.findUnique({
+      const escalation = await this.prismaService.escalation.findUnique({
         where: { id: escalationId },
         include: { dispute: true },
       });
@@ -91,12 +110,15 @@ export class EscalationService {
         throw new NotFoundException('Escalation not found');
       }
 
-      if (escalation.status === EscalationStatus.RESOLVED || escalation.status === EscalationStatus.CLOSED) {
+      if (
+        escalation.status === EscalationStatus.RESOLVED ||
+        escalation.status === EscalationStatus.CLOSED
+      ) {
         throw new BadRequestException('Escalation is already resolved');
       }
 
       // Update escalation status
-      const updatedEscalation = await this.prisma.escalation.update({
+      const updatedEscalation = await this.prismaService.escalation.update({
         where: { id: escalationId },
         data: {
           status: EscalationStatus.RESOLVED,
@@ -107,7 +129,7 @@ export class EscalationService {
       });
 
       // Update dispute status to resolved
-      await this.prisma.dispute.update({
+      await this.prismaService.dispute.update({
         where: { id: escalation.disputeId },
         data: {
           status: 'RESOLVED',
@@ -117,7 +139,9 @@ export class EscalationService {
         },
       });
 
-      this.logger.log(`Resolved escalation ${escalationId} by admin ${resolvedBy}`);
+      this.logger.log(
+        `Resolved escalation ${escalationId} by admin ${resolvedBy}`,
+      );
 
       return this.mapToResponseDto(updatedEscalation);
     } catch (error) {
@@ -132,7 +156,7 @@ export class EscalationService {
     updatedBy: bigint,
   ): Promise<EscalationResponseDto> {
     try {
-      const escalation = await this.prisma.escalation.findUnique({
+      const escalation = await this.prismaService.escalation.findUnique({
         where: { id: escalationId },
       });
 
@@ -141,18 +165,23 @@ export class EscalationService {
       }
 
       // Update escalation status
-      const updatedEscalation = await this.prisma.escalation.update({
+      const updatedEscalation = await this.prismaService.escalation.update({
         where: { id: escalationId },
         data: {
           status: updateDto.status,
         },
       });
 
-      this.logger.log(`Updated escalation ${escalationId} status to ${updateDto.status} by admin ${updatedBy}`);
+      this.logger.log(
+        `Updated escalation ${escalationId} status to ${updateDto.status} by admin ${updatedBy}`,
+      );
 
       return this.mapToResponseDto(updatedEscalation);
     } catch (error) {
-      this.logger.error(`Failed to update escalation ${escalationId} status:`, error);
+      this.logger.error(
+        `Failed to update escalation ${escalationId} status:`,
+        error,
+      );
       throw error;
     }
   }
@@ -177,8 +206,8 @@ export class EscalationService {
       }
 
       if (query.disputeId) {
-        const dispute = await this.prisma.dispute.findUnique({
-          where: { id: BigInt(query.disputeId) },
+        const dispute = await this.prismaService.dispute.findUnique({
+          where: { id: this.safeBigIntConversion(query.disputeId) },
         });
         if (dispute) {
           where.disputeId = dispute.id;
@@ -186,7 +215,7 @@ export class EscalationService {
       }
 
       const [escalations, total] = await Promise.all([
-        this.prisma.escalation.findMany({
+        this.prismaService.escalation.findMany({
           where,
           include: {
             dispute: {
@@ -206,11 +235,13 @@ export class EscalationService {
           skip: ((query.page || 1) - 1) * (query.limit || 10),
           take: query.limit || 10,
         }),
-        this.prisma.escalation.count({ where }),
+        this.prismaService.escalation.count({ where }),
       ]);
 
       return {
-        escalations: escalations.map(escalation => this.mapToResponseDto(escalation)),
+        escalations: escalations.map((escalation) =>
+          this.mapToResponseDto(escalation),
+        ),
         total,
       };
     } catch (error) {
@@ -219,8 +250,10 @@ export class EscalationService {
     }
   }
 
-  async getEscalationById(escalationId: bigint): Promise<EscalationResponseDto> {
-    const escalation = await this.prisma.escalation.findUnique({
+  async getEscalationById(
+    escalationId: bigint,
+  ): Promise<EscalationResponseDto> {
+    const escalation = await this.prismaService.escalation.findUnique({
       where: { id: escalationId },
       include: {
         dispute: {
@@ -245,8 +278,10 @@ export class EscalationService {
     return this.mapToResponseDto(escalation);
   }
 
-  async getEscalationsByDispute(disputeId: bigint): Promise<EscalationResponseDto[]> {
-    const escalations = await this.prisma.escalation.findMany({
+  async getEscalationsByDispute(
+    disputeId: bigint,
+  ): Promise<EscalationResponseDto[]> {
+    const escalations = await this.prismaService.escalation.findMany({
       where: { disputeId },
       include: {
         escalator: { select: { name: true } },
@@ -255,7 +290,7 @@ export class EscalationService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return escalations.map(escalation => this.mapToResponseDto(escalation));
+    return escalations.map((escalation) => this.mapToResponseDto(escalation));
   }
 
   private mapToResponseDto(escalation: any): EscalationResponseDto {

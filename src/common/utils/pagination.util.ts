@@ -1,5 +1,12 @@
 import { Type } from 'class-transformer';
-import { IsOptional, IsNumber, Min, Max, IsString, IsEnum } from 'class-validator';
+import {
+  IsOptional,
+  IsNumber,
+  Min,
+  Max,
+  IsString,
+  IsEnum,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export enum SortOrder {
@@ -142,7 +149,10 @@ export class PaginationUtil {
   /**
    * Build sort object for database queries
    */
-  static buildSort(sort?: string, order: SortOrder = SortOrder.DESC): Record<string, 'asc' | 'desc'> {
+  static buildSort(
+    sort?: string,
+    order: SortOrder = SortOrder.DESC,
+  ): Record<string, 'asc' | 'desc'> {
     if (!sort) {
       return { createdAt: order };
     }

@@ -1,4 +1,11 @@
-import { IsEnum, IsOptional, IsString, IsArray, IsUUID, ArrayNotEmpty } from 'class-validator';
+import {
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsArray,
+  IsUUID,
+  ArrayNotEmpty,
+} from 'class-validator';
 import { ProductModerationStatus } from '@prisma/client';
 
 export class ProductModerationDto {

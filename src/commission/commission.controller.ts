@@ -24,7 +24,7 @@ import {
   CommissionRuleResponseDto,
 } from '../common/dto/commission.dto';
 
-@Controller('admin/commissions')
+@Controller('admin/commissions/rules')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 export class CommissionController {
@@ -37,11 +37,23 @@ export class CommissionController {
     @CurrentUser() user: User,
     @Query('scope') scope?: CommissionScope,
     @Query('isActive') isActive?: boolean,
-  ): Promise<CommissionRuleResponseDto[]> {
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ): Promise<{
+    rules: CommissionRuleResponseDto[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
     this.logger.log(
-      `Admin ${user.id} retrieving commission rules with filters: scope=${scope}, isActive=${isActive}`,
+      `Admin ${user.id} retrieving commission rules with filters: scope=${scope}, isActive=${isActive}, page=${page}, limit=${limit}`,
     );
-    return this.commissionService.getCommissionRules(scope, isActive);
+    return this.commissionService.getCommissionRules(
+      scope,
+      isActive,
+      page,
+      limit,
+    );
   }
 
   @Post()

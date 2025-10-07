@@ -142,7 +142,7 @@ export class AdminOrderResponseDto {
 
   @ApiProperty({
     description: 'Total amount',
-    example: 150.50,
+    example: 150.5,
   })
   totalAmount: number;
 

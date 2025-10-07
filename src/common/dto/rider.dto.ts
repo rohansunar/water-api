@@ -180,7 +180,7 @@ export class EarningsHistoryDto {
 
   @ApiProperty({
     description: 'Amount earned from this delivery',
-    example: 50.00,
+    example: 50.0,
   })
   amount: number;
 
@@ -216,7 +216,7 @@ export class EarningsHistoryDto {
 export class EarningsSummaryDto {
   @ApiProperty({
     description: 'Total earnings for the period',
-    example: 1250.50,
+    example: 1250.5,
   })
   totalEarnings: number;
 
@@ -228,25 +228,25 @@ export class EarningsSummaryDto {
 
   @ApiProperty({
     description: 'Average earnings per delivery',
-    example: 50.00,
+    example: 50.0,
   })
   averagePerDelivery: number;
 
   @ApiProperty({
     description: 'Total tips received',
-    example: 150.00,
+    example: 150.0,
   })
   totalTips: number;
 
   @ApiProperty({
     description: 'Total bonuses earned',
-    example: 100.00,
+    example: 100.0,
   })
   totalBonuses: number;
 
   @ApiProperty({
     description: 'Current pending withdrawal amount',
-    example: 800.00,
+    example: 800.0,
   })
   pendingWithdrawal: number;
 
@@ -266,7 +266,7 @@ export class EarningsSummaryDto {
 export class WithdrawalRequestDto {
   @ApiProperty({
     description: 'Amount to withdraw',
-    example: 500.00,
+    example: 500.0,
     minimum: 100,
   })
   @IsNumber({}, { message: 'Amount must be a number' })
@@ -305,7 +305,7 @@ export class WithdrawalHistoryDto {
 
   @ApiProperty({
     description: 'Amount withdrawn',
-    example: 500.00,
+    example: 500.0,
   })
   amount: number;
 
@@ -766,7 +766,7 @@ export class PerformanceMetricsDto {
 
   @ApiProperty({
     description: 'Total earnings this month',
-    example: 12500.00,
+    example: 12500.0,
   })
   monthlyEarnings: number;
 
@@ -904,13 +904,13 @@ export class PerformanceGoalsDto {
 
   @ApiProperty({
     description: 'Monthly earnings goal',
-    example: 15000.00,
+    example: 15000.0,
   })
   monthlyEarnings: number;
 
   @ApiProperty({
     description: 'Current earnings this month',
-    example: 11250.00,
+    example: 11250.0,
   })
   currentEarnings: number;
 
@@ -957,7 +957,15 @@ export class ScheduleSlotDto {
   @ApiProperty({
     description: 'Day of the week',
     example: 'monday',
-    enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+    enum: [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ],
   })
   dayOfWeek: string;
 
@@ -992,11 +1000,30 @@ export class CreateScheduleDto {
   @ApiProperty({
     description: 'Day of the week',
     example: 'monday',
-    enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+    enum: [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ],
   })
-  @IsEnum(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'], {
-    message: 'Day must be a valid day of the week',
-  })
+  @IsEnum(
+    [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ],
+    {
+      message: 'Day must be a valid day of the week',
+    },
+  )
   dayOfWeek: string;
 }
 

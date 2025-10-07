@@ -13,7 +13,9 @@ export interface Customer {
 }
 
 // Legacy interface for backward compatibility during migration
-export interface User extends Customer {}
+export interface User extends Customer {
+  _id: string;
+}
 
 export interface Address {
   id: string;

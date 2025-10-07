@@ -34,6 +34,15 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { SecurityMiddleware } from './common/middleware/security.middleware';
 import { GracefulDegradationMiddleware } from './common/middleware/graceful-degradation.middleware';
 import { StoreModule } from './store/store.module';
+import { WorkerBaseService } from './common/services/worker-base.service';
+import { TaskAssignmentWorker } from './common/services/task-assignment.worker';
+import { NotificationWorker } from './common/services/notification.worker';
+import { ReconciliationWorker } from './common/services/reconciliation.worker';
+import { RetryWorker } from './common/services/retry.worker';
+import { FraudDetectionWorker } from './common/services/fraud-detection.worker';
+import { WorkerManagerService } from './common/services/worker-manager.service';
+import { PrismaModule } from './common/database/prisma.module';
+import { RedisModule } from './common/services/redis.module';
 
 @Module({
   imports: [
@@ -45,6 +54,8 @@ import { StoreModule } from './store/store.module';
     MongooseModule.forRoot(
       process.env.MONGODB_URI || 'mongodb://localhost:27017/water-jar-delivery',
     ),
+    PrismaModule,
+    RedisModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 1 minute
@@ -74,6 +85,12 @@ import { StoreModule } from './store/store.module';
   providers: [
     AppService,
     DatabaseInitService,
+    TaskAssignmentWorker,
+    NotificationWorker,
+    ReconciliationWorker,
+    RetryWorker,
+    FraudDetectionWorker,
+    WorkerManagerService,
     {
       provide: APP_GUARD,
       useClass: CustomThrottlerGuard,
@@ -100,6 +117,12 @@ import { StoreModule } from './store/store.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(RequestIdMiddleware, SecurityMiddleware, GracefulDegradationMiddleware).forRoutes('*');
+    consumer
+      .apply(
+        RequestIdMiddleware,
+        SecurityMiddleware,
+        GracefulDegradationMiddleware,
+      )
+      .forRoutes('*');
   }
 }

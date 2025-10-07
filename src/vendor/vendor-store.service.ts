@@ -68,7 +68,9 @@ export class VendorStoreService {
           { vendorId, storeName: name, reason: 'store_name_exists' },
           vendorId,
         );
-        throw new ConflictException('Store with this name already exists for this vendor');
+        throw new ConflictException(
+          'Store with this name already exists for this vendor',
+        );
       }
 
       // Create store
@@ -111,7 +113,12 @@ export class VendorStoreService {
     page: number = 1,
     limit: number = 10,
     isActive?: boolean,
-  ): Promise<{ stores: StoreResponseDto[]; total: number; page: number; limit: number }> {
+  ): Promise<{
+    stores: StoreResponseDto[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const startTime = Date.now();
     try {
       const skip = (page - 1) * limit;
@@ -151,12 +158,18 @@ export class VendorStoreService {
         { vendorId, error: error.message },
         vendorId,
       );
-      this.logger.error(`Stores retrieval failed for vendor ${vendorId}:`, error);
+      this.logger.error(
+        `Stores retrieval failed for vendor ${vendorId}:`,
+        error,
+      );
       throw new BadRequestException('Failed to retrieve stores');
     }
   }
 
-  async getStoreById(vendorId: string, storeId: string): Promise<StoreResponseDto> {
+  async getStoreById(
+    vendorId: string,
+    storeId: string,
+  ): Promise<StoreResponseDto> {
     const startTime = Date.now();
     try {
       const store = await this.storeModel.findOne({
@@ -189,7 +202,10 @@ export class VendorStoreService {
         { vendorId, storeId, error: error.message },
         vendorId,
       );
-      this.logger.error(`Store retrieval failed for vendor ${vendorId}, store ${storeId}:`, error);
+      this.logger.error(
+        `Store retrieval failed for vendor ${vendorId}, store ${storeId}:`,
+        error,
+      );
       throw new BadRequestException('Failed to retrieve store');
     }
   }
@@ -232,7 +248,9 @@ export class VendorStoreService {
             { vendorId, storeId, reason: 'name_conflict' },
             vendorId,
           );
-          throw new ConflictException('Store with this name already exists for this vendor');
+          throw new ConflictException(
+            'Store with this name already exists for this vendor',
+          );
         }
       }
 
@@ -267,7 +285,10 @@ export class VendorStoreService {
         { vendorId, storeId, error: error.message },
         vendorId,
       );
-      this.logger.error(`Store update failed for vendor ${vendorId}, store ${storeId}:`, error);
+      this.logger.error(
+        `Store update failed for vendor ${vendorId}, store ${storeId}:`,
+        error,
+      );
       throw new BadRequestException('Store update failed');
     }
   }
@@ -309,7 +330,10 @@ export class VendorStoreService {
         { vendorId, storeId, error: error.message },
         vendorId,
       );
-      this.logger.error(`Store deletion failed for vendor ${vendorId}, store ${storeId}:`, error);
+      this.logger.error(
+        `Store deletion failed for vendor ${vendorId}, store ${storeId}:`,
+        error,
+      );
       throw new BadRequestException('Store deletion failed');
     }
   }

@@ -4,8 +4,11 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
-import { DisputeStatus, DisputePriority } from '../common/interfaces/dispute.interface';
+import { PrismaService } from '../common/database/prisma.service';
+import {
+  DisputeStatus,
+  DisputePriority,
+} from '../common/interfaces/dispute.interface';
 import {
   CreateDisputeDto,
   ResolveDisputeDto,
@@ -18,9 +21,11 @@ import { RefundService } from '../refund/refund.service';
 @Injectable()
 export class DisputeService {
   private readonly logger = new Logger(DisputeService.name);
-  private prisma = new PrismaClient();
 
-  constructor(private readonly refundService: RefundService) {}
+  constructor(
+    private readonly refundService: RefundService,
+    private readonly prismaService: PrismaService,
+  ) {}
 
   async createDispute(
     orderId: string,
@@ -30,7 +35,7 @@ export class DisputeService {
   ): Promise<DisputeResponseDto> {
     try {
       // Find the order
-      const order = await this.prisma.order.findUnique({
+      const order = await this.prismaService.order.findUnique({
         where: { orderUuid: orderId },
       });
 
@@ -40,15 +45,19 @@ export class DisputeService {
 
       // Validate that the user can raise dispute for this order
       if (raisedByType === 'customer' && order.customerId !== raisedBy) {
-        throw new BadRequestException('You can only raise disputes for your own orders');
+        throw new BadRequestException(
+          'You can only raise disputes for your own orders',
+        );
       }
 
       if (raisedByType === 'vendor' && order.vendorId !== raisedBy) {
-        throw new BadRequestException('You can only raise disputes for your own orders');
+        throw new BadRequestException(
+          'You can only raise disputes for your own orders',
+        );
       }
 
       // Check if dispute already exists for this order
-      const existingDispute = await this.prisma.dispute.findFirst({
+      const existingDispute = await this.prismaService.dispute.findFirst({
         where: {
           orderId: order.id,
           orderCreatedAt: order.createdAt,
@@ -63,7 +72,7 @@ export class DisputeService {
       }
 
       // Create dispute
-      const dispute = await this.prisma.dispute.create({
+      const dispute = await this.prismaService.dispute.create({
         data: {
           orderId: order.id,
           orderCreatedAt: order.createdAt,
@@ -78,11 +87,16 @@ export class DisputeService {
         },
       });
 
-      this.logger.log(`Created dispute ${dispute.id} for order ${orderId} by ${raisedByType} ${raisedBy}`);
+      this.logger.log(
+        `Created dispute ${dispute.id} for order ${orderId} by ${raisedByType} ${raisedBy}`,
+      );
 
       return this.mapToResponseDto(dispute);
     } catch (error) {
-      this.logger.error(`Failed to create dispute for order ${orderId}:`, error);
+      this.logger.error(
+        `Failed to create dispute for order ${orderId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -93,7 +107,7 @@ export class DisputeService {
     resolvedBy: bigint,
   ): Promise<DisputeResponseDto> {
     try {
-      const dispute = await this.prisma.dispute.findUnique({
+      const dispute = await this.prismaService.dispute.findUnique({
         where: { id: disputeId },
         include: { order: true },
       });
@@ -102,12 +116,15 @@ export class DisputeService {
         throw new NotFoundException('Dispute not found');
       }
 
-      if (dispute.status === DisputeStatus.RESOLVED || dispute.status === DisputeStatus.CLOSED) {
+      if (
+        dispute.status === DisputeStatus.RESOLVED ||
+        dispute.status === DisputeStatus.CLOSED
+      ) {
         throw new BadRequestException('Dispute is already resolved');
       }
 
       // Update dispute status
-      const updatedDispute = await this.prisma.dispute.update({
+      const updatedDispute = await this.prismaService.dispute.update({
         where: { id: disputeId },
         data: {
           status: DisputeStatus.RESOLVED,
@@ -121,7 +138,9 @@ export class DisputeService {
       if (resolveDto.resolution.toLowerCase().includes('refund')) {
         try {
           // Extract refund amount from resolution or use order total
-          const refundAmount = this.extractRefundAmount(resolveDto.resolution) || dispute.order.totalAmount.toNumber();
+          const refundAmount =
+            this.extractRefundAmount(resolveDto.resolution) ||
+            dispute.order.totalAmount.toNumber();
 
           await this.refundService.createRefund(
             dispute.order.orderUuid,
@@ -136,7 +155,10 @@ export class DisputeService {
 
           this.logger.log(`Created refund for resolved dispute ${disputeId}`);
         } catch (refundError) {
-          this.logger.error(`Failed to create refund for dispute ${disputeId}:`, refundError);
+          this.logger.error(
+            `Failed to create refund for dispute ${disputeId}:`,
+            refundError,
+          );
           // Don't fail the dispute resolution if refund creation fails
         }
       }
@@ -156,7 +178,7 @@ export class DisputeService {
     updatedBy: bigint,
   ): Promise<DisputeResponseDto> {
     try {
-      const dispute = await this.prisma.dispute.findUnique({
+      const dispute = await this.prismaService.dispute.findUnique({
         where: { id: disputeId },
       });
 
@@ -165,14 +187,16 @@ export class DisputeService {
       }
 
       // Update dispute status
-      const updatedDispute = await this.prisma.dispute.update({
+      const updatedDispute = await this.prismaService.dispute.update({
         where: { id: disputeId },
         data: {
           status: updateDto.status,
         },
       });
 
-      this.logger.log(`Updated dispute ${disputeId} status to ${updateDto.status} by admin ${updatedBy}`);
+      this.logger.log(
+        `Updated dispute ${disputeId} status to ${updateDto.status} by admin ${updatedBy}`,
+      );
 
       return this.mapToResponseDto(updatedDispute);
     } catch (error) {
@@ -188,7 +212,7 @@ export class DisputeService {
     reason: string,
   ): Promise<DisputeResponseDto> {
     try {
-      const dispute = await this.prisma.dispute.findUnique({
+      const dispute = await this.prismaService.dispute.findUnique({
         where: { id: disputeId },
       });
 
@@ -197,7 +221,7 @@ export class DisputeService {
       }
 
       // Update dispute status to escalated
-      const updatedDispute = await this.prisma.dispute.update({
+      const updatedDispute = await this.prismaService.dispute.update({
         where: { id: disputeId },
         data: {
           status: DisputeStatus.ESCALATED,
@@ -205,7 +229,7 @@ export class DisputeService {
       });
 
       // Create escalation record
-      await this.prisma.escalation.create({
+      await this.prismaService.escalation.create({
         data: {
           disputeId,
           escalatedBy,
@@ -216,7 +240,9 @@ export class DisputeService {
         },
       });
 
-      this.logger.log(`Escalated dispute ${disputeId} to ${escalatedTo} by admin ${escalatedBy}`);
+      this.logger.log(
+        `Escalated dispute ${disputeId} to ${escalatedTo} by admin ${escalatedBy}`,
+      );
 
       return this.mapToResponseDto(updatedDispute);
     } catch (error) {
@@ -245,7 +271,7 @@ export class DisputeService {
       }
 
       if (query.orderId) {
-        const order = await this.prisma.order.findUnique({
+        const order = await this.prismaService.order.findUnique({
           where: { orderUuid: query.orderId },
         });
         if (order) {
@@ -255,7 +281,7 @@ export class DisputeService {
       }
 
       const [disputes, total] = await Promise.all([
-        this.prisma.dispute.findMany({
+        this.prismaService.dispute.findMany({
           where,
           include: {
             order: {
@@ -270,11 +296,11 @@ export class DisputeService {
           skip: ((query.page || 1) - 1) * (query.limit || 10),
           take: query.limit || 10,
         }),
-        this.prisma.dispute.count({ where }),
+        this.prismaService.dispute.count({ where }),
       ]);
 
       return {
-        disputes: disputes.map(dispute => this.mapToResponseDto(dispute)),
+        disputes: disputes.map((dispute) => this.mapToResponseDto(dispute)),
         total,
       };
     } catch (error) {
@@ -284,7 +310,7 @@ export class DisputeService {
   }
 
   async getDisputeById(disputeId: bigint): Promise<DisputeResponseDto> {
-    const dispute = await this.prisma.dispute.findUnique({
+    const dispute = await this.prismaService.dispute.findUnique({
       where: { id: disputeId },
       include: {
         order: {
@@ -306,7 +332,7 @@ export class DisputeService {
   }
 
   async getDisputesByOrder(orderId: string): Promise<DisputeResponseDto[]> {
-    const order = await this.prisma.order.findUnique({
+    const order = await this.prismaService.order.findUnique({
       where: { orderUuid: orderId },
     });
 
@@ -314,7 +340,7 @@ export class DisputeService {
       throw new NotFoundException('Order not found');
     }
 
-    const disputes = await this.prisma.dispute.findMany({
+    const disputes = await this.prismaService.dispute.findMany({
       where: {
         orderId: order.id,
         orderCreatedAt: order.createdAt,
@@ -325,7 +351,7 @@ export class DisputeService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return disputes.map(dispute => this.mapToResponseDto(dispute));
+    return disputes.map((dispute) => this.mapToResponseDto(dispute));
   }
 
   private extractRefundAmount(resolution: string): number | null {

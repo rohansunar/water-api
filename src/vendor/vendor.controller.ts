@@ -119,9 +119,7 @@ export class VendorController {
 
   // Store Management Endpoints
   @Get('store')
-  async getStoreDetails(
-    @CurrentUser() user: User,
-  ): Promise<StoreResponseDto> {
+  async getStoreDetails(@CurrentUser() user: User): Promise<StoreResponseDto> {
     this.logger.log(`Getting store details for vendor user: ${user.id}`);
     return this.vendorService.getStoreDetails(user.id);
   }
@@ -248,9 +246,7 @@ export class VendorController {
   }
 
   @Get('products/categories')
-  async getProductCategories(
-    @CurrentUser() user: User,
-  ): Promise<string[]> {
+  async getProductCategories(@CurrentUser() user: User): Promise<string[]> {
     this.logger.log(`Getting product categories for vendor user: ${user.id}`);
     return this.vendorService.getProductCategories(user.id);
   }
@@ -260,7 +256,9 @@ export class VendorController {
     @CurrentUser() user: User,
     @Body() bulkOperationsDto: any, // TODO: Create proper DTO
   ): Promise<{ message: string; processed: number }> {
-    this.logger.log(`Performing bulk product operations for vendor user: ${user.id}`);
+    this.logger.log(
+      `Performing bulk product operations for vendor user: ${user.id}`,
+    );
     return this.vendorService.bulkProductOperations(user.id, bulkOperationsDto);
   }
 

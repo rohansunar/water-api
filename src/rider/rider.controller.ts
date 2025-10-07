@@ -214,7 +214,8 @@ export class RiderController {
   @Get('earnings')
   @ApiOperation({
     summary: 'Get earnings history with pagination',
-    description: 'Retrieve paginated earnings history for the authenticated rider',
+    description:
+      'Retrieve paginated earnings history for the authenticated rider',
   })
   @ApiResponse({
     status: 200,
@@ -249,7 +250,8 @@ export class RiderController {
   @Get('earnings/:id')
   @ApiOperation({
     summary: 'Get specific earning details',
-    description: 'Retrieve detailed information about a specific earning record',
+    description:
+      'Retrieve detailed information about a specific earning record',
   })
   @ApiParam({
     name: 'id',
@@ -294,9 +296,7 @@ export class RiderController {
     @CurrentUser() user: User,
     @Body() withdrawalDto: WithdrawalRequestDto,
   ): Promise<WithdrawalHistoryDto> {
-    this.logger.log(
-      `Processing withdrawal request for rider user: ${user.id}`,
-    );
+    this.logger.log(`Processing withdrawal request for rider user: ${user.id}`);
     return this.riderService.requestWithdrawal(user.id, withdrawalDto);
   }
 
@@ -314,9 +314,7 @@ export class RiderController {
     @CurrentUser() user: User,
     @Query() paginationDto: PaginationQueryDto,
   ): Promise<PaginationResponseDto<WithdrawalHistoryDto>> {
-    this.logger.log(
-      `Getting withdrawal history for rider user: ${user.id}`,
-    );
+    this.logger.log(`Getting withdrawal history for rider user: ${user.id}`);
     return this.riderService.getWithdrawalHistory(user.id, paginationDto);
   }
 
@@ -325,7 +323,8 @@ export class RiderController {
   @Get('deliveries')
   @ApiOperation({
     summary: 'Get delivery history with pagination',
-    description: 'Retrieve paginated delivery history for the authenticated rider',
+    description:
+      'Retrieve paginated delivery history for the authenticated rider',
   })
   @ApiResponse({
     status: 200,
@@ -379,9 +378,7 @@ export class RiderController {
     description: 'Delivery statistics retrieved successfully',
     type: DeliveryStatsDto,
   })
-  async getDeliveryStats(
-    @CurrentUser() user: User,
-  ): Promise<DeliveryStatsDto> {
+  async getDeliveryStats(@CurrentUser() user: User): Promise<DeliveryStatsDto> {
     this.logger.log(`Getting delivery stats for rider user: ${user.id}`);
     return this.riderService.getDeliveryStats(user.id);
   }
@@ -411,9 +408,7 @@ export class RiderController {
     @CurrentUser() user: User,
     @Body() rateDto: RateDeliveryDto,
   ): Promise<DeliveryHistoryDto> {
-    this.logger.log(
-      `Rating delivery ${deliveryId} for rider user: ${user.id}`,
-    );
+    this.logger.log(`Rating delivery ${deliveryId} for rider user: ${user.id}`);
     return this.riderService.rateDelivery(user.id, deliveryId, rateDto);
   }
 
@@ -430,9 +425,7 @@ export class RiderController {
   async getUpcomingDeliveries(
     @CurrentUser() user: User,
   ): Promise<UpcomingDeliveryDto[]> {
-    this.logger.log(
-      `Getting upcoming deliveries for rider user: ${user.id}`,
-    );
+    this.logger.log(`Getting upcoming deliveries for rider user: ${user.id}`);
     return this.riderService.getUpcomingDeliveries(user.id);
   }
 
@@ -470,9 +463,7 @@ export class RiderController {
     @CurrentUser() user: User,
     @Body() preferencesDto: RoutePreferencesDto,
   ): Promise<RoutePreferencesDto> {
-    this.logger.log(
-      `Setting route preferences for rider user: ${user.id}`,
-    );
+    this.logger.log(`Setting route preferences for rider user: ${user.id}`);
     return this.riderService.setRoutePreferences(user.id, preferencesDto);
   }
 
@@ -517,9 +508,7 @@ export class RiderController {
     @Param('id') routeId: string,
     @CurrentUser() user: User,
   ): Promise<RouteHistoryDto> {
-    this.logger.log(
-      `Completing route ${routeId} for rider user: ${user.id}`,
-    );
+    this.logger.log(`Completing route ${routeId} for rider user: ${user.id}`);
     return this.riderService.completeRoute(user.id, routeId);
   }
 
@@ -552,9 +541,7 @@ export class RiderController {
     description: 'Rating details retrieved successfully',
     type: RiderRatingDto,
   })
-  async getRiderRating(
-    @CurrentUser() user: User,
-  ): Promise<RiderRatingDto> {
+  async getRiderRating(@CurrentUser() user: User): Promise<RiderRatingDto> {
     this.logger.log(`Getting rating details for rider user: ${user.id}`);
     return this.riderService.getRiderRating(user.id);
   }
@@ -572,9 +559,7 @@ export class RiderController {
   async getLeaderboardPosition(
     @CurrentUser() user: User,
   ): Promise<LeaderboardPositionDto> {
-    this.logger.log(
-      `Getting leaderboard position for rider user: ${user.id}`,
-    );
+    this.logger.log(`Getting leaderboard position for rider user: ${user.id}`);
     return this.riderService.getLeaderboardPosition(user.id);
   }
 
@@ -607,9 +592,7 @@ export class RiderController {
     description: 'Schedule retrieved successfully',
     type: [ScheduleSlotDto],
   })
-  async getSchedule(
-    @CurrentUser() user: User,
-  ): Promise<ScheduleSlotDto[]> {
+  async getSchedule(@CurrentUser() user: User): Promise<ScheduleSlotDto[]> {
     this.logger.log(`Getting schedule for rider user: ${user.id}`);
     return this.riderService.getSchedule(user.id);
   }
@@ -633,9 +616,7 @@ export class RiderController {
     @CurrentUser() user: User,
     @Body() scheduleDto: CreateScheduleDto,
   ): Promise<ScheduleSlotDto> {
-    this.logger.log(
-      `Creating schedule slot for rider user: ${user.id}`,
-    );
+    this.logger.log(`Creating schedule slot for rider user: ${user.id}`);
     return this.riderService.createScheduleSlot(user.id, scheduleDto);
   }
 
@@ -711,9 +692,285 @@ export class RiderController {
   async getAvailabilityStatus(
     @CurrentUser() user: User,
   ): Promise<AvailabilityStatusDto> {
-    this.logger.log(
-      `Getting availability status for rider user: ${user.id}`,
-    );
+    this.logger.log(`Getting availability status for rider user: ${user.id}`);
     return this.riderService.getAvailabilityStatus(user.id);
+  }
+
+  // ===== PHASE 2 ADDITIONAL ENDPOINTS =====
+
+  @Post('me/shift/end')
+  @ApiOperation({
+    summary: 'End shift with cash reconciliation',
+    description: 'End the current shift and reconcile cash collected',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        cashCollected: {
+          type: 'number',
+          description: 'Total cash collected during shift',
+        },
+        totalDeliveries: {
+          type: 'number',
+          description: 'Number of deliveries completed',
+        },
+        notes: {
+          type: 'string',
+          description: 'Optional notes about the shift',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Shift ended successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        shiftSummary: {
+          type: 'object',
+          properties: {
+            shiftId: { type: 'string' },
+            startTime: { type: 'string', format: 'date-time' },
+            endTime: { type: 'string', format: 'date-time' },
+            totalDeliveries: { type: 'number' },
+            cashCollected: { type: 'number' },
+            status: { type: 'string' },
+          },
+        },
+      },
+    },
+  })
+  async endShift(
+    @CurrentUser() user: User,
+    @Body()
+    shiftEndDto: {
+      cashCollected: number;
+      totalDeliveries: number;
+      notes?: string;
+    },
+  ): Promise<{ message: string; shiftSummary: any }> {
+    this.logger.log(`Ending shift for rider user: ${user.id}`);
+    return this.riderService.endShift(user.id, shiftEndDto);
+  }
+
+  @Get('me/notifications')
+  @ApiOperation({
+    summary: 'Get notification history',
+    description: 'Retrieve notification history for the rider',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Notifications retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        notifications: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              type: { type: 'string' },
+              title: { type: 'string' },
+              message: { type: 'string' },
+              read: { type: 'boolean' },
+              createdAt: { type: 'string', format: 'date-time' },
+            },
+          },
+        },
+        unreadCount: { type: 'number' },
+      },
+    },
+  })
+  async getNotifications(
+    @CurrentUser() user: User,
+    @Query() paginationDto: PaginationQueryDto,
+  ): Promise<{ notifications: any[]; unreadCount: number }> {
+    this.logger.log(`Getting notifications for rider user: ${user.id}`);
+    return this.riderService.getNotifications(user.id, paginationDto);
+  }
+
+  @Post('me/support')
+  @ApiOperation({
+    summary: 'Create support ticket',
+    description: 'Create a support ticket for rider assistance',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        subject: { type: 'string', description: 'Support ticket subject' },
+        message: {
+          type: 'string',
+          description: 'Detailed description of the issue',
+        },
+        priority: { type: 'string', enum: ['low', 'medium', 'high', 'urgent'] },
+        category: { type: 'string', description: 'Issue category' },
+      },
+      required: ['subject', 'message'],
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Support ticket created successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        ticketId: { type: 'string' },
+        status: { type: 'string' },
+        createdAt: { type: 'string', format: 'date-time' },
+        estimatedResolution: { type: 'string', format: 'date-time' },
+      },
+    },
+  })
+  async createSupportTicket(
+    @CurrentUser() user: User,
+    @Body()
+    supportDto: {
+      subject: string;
+      message: string;
+      priority?: string;
+      category?: string;
+    },
+  ): Promise<{
+    ticketId: string;
+    status: string;
+    createdAt: Date;
+    estimatedResolution: Date;
+  }> {
+    this.logger.log(`Creating support ticket for rider user: ${user.id}`);
+    return this.riderService.createSupportTicket(user.id, supportDto);
+  }
+
+  @Post('me/tasks/:taskId/deliver')
+  @ApiOperation({
+    summary: 'Complete delivery with photo',
+    description:
+      'Mark delivery as completed and upload delivery confirmation photo',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task/delivery identifier',
+    example: 'task-123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        deliveryNotes: {
+          type: 'string',
+          description: 'Optional delivery notes',
+        },
+        customerSignature: {
+          type: 'string',
+          description: 'Base64 encoded customer signature (optional)',
+        },
+        photoRequired: {
+          type: 'boolean',
+          description: 'Whether photo is required for this delivery',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Delivery completed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string' },
+        status: { type: 'string' },
+        completedAt: { type: 'string', format: 'date-time' },
+        photoUrl: { type: 'string' },
+        message: { type: 'string' },
+      },
+    },
+  })
+  async completeDelivery(
+    @Param('taskId') taskId: string,
+    @CurrentUser() user: User,
+    @Body()
+    deliveryDto: {
+      deliveryNotes?: string;
+      customerSignature?: string;
+      photoRequired?: boolean;
+    },
+  ): Promise<{
+    taskId: string;
+    status: string;
+    completedAt: Date;
+    photoUrl?: string;
+    message: string;
+  }> {
+    this.logger.log(`Completing delivery ${taskId} for rider user: ${user.id}`);
+    return this.riderService.completeDelivery(user.id, taskId, deliveryDto);
+  }
+
+  @Post('me/tasks/:taskId/fail')
+  @ApiOperation({
+    summary: 'Mark delivery as failed',
+    description: 'Mark a delivery task as failed with reason',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task/delivery identifier',
+    example: 'task-123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        reason: { type: 'string', description: 'Reason for delivery failure' },
+        details: { type: 'string', description: 'Detailed explanation' },
+        retryable: {
+          type: 'boolean',
+          description: 'Whether the delivery can be retried',
+        },
+        customerContacted: {
+          type: 'boolean',
+          description: 'Whether customer was contacted',
+        },
+      },
+      required: ['reason'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Delivery marked as failed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string' },
+        status: { type: 'string' },
+        failedAt: { type: 'string', format: 'date-time' },
+        reason: { type: 'string' },
+        canRetry: { type: 'boolean' },
+        message: { type: 'string' },
+      },
+    },
+  })
+  async failDelivery(
+    @Param('taskId') taskId: string,
+    @CurrentUser() user: User,
+    @Body()
+    failureDto: {
+      reason: string;
+      details?: string;
+      retryable?: boolean;
+      customerContacted?: boolean;
+    },
+  ): Promise<{
+    taskId: string;
+    status: string;
+    failedAt: Date;
+    reason: string;
+    canRetry: boolean;
+    message: string;
+  }> {
+    this.logger.log(`Failing delivery ${taskId} for rider user: ${user.id}`);
+    return this.riderService.failDelivery(user.id, taskId, failureDto);
   }
 }

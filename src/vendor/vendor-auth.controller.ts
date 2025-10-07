@@ -8,7 +8,11 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { VendorAuthService } from './vendor-auth.service';
-import { VendorSignupDto, VendorLoginDto, VendorAuthResponseDto } from '../common/dto/vendor.dto';
+import {
+  VendorSignupDto,
+  VendorLoginDto,
+  VendorAuthResponseDto,
+} from '../common/dto/vendor.dto';
 import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Vendor Authentication')
@@ -38,7 +42,10 @@ export class VendorAuthController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 409 },
-        message: { type: 'string', example: 'Vendor with this email already exists' },
+        message: {
+          type: 'string',
+          example: 'Vendor with this email already exists',
+        },
         error: { type: 'string', example: 'Conflict' },
       },
     },
@@ -55,8 +62,12 @@ export class VendorAuthController {
       },
     },
   })
-  async signup(@Body() signupDto: VendorSignupDto): Promise<VendorAuthResponseDto> {
-    this.logger.log(`Vendor signup attempt for business: ${signupDto.businessName}, email: ${signupDto.email}`);
+  async signup(
+    @Body() signupDto: VendorSignupDto,
+  ): Promise<VendorAuthResponseDto> {
+    this.logger.log(
+      `Vendor signup attempt for business: ${signupDto.businessName}, email: ${signupDto.email}`,
+    );
     return this.vendorAuthService.signup(signupDto);
   }
 
@@ -96,7 +107,9 @@ export class VendorAuthController {
       },
     },
   })
-  async login(@Body() loginDto: VendorLoginDto): Promise<VendorAuthResponseDto> {
+  async login(
+    @Body() loginDto: VendorLoginDto,
+  ): Promise<VendorAuthResponseDto> {
     this.logger.log(`Vendor login attempt for email: ${loginDto.email}`);
     return this.vendorAuthService.login(loginDto);
   }

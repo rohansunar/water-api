@@ -86,14 +86,16 @@ export class Product {
     areaPincodes?: string[];
   };
 
-  @Prop([{
-    storeId: { type: String, required: true },
-    price: { type: Number, min: 0 },
-    stockQuantity: { type: Number, min: 0, default: 0 },
-    reservedStock: { type: Number, min: 0, default: 0 },
-    isAvailable: { type: Boolean, default: true },
-    areaPincodes: [{ type: String, maxlength: 16 }],
-  }])
+  @Prop([
+    {
+      storeId: { type: String, required: true },
+      price: { type: Number, min: 0 },
+      stockQuantity: { type: Number, min: 0, default: 0 },
+      reservedStock: { type: Number, min: 0, default: 0 },
+      isAvailable: { type: Boolean, default: true },
+      areaPincodes: [{ type: String, maxlength: 16 }],
+    },
+  ])
   storeMappings?: {
     storeId: string;
     price?: number;

@@ -16,7 +16,9 @@ import { AdminRolesGuard } from './guards/admin-roles.guard';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_ADMIN_SECRET') || 'admin-jwt-secret-key',
+        secret:
+          configService.get<string>('JWT_ADMIN_SECRET') ||
+          'admin-jwt-secret-key',
         signOptions: {
           expiresIn: '1h',
         },
@@ -25,7 +27,19 @@ import { AdminRolesGuard } from './guards/admin-roles.guard';
     }),
   ],
   controllers: [AdminAuthController],
-  providers: [AdminAuthService, AuditService, AdminJwtStrategy, AdminJwtAuthGuard, AdminRolesGuard],
-  exports: [AdminAuthService, AuditService, AdminJwtStrategy, AdminJwtAuthGuard, AdminRolesGuard],
+  providers: [
+    AdminAuthService,
+    AuditService,
+    AdminJwtStrategy,
+    AdminJwtAuthGuard,
+    AdminRolesGuard,
+  ],
+  exports: [
+    AdminAuthService,
+    AuditService,
+    AdminJwtStrategy,
+    AdminJwtAuthGuard,
+    AdminRolesGuard,
+  ],
 })
 export class AdminAuthModule {}

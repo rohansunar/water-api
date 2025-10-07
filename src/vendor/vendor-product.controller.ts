@@ -12,7 +12,13 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { VendorProductService } from './vendor-product.service';
 import {
   CreateVendorProductDto,
@@ -79,7 +85,10 @@ export class VendorProductController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 409 },
-        message: { type: 'string', example: 'Product with this name already exists for this vendor' },
+        message: {
+          type: 'string',
+          example: 'Product with this name already exists for this vendor',
+        },
         error: { type: 'string', example: 'Conflict' },
       },
     },
@@ -88,7 +97,9 @@ export class VendorProductController {
     @Body() createProductDto: CreateVendorProductDto,
     @CurrentUser('sub') vendorId: string,
   ): Promise<VendorProductResponseDto> {
-    this.logger.log(`Product creation attempt for vendor: ${vendorId}, product title: ${createProductDto.title}`);
+    this.logger.log(
+      `Product creation attempt for vendor: ${vendorId}, product title: ${createProductDto.title}`,
+    );
     return this.vendorProductService.createProduct(vendorId, createProductDto);
   }
 
@@ -96,7 +107,8 @@ export class VendorProductController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get all products',
-    description: 'Retrieve all products for the authenticated vendor with pagination and filtering',
+    description:
+      'Retrieve all products for the authenticated vendor with pagination and filtering',
   })
   @ApiQuery({
     name: 'page',
@@ -160,20 +172,35 @@ export class VendorProductController {
     @Query('limit') limit?: string,
     @Query('isActive') isActive?: string,
     @Query('category') category?: string,
-  ): Promise<{ products: VendorProductResponseDto[]; total: number; page: number; limit: number }> {
+  ): Promise<{
+    products: VendorProductResponseDto[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
-    const isActiveBool = isActive !== undefined ? isActive === 'true' : undefined;
+    const isActiveBool =
+      isActive !== undefined ? isActive === 'true' : undefined;
 
-    this.logger.log(`Products retrieval attempt for vendor: ${vendorId}, page: ${pageNum}, limit: ${limitNum}`);
-    return this.vendorProductService.getProducts(vendorId, pageNum, limitNum, isActiveBool, category);
+    this.logger.log(
+      `Products retrieval attempt for vendor: ${vendorId}, page: ${pageNum}, limit: ${limitNum}`,
+    );
+    return this.vendorProductService.getProducts(
+      vendorId,
+      pageNum,
+      limitNum,
+      isActiveBool,
+      category,
+    );
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get product by ID',
-    description: 'Retrieve a specific product by its ID for the authenticated vendor',
+    description:
+      'Retrieve a specific product by its ID for the authenticated vendor',
   })
   @ApiResponse({
     status: 200,
@@ -208,7 +235,9 @@ export class VendorProductController {
     @Param('id') productId: string,
     @CurrentUser('sub') vendorId: string,
   ): Promise<VendorProductResponseDto> {
-    this.logger.log(`Product retrieval attempt for vendor: ${vendorId}, product ID: ${productId}`);
+    this.logger.log(
+      `Product retrieval attempt for vendor: ${vendorId}, product ID: ${productId}`,
+    );
     return this.vendorProductService.getProductById(vendorId, productId);
   }
 
@@ -243,7 +272,10 @@ export class VendorProductController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 409 },
-        message: { type: 'string', example: 'Product with this name already exists for this vendor' },
+        message: {
+          type: 'string',
+          example: 'Product with this name already exists for this vendor',
+        },
         error: { type: 'string', example: 'Conflict' },
       },
     },
@@ -265,8 +297,14 @@ export class VendorProductController {
     @Body() updateProductDto: UpdateVendorProductDto,
     @CurrentUser('sub') vendorId: string,
   ): Promise<VendorProductResponseDto> {
-    this.logger.log(`Product update attempt for vendor: ${vendorId}, product ID: ${productId}`);
-    return this.vendorProductService.updateProduct(vendorId, productId, updateProductDto);
+    this.logger.log(
+      `Product update attempt for vendor: ${vendorId}, product ID: ${productId}`,
+    );
+    return this.vendorProductService.updateProduct(
+      vendorId,
+      productId,
+      updateProductDto,
+    );
   }
 
   @Delete(':id')
@@ -307,7 +345,9 @@ export class VendorProductController {
     @Param('id') productId: string,
     @CurrentUser('sub') vendorId: string,
   ): Promise<void> {
-    this.logger.log(`Product deletion attempt for vendor: ${vendorId}, product ID: ${productId}`);
+    this.logger.log(
+      `Product deletion attempt for vendor: ${vendorId}, product ID: ${productId}`,
+    );
     await this.vendorProductService.deleteProduct(vendorId, productId);
   }
 
@@ -352,8 +392,14 @@ export class VendorProductController {
     @Body() createProductVariantDto: CreateVendorProductVariantDto,
     @CurrentUser('sub') vendorId: string,
   ): Promise<VendorProductVariantResponseDto> {
-    this.logger.log(`Product variant creation attempt for vendor: ${vendorId}, product ID: ${productId}`);
-    return this.vendorProductService.createProductVariant(vendorId, productId, createProductVariantDto);
+    this.logger.log(
+      `Product variant creation attempt for vendor: ${vendorId}, product ID: ${productId}`,
+    );
+    return this.vendorProductService.createProductVariant(
+      vendorId,
+      productId,
+      createProductVariantDto,
+    );
   }
 
   @Put('/variants/:id')
@@ -385,8 +431,14 @@ export class VendorProductController {
     @Body() updateProductVariantDto: UpdateVendorProductVariantDto,
     @CurrentUser('sub') vendorId: string,
   ): Promise<VendorProductVariantResponseDto> {
-    this.logger.log(`Product variant update attempt for vendor: ${vendorId}, variant ID: ${variantId}`);
-    return this.vendorProductService.updateProductVariant(vendorId, variantId, updateProductVariantDto);
+    this.logger.log(
+      `Product variant update attempt for vendor: ${vendorId}, variant ID: ${variantId}`,
+    );
+    return this.vendorProductService.updateProductVariant(
+      vendorId,
+      variantId,
+      updateProductVariantDto,
+    );
   }
 
   @Delete('/variants/:id')
@@ -415,7 +467,9 @@ export class VendorProductController {
     @Param('id') variantId: string,
     @CurrentUser('sub') vendorId: string,
   ): Promise<void> {
-    this.logger.log(`Product variant deletion attempt for vendor: ${vendorId}, variant ID: ${variantId}`);
+    this.logger.log(
+      `Product variant deletion attempt for vendor: ${vendorId}, variant ID: ${variantId}`,
+    );
     await this.vendorProductService.deleteProductVariant(vendorId, variantId);
   }
 
@@ -450,7 +504,10 @@ export class VendorProductController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 409 },
-        message: { type: 'string', example: 'Product mapping already exists for this store' },
+        message: {
+          type: 'string',
+          example: 'Product mapping already exists for this store',
+        },
         error: { type: 'string', example: 'Conflict' },
       },
     },
@@ -460,7 +517,10 @@ export class VendorProductController {
     @CurrentUser('sub') vendorId: string,
   ): Promise<VendorProductMappingResponseDto> {
     this.logger.log(`Product mapping creation attempt for vendor: ${vendorId}`);
-    return this.vendorProductService.createProductMapping(vendorId, createProductMappingDto);
+    return this.vendorProductService.createProductMapping(
+      vendorId,
+      createProductMappingDto,
+    );
   }
 
   @Put('/mapping/:id')
@@ -492,8 +552,14 @@ export class VendorProductController {
     @Body() updateProductMappingDto: UpdateVendorProductMappingDto,
     @CurrentUser('sub') vendorId: string,
   ): Promise<VendorProductMappingResponseDto> {
-    this.logger.log(`Product mapping update attempt for vendor: ${vendorId}, mapping ID: ${mappingId}`);
-    return this.vendorProductService.updateProductMapping(vendorId, mappingId, updateProductMappingDto);
+    this.logger.log(
+      `Product mapping update attempt for vendor: ${vendorId}, mapping ID: ${mappingId}`,
+    );
+    return this.vendorProductService.updateProductMapping(
+      vendorId,
+      mappingId,
+      updateProductMappingDto,
+    );
   }
 
   @Get('/mapping')
@@ -524,7 +590,9 @@ export class VendorProductController {
       properties: {
         mappings: {
           type: 'array',
-          items: { $ref: '#/components/schemas/VendorProductMappingResponseDto' },
+          items: {
+            $ref: '#/components/schemas/VendorProductMappingResponseDto',
+          },
         },
         total: { type: 'number', example: 25 },
         page: { type: 'number', example: 1 },
@@ -536,11 +604,22 @@ export class VendorProductController {
     @CurrentUser('sub') vendorId: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
-  ): Promise<{ mappings: VendorProductMappingResponseDto[]; total: number; page: number; limit: number }> {
+  ): Promise<{
+    mappings: VendorProductMappingResponseDto[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
 
-    this.logger.log(`Product mappings retrieval attempt for vendor: ${vendorId}, page: ${pageNum}, limit: ${limitNum}`);
-    return this.vendorProductService.getProductMappings(vendorId, pageNum, limitNum);
+    this.logger.log(
+      `Product mappings retrieval attempt for vendor: ${vendorId}, page: ${pageNum}, limit: ${limitNum}`,
+    );
+    return this.vendorProductService.getProductMappings(
+      vendorId,
+      pageNum,
+      limitNum,
+    );
   }
 }

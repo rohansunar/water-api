@@ -14,7 +14,9 @@ import { VendorJwtAuthGuard } from './guards/vendor-jwt-auth.guard';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_VENDOR_SECRET') || 'vendor-jwt-secret-key',
+        secret:
+          configService.get<string>('JWT_VENDOR_SECRET') ||
+          'vendor-jwt-secret-key',
         signOptions: {
           expiresIn: '24h',
         },

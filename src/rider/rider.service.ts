@@ -321,7 +321,7 @@ export class RiderService {
       {
         id: 'earning-1',
         orderId: 'order-1',
-        amount: 50.00,
+        amount: 50.0,
         type: 'delivery_fee',
         status: 'completed',
         earnedAt: new Date('2024-01-15T10:30:00Z'),
@@ -330,7 +330,7 @@ export class RiderService {
       {
         id: 'earning-2',
         orderId: 'order-2',
-        amount: 25.00,
+        amount: 25.0,
         type: 'tips',
         status: 'completed',
         earnedAt: new Date('2024-01-14T15:45:00Z'),
@@ -338,7 +338,12 @@ export class RiderService {
       },
     ];
 
-    const { page = 1, limit = 10, sortBy = 'earnedAt', sortOrder = 'desc' } = paginationDto;
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'earnedAt',
+      sortOrder = 'desc',
+    } = paginationDto;
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
 
@@ -372,16 +377,24 @@ export class RiderService {
 
     // Mock summary data - in real implementation, calculate from database
     const currentMonth = new Date();
-    const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-    const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+    const startOfMonth = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth(),
+      1,
+    );
+    const endOfMonth = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth() + 1,
+      0,
+    );
 
     return {
-      totalEarnings: 1250.50,
+      totalEarnings: 1250.5,
       totalDeliveries: 25,
-      averagePerDelivery: 50.00,
-      totalTips: 150.00,
-      totalBonuses: 100.00,
-      pendingWithdrawal: 800.00,
+      averagePerDelivery: 50.0,
+      totalTips: 150.0,
+      totalBonuses: 100.0,
+      pendingWithdrawal: 800.0,
       dateRange: {
         startDate: startOfMonth,
         endDate: endOfMonth,
@@ -402,7 +415,7 @@ export class RiderService {
     const earning: EarningsHistoryDto = {
       id: earningId,
       orderId: 'order-123',
-      amount: 50.00,
+      amount: 50.0,
       type: 'delivery_fee',
       status: 'completed',
       earnedAt: new Date('2024-01-15T10:30:00Z'),
@@ -451,7 +464,7 @@ export class RiderService {
     const mockWithdrawals: WithdrawalHistoryDto[] = [
       {
         id: 'withdrawal-1',
-        amount: 500.00,
+        amount: 500.0,
         status: 'completed',
         bankAccountNumber: '****5678',
         ifscCode: 'HDFC0001234',
@@ -745,7 +758,10 @@ export class RiderService {
     };
   }
 
-  async completeRoute(userId: string, routeId: string): Promise<RouteHistoryDto> {
+  async completeRoute(
+    userId: string,
+    routeId: string,
+  ): Promise<RouteHistoryDto> {
     const rider = await this.findByUserId(userId);
     if (!rider) {
       throw new NotFoundException('Delivery rider profile not found');
@@ -777,15 +793,23 @@ export class RiderService {
 
     // Mock performance metrics - in real implementation, calculate from database
     const currentMonth = new Date();
-    const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-    const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+    const startOfMonth = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth(),
+      1,
+    );
+    const endOfMonth = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth() + 1,
+      0,
+    );
 
     return {
       overallScore: 4.7,
       completionRate: 98.5,
       onTimeRate: 92.0,
       averageRating: 4.6,
-      monthlyEarnings: 12500.00,
+      monthlyEarnings: 12500.0,
       period: {
         startDate: startOfMonth,
         endDate: endOfMonth,
@@ -821,7 +845,9 @@ export class RiderService {
     };
   }
 
-  async getLeaderboardPosition(userId: string): Promise<LeaderboardPositionDto> {
+  async getLeaderboardPosition(
+    userId: string,
+  ): Promise<LeaderboardPositionDto> {
     const rider = await this.findByUserId(userId);
     if (!rider) {
       throw new NotFoundException('Delivery rider profile not found');
@@ -869,14 +895,18 @@ export class RiderService {
 
     // Mock performance goals - in real implementation, fetch from database
     const currentMonth = new Date();
-    const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
+    const daysInMonth = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth() + 1,
+      0,
+    ).getDate();
     const daysRemaining = daysInMonth - currentMonth.getDate();
 
     return {
       monthlyDeliveries: 200,
       currentDeliveries: 150,
-      monthlyEarnings: 15000.00,
-      currentEarnings: 11250.00,
+      monthlyEarnings: 15000.0,
+      currentEarnings: 11250.0,
       targetRating: 4.5,
       currentRating: 4.6,
       daysRemaining,
@@ -944,8 +974,12 @@ export class RiderService {
     // Mock schedule slot update - in real implementation, update database
     const updatedSlot: ScheduleSlotDto = {
       id: slotId,
-      startTime: updateDto.startTime ? new Date(updateDto.startTime) : new Date('2024-01-15T09:00:00Z'),
-      endTime: updateDto.endTime ? new Date(updateDto.endTime) : new Date('2024-01-15T18:00:00Z'),
+      startTime: updateDto.startTime
+        ? new Date(updateDto.startTime)
+        : new Date('2024-01-15T09:00:00Z'),
+      endTime: updateDto.endTime
+        ? new Date(updateDto.endTime)
+        : new Date('2024-01-15T18:00:00Z'),
       dayOfWeek: 'monday',
       isActive: updateDto.isActive ?? true,
       createdAt: new Date(),
@@ -977,22 +1011,225 @@ export class RiderService {
 
     // Mock availability status - in real implementation, check current schedule
     const currentTime = new Date();
-    const currentDay = currentTime.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+    const currentDay = currentTime
+      .toLocaleDateString('en-US', { weekday: 'long' })
+      .toLowerCase();
 
     return {
       isAvailable: rider.isAvailable,
-      currentSlot: rider.isAvailable ? {
-        id: 'current-slot',
-        startTime: new Date(currentTime.getTime() - 60 * 60 * 1000), // 1 hour ago
-        endTime: new Date(currentTime.getTime() + 7 * 60 * 60 * 1000), // 7 hours from now
-        dayOfWeek: currentDay,
-      } : undefined,
-      nextSlot: rider.isAvailable ? undefined : {
-        id: 'next-slot',
-        startTime: new Date(currentTime.getTime() + 24 * 60 * 60 * 1000), // Tomorrow
-        endTime: new Date(currentTime.getTime() + 33 * 60 * 60 * 1000), // Tomorrow + 9 hours
-        dayOfWeek: new Date(currentTime.getTime() + 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase(),
+      currentSlot: rider.isAvailable
+        ? {
+            id: 'current-slot',
+            startTime: new Date(currentTime.getTime() - 60 * 60 * 1000), // 1 hour ago
+            endTime: new Date(currentTime.getTime() + 7 * 60 * 60 * 1000), // 7 hours from now
+            dayOfWeek: currentDay,
+          }
+        : undefined,
+      nextSlot: rider.isAvailable
+        ? undefined
+        : {
+            id: 'next-slot',
+            startTime: new Date(currentTime.getTime() + 24 * 60 * 60 * 1000), // Tomorrow
+            endTime: new Date(currentTime.getTime() + 33 * 60 * 60 * 1000), // Tomorrow + 9 hours
+            dayOfWeek: new Date(currentTime.getTime() + 24 * 60 * 60 * 1000)
+              .toLocaleDateString('en-US', { weekday: 'long' })
+              .toLowerCase(),
+          },
+    };
+  }
+
+  // ===== PHASE 2 ADDITIONAL METHODS =====
+
+  async endShift(
+    userId: string,
+    shiftEndDto: {
+      cashCollected: number;
+      totalDeliveries: number;
+      notes?: string;
+    },
+  ): Promise<{ message: string; shiftSummary: any }> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock shift end processing
+    const shiftSummary = {
+      shiftId: `shift-${Date.now()}`,
+      startTime: new Date(Date.now() - 8 * 60 * 60 * 1000), // 8 hours ago
+      endTime: new Date(),
+      totalDeliveries: shiftEndDto.totalDeliveries,
+      cashCollected: shiftEndDto.cashCollected,
+      status: 'completed',
+      notes: shiftEndDto.notes,
+    };
+
+    this.logger.log(
+      `Shift ended for rider ${rider.id}: ${shiftEndDto.totalDeliveries} deliveries, ₹${shiftEndDto.cashCollected} collected`,
+    );
+    return {
+      message: 'Shift ended successfully',
+      shiftSummary,
+    };
+  }
+
+  async getNotifications(
+    userId: string,
+    paginationDto: PaginationQueryDto,
+  ): Promise<{ notifications: any[]; unreadCount: number }> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock notifications
+    const mockNotifications = [
+      {
+        id: 'notif-1',
+        type: 'delivery_assigned',
+        title: 'New Delivery Assigned',
+        message: 'You have been assigned a new delivery order #ORD-001',
+        read: false,
+        createdAt: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
       },
+      {
+        id: 'notif-2',
+        type: 'payment_received',
+        title: 'Payment Received',
+        message: 'Payment of ₹150 has been credited to your account',
+        read: true,
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+      },
+    ];
+
+    const { page = 1, limit = 10 } = paginationDto;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+
+    const paginatedNotifications = mockNotifications.slice(
+      startIndex,
+      endIndex,
+    );
+    const unreadCount = mockNotifications.filter((n) => !n.read).length;
+
+    return {
+      notifications: paginatedNotifications,
+      unreadCount,
+    };
+  }
+
+  async createSupportTicket(
+    userId: string,
+    supportDto: {
+      subject: string;
+      message: string;
+      priority?: string;
+      category?: string;
+    },
+  ): Promise<{
+    ticketId: string;
+    status: string;
+    createdAt: Date;
+    estimatedResolution: Date;
+  }> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock support ticket creation
+    const ticketId = `TICKET-${Date.now()}`;
+    const createdAt = new Date();
+    const estimatedResolution = new Date(
+      createdAt.getTime() + 24 * 60 * 60 * 1000,
+    ); // 24 hours from now
+
+    this.logger.log(
+      `Support ticket created for rider ${rider.id}: ${supportDto.subject}`,
+    );
+
+    return {
+      ticketId,
+      status: 'open',
+      createdAt,
+      estimatedResolution,
+    };
+  }
+
+  async completeDelivery(
+    userId: string,
+    taskId: string,
+    deliveryDto: {
+      deliveryNotes?: string;
+      customerSignature?: string;
+      photoRequired?: boolean;
+    },
+  ): Promise<{
+    taskId: string;
+    status: string;
+    completedAt: Date;
+    photoUrl?: string;
+    message: string;
+  }> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock delivery completion
+    const completedAt = new Date();
+    const photoUrl = deliveryDto.photoRequired
+      ? `https://example.com/photos/${taskId}.jpg`
+      : undefined;
+
+    this.logger.log(`Delivery ${taskId} completed by rider ${rider.id}`);
+
+    return {
+      taskId,
+      status: 'completed',
+      completedAt,
+      photoUrl,
+      message: 'Delivery completed successfully',
+    };
+  }
+
+  async failDelivery(
+    userId: string,
+    taskId: string,
+    failureDto: {
+      reason: string;
+      details?: string;
+      retryable?: boolean;
+      customerContacted?: boolean;
+    },
+  ): Promise<{
+    taskId: string;
+    status: string;
+    failedAt: Date;
+    reason: string;
+    canRetry: boolean;
+    message: string;
+  }> {
+    const rider = await this.findByUserId(userId);
+    if (!rider) {
+      throw new NotFoundException('Delivery rider profile not found');
+    }
+
+    // Mock delivery failure
+    const failedAt = new Date();
+    const canRetry = failureDto.retryable !== false;
+
+    this.logger.log(
+      `Delivery ${taskId} failed by rider ${rider.id}: ${failureDto.reason}`,
+    );
+
+    return {
+      taskId,
+      status: 'failed',
+      failedAt,
+      reason: failureDto.reason,
+      canRetry,
+      message: 'Delivery marked as failed',
     };
   }
 }

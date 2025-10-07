@@ -33,6 +33,7 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     string,
     { otp: string; expiresAt: Date; attempts: number }
   >();
+  private readonly maxOtpStoreSize = 10000; // Limit OTP store size to prevent memory bloat
   private cleanupInterval!: NodeJS.Timeout;
 
   constructor(
@@ -67,7 +68,12 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     const startTime = Date.now();
     try {
       const { phone } = loginDto;
-      this.customLogger.logSecurityEvent('login_attempt', { phone }, undefined, undefined);
+      this.customLogger.logSecurityEvent(
+        'login_attempt',
+        { phone },
+        undefined,
+        undefined,
+      );
 
       const otp = this.generateOTP();
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
@@ -75,20 +81,37 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
       this.storeOtp(phone, otp, expiresAt);
       this.logOtpGeneration(phone, otp);
 
-      this.customLogger.logSecurityEvent('login_success', { phone }, undefined, undefined);
+      this.customLogger.logSecurityEvent(
+        'login_success',
+        { phone },
+        undefined,
+        undefined,
+      );
       return {
         message: 'OTP sent successfully to your phone number',
         success: true,
       };
     } catch (error) {
-      this.customLogger.logSecurityEvent('login_failure', { phone: loginDto.phone, error: error.message }, undefined, undefined);
+      this.customLogger.logSecurityEvent(
+        'login_failure',
+        { phone: loginDto.phone, error: error.message },
+        undefined,
+        undefined,
+      );
       this.logger.error(`Login failed for phone ${loginDto.phone}:`, error);
       throw new BadRequestException('Failed to send OTP. Please try again.');
     }
   }
 
-
   private storeOtp(phone: string, otp: string, expiresAt: Date): void {
+    // Maintain OTP store size limit
+    if (this.otpStore.size >= this.maxOtpStoreSize) {
+      // Remove 10% of oldest entries when limit is reached
+      const entriesToRemove = Math.ceil(this.maxOtpStoreSize * 0.1);
+      const keysToRemove = Array.from(this.otpStore.keys()).slice(0, entriesToRemove);
+      keysToRemove.forEach(key => this.otpStore.delete(key));
+    }
+
     // Store OTP with expiration and attempt tracking
     this.otpStore.set(phone, { otp, expiresAt, attempts: 0 });
   }
@@ -105,7 +128,12 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     const startTime = Date.now();
     try {
       const { phone, otp } = verifyOtpDto;
-      this.customLogger.logSecurityEvent('otp_verification_attempt', { phone }, undefined, undefined);
+      this.customLogger.logSecurityEvent(
+        'otp_verification_attempt',
+        { phone },
+        undefined,
+        undefined,
+      );
 
       this.validateOtp(phone, otp);
 
@@ -113,8 +141,17 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
       const user = await this.findOrCreateUser(phone);
       const token = this.generateToken(customer);
 
-      this.customLogger.logSecurityEvent('otp_verification_success', { phone, customerId: (customer as any)._id }, undefined, undefined);
-      this.customLogger.logBusinessEvent('customer_authenticated', { customerId: (customer as any)._id, phone }, (customer as any)._id);
+      this.customLogger.logSecurityEvent(
+        'otp_verification_success',
+        { phone, customerId: (customer as any)._id },
+        undefined,
+        undefined,
+      );
+      this.customLogger.logBusinessEvent(
+        'customer_authenticated',
+        { customerId: (customer as any)._id, phone },
+        (customer as any)._id,
+      );
 
       const customerProfile = await this.buildCustomerProfile(customer);
       const userProfile = await this.buildUserProfile(user);
@@ -122,10 +159,20 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
       return this.buildAuthResponse(token, customerProfile, userProfile);
     } catch (error) {
       if (error instanceof UnauthorizedException) {
-        this.customLogger.logSecurityEvent('otp_verification_failure', { phone: verifyOtpDto.phone, reason: error.message }, undefined, undefined);
+        this.customLogger.logSecurityEvent(
+          'otp_verification_failure',
+          { phone: verifyOtpDto.phone, reason: error.message },
+          undefined,
+          undefined,
+        );
         throw error;
       }
-      this.customLogger.logSecurityEvent('otp_verification_error', { phone: verifyOtpDto.phone, error: error.message }, undefined, undefined);
+      this.customLogger.logSecurityEvent(
+        'otp_verification_error',
+        { phone: verifyOtpDto.phone, error: error.message },
+        undefined,
+        undefined,
+      );
       this.logger.error(
         `OTP verification failed for phone ${verifyOtpDto.phone}:`,
         error,
@@ -183,13 +230,29 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
           walletBalance: 0,
         };
         customer = await this.customerService.create(createCustomerDto);
-        this.customLogger.logDatabaseOperation('create', 'customers', Date.now() - startTime, true);
+        this.customLogger.logDatabaseOperation(
+          'create',
+          'customers',
+          Date.now() - startTime,
+          true,
+        );
       } else {
-        this.customLogger.logDatabaseOperation('find', 'customers', Date.now() - startTime, true);
+        this.customLogger.logDatabaseOperation(
+          'find',
+          'customers',
+          Date.now() - startTime,
+          true,
+        );
       }
       return customer as any;
     } catch (error) {
-      this.customLogger.logDatabaseOperation('findOrCreate', 'customers', Date.now() - startTime, false, error);
+      this.customLogger.logDatabaseOperation(
+        'findOrCreate',
+        'customers',
+        Date.now() - startTime,
+        false,
+        error,
+      );
       throw error;
     }
   }
@@ -207,13 +270,29 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
           walletBalance: 0,
         };
         user = await this.userService.create(createUserDto);
-        this.customLogger.logDatabaseOperation('create', 'users', Date.now() - startTime, true);
+        this.customLogger.logDatabaseOperation(
+          'create',
+          'users',
+          Date.now() - startTime,
+          true,
+        );
       } else {
-        this.customLogger.logDatabaseOperation('find', 'users', Date.now() - startTime, true);
+        this.customLogger.logDatabaseOperation(
+          'find',
+          'users',
+          Date.now() - startTime,
+          true,
+        );
       }
       return user;
     } catch (error) {
-      this.customLogger.logDatabaseOperation('findOrCreate', 'users', Date.now() - startTime, false, error);
+      this.customLogger.logDatabaseOperation(
+        'findOrCreate',
+        'users',
+        Date.now() - startTime,
+        false,
+        error,
+      );
       throw error;
     }
   }
@@ -228,7 +307,9 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     return this.jwtService.sign(payload);
   }
 
-  private async buildCustomerProfile(customer: any): Promise<CustomerProfileDto> {
+  private async buildCustomerProfile(
+    customer: any,
+  ): Promise<CustomerProfileDto> {
     const customerProfile = await this.customerService.getCustomerProfile(
       customer._id.toString(),
     );
@@ -249,7 +330,7 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async buildUserProfile(user: any): Promise<UserProfileDto> {
-    const userProfile = await this.userService.getUserProfile(user.id);
+    const userProfile = await this.userService.getUserProfile(user._id.toString());
 
     // Legacy user profile for backward compatibility
     return {
@@ -293,7 +374,12 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     const startTime = Date.now();
     try {
       const user = await this.userService.findById(userId);
-      this.customLogger.logDatabaseOperation('find', 'users', Date.now() - startTime, true);
+      this.customLogger.logDatabaseOperation(
+        'find',
+        'users',
+        Date.now() - startTime,
+        true,
+      );
       if (!user || !user.isActive) {
         throw new UnauthorizedException('User not found or inactive');
       }
@@ -303,7 +389,13 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      this.customLogger.logDatabaseOperation('find', 'users', Date.now() - startTime, false, error);
+      this.customLogger.logDatabaseOperation(
+        'find',
+        'users',
+        Date.now() - startTime,
+        false,
+        error,
+      );
       throw error;
     }
   }
@@ -313,13 +405,29 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
-  // Cleanup expired OTPs periodically
+  // Cleanup expired OTPs periodically with enhanced logging and size management
   private cleanupExpiredOtps(): void {
     const now = new Date();
+    let cleanedCount = 0;
+    const initialSize = this.otpStore.size;
+
     for (const [phone, otpData] of this.otpStore.entries()) {
       if (now > otpData.expiresAt) {
         this.otpStore.delete(phone);
+        cleanedCount++;
       }
+    }
+
+    // Additional cleanup: remove oldest entries if store is still too large
+    if (this.otpStore.size >= this.maxOtpStoreSize) {
+      const entriesToRemove = Math.ceil(this.maxOtpStoreSize * 0.2); // Remove 20% more
+      const keysToRemove = Array.from(this.otpStore.keys()).slice(0, entriesToRemove);
+      keysToRemove.forEach(key => this.otpStore.delete(key));
+      cleanedCount += keysToRemove.length;
+    }
+
+    if (cleanedCount > 0) {
+      this.logger.log(`OTP cleanup: removed ${cleanedCount} entries (${initialSize} → ${this.otpStore.size})`);
     }
   }
 }

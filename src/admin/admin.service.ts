@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { UserService } from '../modules/user/services/user.service';
 import { VendorService } from '../vendor/vendor.service';
 import { LedgerService } from '../ledger/ledger.service';
@@ -10,17 +6,36 @@ import { User, UserRole } from '../common/interfaces/user.interface';
 import { LedgerSummaryResponseDto } from '../common/dto/ledger.dto';
 import { CustomLoggerService } from '../common/logger/logger.service';
 import { ProductModerationService } from '../product/product-moderation.service';
-import { AdminPaginationQueryDto, AdminPaginatedResponseDto, AdminUserListResponseDto, AdminTransactionListQueryDto } from '../common/dto/admin.dto';
-import { ComplaintResponseDto, ComplaintListQueryDto } from '../common/dto/complaint.dto';
-import { ProductResponseDto, ProductSearchDto } from '../common/dto/product.dto';
+import {
+  AdminPaginationQueryDto,
+  AdminPaginatedResponseDto,
+  AdminUserListResponseDto,
+  AdminTransactionListQueryDto,
+} from '../common/dto/admin.dto';
+import {
+  ComplaintResponseDto,
+  ComplaintListQueryDto,
+} from '../common/dto/complaint.dto';
+import {
+  ProductResponseDto,
+  ProductSearchDto,
+} from '../common/dto/product.dto';
 import { PaginationUtil } from '../common/utils/pagination.util';
-import { AdminOrderQueryDto, AdminOrderResponseDto } from '../common/dto/order-management.dto';
+import {
+  AdminOrderQueryDto,
+  AdminOrderResponseDto,
+} from '../common/dto/order-management.dto';
 import { OrderStatus } from '../common/interfaces/order.interface';
 import {
   LedgerEntryResponseDto,
   PayoutResponseDto,
 } from '../common/dto/ledger.dto';
-import { LedgerEntryType, LedgerEntryStatus, PayoutStatus, PayoutMethod } from '../common/interfaces/ledger.interface';
+import {
+  LedgerEntryType,
+  LedgerEntryStatus,
+  PayoutStatus,
+  PayoutMethod,
+} from '../common/interfaces/ledger.interface';
 
 export interface AdminDashboardStats {
   totalUsers: number;
@@ -86,11 +101,15 @@ export class AdminService {
     }
   }
 
-  private async getModerationStats(): Promise<{ pendingProductModerations: number; flaggedProducts: number }> {
+  private async getModerationStats(): Promise<{
+    pendingProductModerations: number;
+    flaggedProducts: number;
+  }> {
     let pendingProductModerations = 0;
     let flaggedProducts = 0;
     try {
-      const moderationStats = await this.productModerationService.getModerationStats();
+      const moderationStats =
+        await this.productModerationService.getModerationStats();
       pendingProductModerations = moderationStats.totalPending;
       flaggedProducts = moderationStats.totalFlagged;
     } catch (error) {
@@ -102,7 +121,10 @@ export class AdminService {
 
   private buildDashboardStats(
     totalPendingDues: number,
-    moderationStats: { pendingProductModerations: number; flaggedProducts: number },
+    moderationStats: {
+      pendingProductModerations: number;
+      flaggedProducts: number;
+    },
   ): AdminDashboardStats {
     return {
       totalUsers: 150, // Simulated data
@@ -127,7 +149,12 @@ export class AdminService {
       );
 
       const users = this.getSimulatedUsers();
-      const filteredUsers = this.filterUsers(users, query.role, query.status, query.search);
+      const filteredUsers = this.filterUsers(
+        users,
+        query.role,
+        query.status,
+        query.search,
+      );
 
       // Apply pagination
       const paginatedUsers = filteredUsers.slice(skip, skip + limit);
@@ -160,8 +187,13 @@ export class AdminService {
       );
 
       const users = this.getSimulatedUsers();
-      const customers = users.filter(user => user.role === UserRole.CUSTOMER);
-      const filteredCustomers = this.filterUsers(customers, query.role, query.status, query.search);
+      const customers = users.filter((user) => user.role === UserRole.CUSTOMER);
+      const filteredCustomers = this.filterUsers(
+        customers,
+        query.role,
+        query.status,
+        query.search,
+      );
 
       // Apply pagination
       const paginatedCustomers = filteredCustomers.slice(skip, skip + limit);
@@ -194,8 +226,13 @@ export class AdminService {
       );
 
       const users = this.getSimulatedUsers();
-      const vendors = users.filter(user => user.role === UserRole.VENDOR);
-      const filteredVendors = this.filterUsers(vendors, query.role, query.status, query.search);
+      const vendors = users.filter((user) => user.role === UserRole.VENDOR);
+      const filteredVendors = this.filterUsers(
+        vendors,
+        query.role,
+        query.status,
+        query.search,
+      );
 
       // Apply pagination
       const paginatedVendors = filteredVendors.slice(skip, skip + limit);
@@ -228,8 +265,15 @@ export class AdminService {
       );
 
       const users = this.getSimulatedUsers();
-      const riders = users.filter(user => user.role === UserRole.DELIVERY_RIDER);
-      const filteredRiders = this.filterUsers(riders, query.role, query.status, query.search);
+      const riders = users.filter(
+        (user) => user.role === UserRole.DELIVERY_RIDER,
+      );
+      const filteredRiders = this.filterUsers(
+        riders,
+        query.role,
+        query.status,
+        query.search,
+      );
 
       // Apply pagination
       const paginatedRiders = filteredRiders.slice(skip, skip + limit);
@@ -310,9 +354,10 @@ export class AdminService {
 
     if (search) {
       const searchLower = search.toLowerCase();
-      filteredUsers = filteredUsers.filter((user) =>
-        user.name?.toLowerCase().includes(searchLower) ||
-        user.phone.includes(searchLower)
+      filteredUsers = filteredUsers.filter(
+        (user) =>
+          user.name?.toLowerCase().includes(searchLower) ||
+          user.phone.includes(searchLower),
       );
     }
 
@@ -336,7 +381,10 @@ export class AdminService {
     }
   }
 
-  private async performUserUpdate(userId: string, isActive: boolean): Promise<void> {
+  private async performUserUpdate(
+    userId: string,
+    isActive: boolean,
+  ): Promise<void> {
     await this.userService.update(userId, { isActive });
   }
 
@@ -554,7 +602,9 @@ export class AdminService {
       );
 
       const orders = this.getSimulatedOrders();
-      const pendingOrders = orders.filter(order => order.status === OrderStatus.PENDING);
+      const pendingOrders = orders.filter(
+        (order) => order.status === OrderStatus.PENDING,
+      );
       const filteredOrders = this.filterOrders(pendingOrders, query);
 
       // Apply pagination
@@ -588,7 +638,9 @@ export class AdminService {
       );
 
       const orders = this.getSimulatedOrders();
-      const completedOrders = orders.filter(order => order.status === OrderStatus.DELIVERED);
+      const completedOrders = orders.filter(
+        (order) => order.status === OrderStatus.DELIVERED,
+      );
       const filteredOrders = this.filterOrders(completedOrders, query);
 
       // Apply pagination
@@ -622,7 +674,9 @@ export class AdminService {
       );
 
       const orders = this.getSimulatedOrders();
-      const cancelledOrders = orders.filter(order => order.status === OrderStatus.CANCELLED);
+      const cancelledOrders = orders.filter(
+        (order) => order.status === OrderStatus.CANCELLED,
+      );
       const filteredOrders = this.filterOrders(cancelledOrders, query);
 
       // Apply pagination
@@ -657,7 +711,7 @@ export class AdminService {
         vendorId: BigInt(1),
         vendorName: 'Fresh Water Co.',
         status: OrderStatus.PENDING,
-        totalAmount: 150.50,
+        totalAmount: 150.5,
         paymentStatus: 'completed',
         hasDisputes: false,
         createdAt: new Date('2024-01-15T10:30:00Z'),
@@ -672,7 +726,7 @@ export class AdminService {
         vendorId: BigInt(2),
         vendorName: 'Pure Water Solutions',
         status: OrderStatus.DELIVERED,
-        totalAmount: 200.00,
+        totalAmount: 200.0,
         paymentStatus: 'completed',
         hasDisputes: false,
         createdAt: new Date('2024-01-14T14:20:00Z'),
@@ -703,27 +757,36 @@ export class AdminService {
     let filteredOrders = orders;
 
     if (query.status) {
-      filteredOrders = filteredOrders.filter((order) => order.status === query.status);
+      filteredOrders = filteredOrders.filter(
+        (order) => order.status === query.status,
+      );
     }
 
     if (query.customerId) {
-      filteredOrders = filteredOrders.filter((order) => order.customerId.toString() === query.customerId);
+      filteredOrders = filteredOrders.filter(
+        (order) => order.customerId.toString() === query.customerId,
+      );
     }
 
     if (query.vendorId) {
-      filteredOrders = filteredOrders.filter((order) => order.vendorId?.toString() === query.vendorId);
+      filteredOrders = filteredOrders.filter(
+        (order) => order.vendorId?.toString() === query.vendorId,
+      );
     }
 
     if (query.disputed !== undefined) {
-      filteredOrders = filteredOrders.filter((order) => order.hasDisputes === query.disputed);
+      filteredOrders = filteredOrders.filter(
+        (order) => order.hasDisputes === query.disputed,
+      );
     }
 
     if (query.search) {
       const searchLower = query.search.toLowerCase();
-      filteredOrders = filteredOrders.filter((order) =>
-        order.orderNumber.toLowerCase().includes(searchLower) ||
-        order.customerName.toLowerCase().includes(searchLower) ||
-        order.vendorName?.toLowerCase().includes(searchLower)
+      filteredOrders = filteredOrders.filter(
+        (order) =>
+          order.orderNumber.toLowerCase().includes(searchLower) ||
+          order.customerName.toLowerCase().includes(searchLower) ||
+          order.vendorName?.toLowerCase().includes(searchLower),
       );
     }
 
@@ -744,7 +807,10 @@ export class AdminService {
       const filteredTransactions = this.filterTransactions(transactions, query);
 
       // Apply pagination
-      const paginatedTransactions = filteredTransactions.slice(skip, skip + limit);
+      const paginatedTransactions = filteredTransactions.slice(
+        skip,
+        skip + limit,
+      );
 
       const total = filteredTransactions.length;
       const response = PaginationUtil.createPaginatedResponse(
@@ -807,11 +873,16 @@ export class AdminService {
       );
 
       const transactions = this.getSimulatedTransactions();
-      const commissions = transactions.filter(t => t.type === LedgerEntryType.COMMISSION);
+      const commissions = transactions.filter(
+        (t) => t.type === LedgerEntryType.COMMISSION,
+      );
       const filteredCommissions = this.filterTransactions(commissions, query);
 
       // Apply pagination
-      const paginatedCommissions = filteredCommissions.slice(skip, skip + limit);
+      const paginatedCommissions = filteredCommissions.slice(
+        skip,
+        skip + limit,
+      );
 
       const total = filteredCommissions.length;
       const response = PaginationUtil.createPaginatedResponse(
@@ -838,7 +909,7 @@ export class AdminService {
         vendorId: 'vendor-1',
         orderId: 'order-1',
         userId: 'user-1',
-        amount: 150.50,
+        amount: 150.5,
         type: LedgerEntryType.SALE,
         status: LedgerEntryStatus.COMPLETED,
         description: 'Payment for order ORD-001-2024',
@@ -862,7 +933,7 @@ export class AdminService {
         vendorId: 'vendor-2',
         orderId: 'order-2',
         userId: 'user-2',
-        amount: 200.00,
+        amount: 200.0,
         type: LedgerEntryType.SALE,
         status: LedgerEntryStatus.COMPLETED,
         description: 'Payment for order ORD-002-2024',
@@ -888,7 +959,7 @@ export class AdminService {
       {
         id: '2',
         vendorId: 'vendor-2',
-        amount: 180.00,
+        amount: 180.0,
         status: PayoutStatus.PENDING,
         method: PayoutMethod.UPI,
         createdAt: new Date('2024-01-14T15:00:00Z'),
@@ -904,29 +975,41 @@ export class AdminService {
     let filteredTransactions = transactions;
 
     if (query.type) {
-      filteredTransactions = filteredTransactions.filter((t) => t.type === query.type);
+      filteredTransactions = filteredTransactions.filter(
+        (t) => t.type === query.type,
+      );
     }
 
     if (query.userId) {
-      filteredTransactions = filteredTransactions.filter((t) => t.userId === query.userId);
+      filteredTransactions = filteredTransactions.filter(
+        (t) => t.userId === query.userId,
+      );
     }
 
     if (query.amountMin !== undefined) {
-      filteredTransactions = filteredTransactions.filter((t) => t.amount >= query.amountMin!);
+      filteredTransactions = filteredTransactions.filter(
+        (t) => t.amount >= query.amountMin!,
+      );
     }
 
     if (query.amountMax !== undefined) {
-      filteredTransactions = filteredTransactions.filter((t) => t.amount <= query.amountMax!);
+      filteredTransactions = filteredTransactions.filter(
+        (t) => t.amount <= query.amountMax!,
+      );
     }
 
     if (query.dateFrom) {
       const dateFrom = new Date(query.dateFrom);
-      filteredTransactions = filteredTransactions.filter((t) => t.createdAt >= dateFrom);
+      filteredTransactions = filteredTransactions.filter(
+        (t) => t.createdAt >= dateFrom,
+      );
     }
 
     if (query.dateTo) {
       const dateTo = new Date(query.dateTo);
-      filteredTransactions = filteredTransactions.filter((t) => t.createdAt <= dateTo);
+      filteredTransactions = filteredTransactions.filter(
+        (t) => t.createdAt <= dateTo,
+      );
     }
 
     return filteredTransactions;
@@ -939,15 +1022,21 @@ export class AdminService {
     let filteredPayouts = payouts;
 
     if (query.userId) {
-      filteredPayouts = filteredPayouts.filter((p) => p.vendorId === query.userId);
+      filteredPayouts = filteredPayouts.filter(
+        (p) => p.vendorId === query.userId,
+      );
     }
 
     if (query.amountMin !== undefined) {
-      filteredPayouts = filteredPayouts.filter((p) => p.amount >= query.amountMin!);
+      filteredPayouts = filteredPayouts.filter(
+        (p) => p.amount >= query.amountMin!,
+      );
     }
 
     if (query.amountMax !== undefined) {
-      filteredPayouts = filteredPayouts.filter((p) => p.amount <= query.amountMax!);
+      filteredPayouts = filteredPayouts.filter(
+        (p) => p.amount <= query.amountMax!,
+      );
     }
 
     if (query.dateFrom) {
@@ -1037,19 +1126,27 @@ export class AdminService {
     let filteredComplaints = complaints;
 
     if (query.type) {
-      filteredComplaints = filteredComplaints.filter((c) => c.type === query.type);
+      filteredComplaints = filteredComplaints.filter(
+        (c) => c.type === query.type,
+      );
     }
 
     if (query.status) {
-      filteredComplaints = filteredComplaints.filter((c) => c.status === query.status);
+      filteredComplaints = filteredComplaints.filter(
+        (c) => c.status === query.status,
+      );
     }
 
     if (query.priority) {
-      filteredComplaints = filteredComplaints.filter((c) => c.priority === query.priority);
+      filteredComplaints = filteredComplaints.filter(
+        (c) => c.priority === query.priority,
+      );
     }
 
     if (query.userId) {
-      filteredComplaints = filteredComplaints.filter((c) => c.userId === query.userId);
+      filteredComplaints = filteredComplaints.filter(
+        (c) => c.userId === query.userId,
+      );
     }
 
     return filteredComplaints;
@@ -1164,8 +1261,8 @@ export class AdminService {
         description: 'High-quality reusable water bottle',
         category: 'water_bottles',
         size: '1L',
-        price: 25.00,
-        depositAmount: 50.00,
+        price: 25.0,
+        depositAmount: 50.0,
         hasDeposit: true,
         stockQuantity: 100,
         isActive: true,
@@ -1222,31 +1319,28 @@ export class AdminService {
 
     if (query.query) {
       const searchLower = query.query.toLowerCase();
-      filteredProducts = filteredProducts.filter((p) =>
-        p.name.toLowerCase().includes(searchLower) ||
-        p.description?.toLowerCase().includes(searchLower)
+      filteredProducts = filteredProducts.filter(
+        (p) =>
+          p.name.toLowerCase().includes(searchLower) ||
+          p.description?.toLowerCase().includes(searchLower),
       );
     }
 
     if (query.category) {
-      filteredProducts = filteredProducts.filter((p) => p.category === query.category);
+      filteredProducts = filteredProducts.filter(
+        (p) => p.category === query.category,
+      );
     }
 
     return filteredProducts;
   }
 
-  private filterReviews(
-    reviews: any[],
-    query: AdminPaginationQueryDto,
-  ): any[] {
+  private filterReviews(reviews: any[], query: AdminPaginationQueryDto): any[] {
     // Simple filtering logic - in real implementation would be more complex
     return reviews;
   }
 
-  private filterReports(
-    reports: any[],
-    query: AdminPaginationQueryDto,
-  ): any[] {
+  private filterReports(reports: any[], query: AdminPaginationQueryDto): any[] {
     // Simple filtering logic - in real implementation would be more complex
     return reports;
   }

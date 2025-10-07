@@ -78,7 +78,11 @@ export class PrismaErrorHandlerService {
     const isRetryable = this.isRetryableError(error, config);
 
     // Convert to appropriate business exception
-    const businessException = this.convertToBusinessException(error, context, isRetryable);
+    const businessException = this.convertToBusinessException(
+      error,
+      context,
+      isRetryable,
+    );
 
     // Log the business exception
     this.customLogger.logDatabaseOperation(
@@ -171,7 +175,10 @@ export class PrismaErrorHandlerService {
 
     // Check error code against retryable errors
     for (const retryableError of config.retryableErrors) {
-      if (errorCode === retryableError || errorMessage.includes(retryableError)) {
+      if (
+        errorCode === retryableError ||
+        errorMessage.includes(retryableError)
+      ) {
         return true;
       }
     }
@@ -186,7 +193,9 @@ export class PrismaErrorHandlerService {
       /unreachable/i,
     ];
 
-    return connectionErrorPatterns.some((pattern) => pattern.test(errorMessage));
+    return connectionErrorPatterns.some((pattern) =>
+      pattern.test(errorMessage),
+    );
   }
 
   /**
@@ -247,7 +256,10 @@ export class PrismaErrorHandlerService {
         return new DuplicateRecordException(context.model, field);
 
       case 'P2025': // Record not found
-        return new RecordNotFoundException(context.model, context.recordId?.toString());
+        return new RecordNotFoundException(
+          context.model,
+          context.recordId?.toString(),
+        );
 
       case 'P2003': // Foreign key constraint failed
         return new DatabaseException(

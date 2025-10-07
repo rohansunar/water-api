@@ -540,7 +540,8 @@ export class VendorService {
       id: 'store-1',
       vendor_id: vendor.id,
       name: updateStoreDto.name || `${vendor.businessName} Store`,
-      address: updateStoreDto.address || vendor.businessAddress || 'Default Address',
+      address:
+        updateStoreDto.address || vendor.businessAddress || 'Default Address',
       phone: updateStoreDto.phone || '9876543210',
       active_hours: updateStoreDto.active_hours || {
         monday: { open: '09:00', close: '21:00' },
@@ -582,7 +583,9 @@ export class VendorService {
       updatedAt: new Date(),
     };
 
-    this.logger.log(`Created store hours ${storeHours.id} for vendor ${vendor.id}`);
+    this.logger.log(
+      `Created store hours ${storeHours.id} for vendor ${vendor.id}`,
+    );
     return storeHours;
   }
 
@@ -665,7 +668,7 @@ export class VendorService {
         product_id: productId,
         variant_sku: 'PW-20L-MINERAL-001',
         attributes: { type: 'mineral', brand: 'AquaPure' },
-        price_override: 55.00,
+        price_override: 55.0,
         is_active: true,
         created_at: new Date(),
         updated_at: new Date(),
@@ -712,7 +715,9 @@ export class VendorService {
       updated_at: new Date(),
     };
 
-    this.logger.log(`Created product variant ${newVariant.id} for vendor ${vendor.id}`);
+    this.logger.log(
+      `Created product variant ${newVariant.id} for vendor ${vendor.id}`,
+    );
     return newVariant;
   }
 
@@ -739,7 +744,9 @@ export class VendorService {
       updated_at: new Date(),
     };
 
-    this.logger.log(`Updated product variant ${variantId} for vendor ${vendor.id}`);
+    this.logger.log(
+      `Updated product variant ${variantId} for vendor ${vendor.id}`,
+    );
     return updatedVariant;
   }
 
@@ -754,7 +761,9 @@ export class VendorService {
     }
 
     // In real implementation, delete from database
-    this.logger.log(`Deleted product variant ${variantId} for vendor ${vendor.id}`);
+    this.logger.log(
+      `Deleted product variant ${variantId} for vendor ${vendor.id}`,
+    );
     return { message: 'Product variant deleted successfully' };
   }
 
@@ -799,9 +808,9 @@ export class VendorService {
     const mockAnalytics: SalesAnalyticsResponseDto = {
       vendorId: vendor.id,
       period: analyticsQuery.period,
-      totalSales: 15000.00,
+      totalSales: 15000.0,
       totalOrders: 150,
-      averageOrderValue: 100.00,
+      averageOrderValue: 100.0,
       salesData: [
         { date: '2024-01-01', sales: 500, orders: 5 },
         { date: '2024-01-02', sales: 750, orders: 8 },
@@ -842,7 +851,7 @@ export class VendorService {
       {
         productId: 'prod-1',
         productName: '20L Water Jar',
-        totalSales: 5000.00,
+        totalSales: 5000.0,
         totalOrders: 50,
         averageRating: 4.5,
         reviewCount: 25,
@@ -852,7 +861,7 @@ export class VendorService {
       {
         productId: 'prod-2',
         productName: '10L Water Jar',
-        totalSales: 3000.00,
+        totalSales: 3000.0,
         totalOrders: 60,
         averageRating: 4.2,
         reviewCount: 18,
@@ -895,8 +904,8 @@ export class VendorService {
         customerId: 'cust-1',
         customerName: 'John Doe',
         totalOrders: 15,
-        totalSpent: 1500.00,
-        averageOrderValue: 100.00,
+        totalSpent: 1500.0,
+        averageOrderValue: 100.0,
         firstOrderDate: new Date('2024-01-01'),
         lastOrderDate: new Date('2024-01-15'),
         loyaltyScore: 85,
@@ -905,8 +914,8 @@ export class VendorService {
         customerId: 'cust-2',
         customerName: 'Jane Smith',
         totalOrders: 8,
-        totalSpent: 800.00,
-        averageOrderValue: 100.00,
+        totalSpent: 800.0,
+        averageOrderValue: 100.0,
         firstOrderDate: new Date('2024-01-05'),
         lastOrderDate: new Date('2024-01-12'),
         loyaltyScore: 72,
@@ -931,10 +940,7 @@ export class VendorService {
     };
   }
 
-  async getDailyReport(
-    userId: string,
-    date?: string,
-  ): Promise<DailyReportDto> {
+  async getDailyReport(userId: string, date?: string): Promise<DailyReportDto> {
     const vendor = await this.findByUserId(userId);
     if (!vendor) {
       throw new NotFoundException('Vendor profile not found');
@@ -946,7 +952,7 @@ export class VendorService {
     // For now, return mock daily report
     const mockReport: DailyReportDto = {
       date: reportDate.toISOString().split('T')[0],
-      totalSales: 5000.00,
+      totalSales: 5000.0,
       totalOrders: 50,
       newCustomers: 5,
       topProducts: [
@@ -991,9 +997,9 @@ export class VendorService {
     // For now, return mock monthly report
     const mockReport: MonthlyReportDto = {
       month: reportMonth,
-      totalSales: 150000.00,
+      totalSales: 150000.0,
       totalOrders: 1500,
-      averageDailySales: 5000.00,
+      averageDailySales: 5000.0,
       growthPercentage: 15.5,
       dailyBreakdown: [
         { day: 1, sales: 4500, orders: 45 },
@@ -1082,7 +1088,9 @@ export class VendorService {
       lastUpdated: new Date(),
     };
 
-    this.logger.log(`Updated inventory for product ${productId} to ${updateInventoryDto.quantity}`);
+    this.logger.log(
+      `Updated inventory for product ${productId} to ${updateInventoryDto.quantity}`,
+    );
     return updatedInventory;
   }
 
@@ -1150,7 +1158,7 @@ export class VendorService {
         customerId: 'cust-1',
         customerName: 'John Doe',
         status: 'pending',
-        totalAmount: 150.00,
+        totalAmount: 150.0,
         createdAt: new Date(),
         deliveryAddress: '123 Customer Street, Delhi, 110001',
         contactPhone: '+91-9876543210',
@@ -1192,7 +1200,7 @@ export class VendorService {
         customerId: 'cust-2',
         customerName: 'Jane Smith',
         status: 'delivered',
-        totalAmount: 200.00,
+        totalAmount: 200.0,
         createdAt: new Date(),
         deliveryAddress: '456 Customer Avenue, Delhi, 110002',
         contactPhone: '+91-9876543211',
@@ -1265,7 +1273,7 @@ export class VendorService {
       customerId: 'cust-1',
       customerName: 'John Doe',
       status: 'confirmed',
-      totalAmount: 150.00,
+      totalAmount: 150.0,
       createdAt: new Date(),
       deliveryAddress: '123 Customer Street, Delhi, 110001',
       contactPhone: '+91-9876543210',
@@ -1286,7 +1294,9 @@ export class VendorService {
     }
 
     // In real implementation, update order status in database
-    this.logger.log(`Rejected order ${orderId} for vendor ${vendor.id} with reason: ${rejectOrderDto.reason}`);
+    this.logger.log(
+      `Rejected order ${orderId} for vendor ${vendor.id} with reason: ${rejectOrderDto.reason}`,
+    );
 
     return {
       message: `Order rejected: ${rejectOrderDto.reason}`,

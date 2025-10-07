@@ -100,7 +100,9 @@ export class ProductService {
 
       // Trigger auto-moderation for the new product
       try {
-        await this.productModerationService.autoFlagProduct((product as any).id);
+        await this.productModerationService.autoFlagProduct(
+          (product as any).id,
+        );
       } catch (error) {
         this.logger.error(`Failed to auto-flag product ${product.id}:`, error);
         // Don't fail the product creation if moderation fails
@@ -316,7 +318,9 @@ export class ProductService {
     }
   }
 
-  private mapToProductResponseDto(product: ProductDocument): ProductResponseDto {
+  private mapToProductResponseDto(
+    product: ProductDocument,
+  ): ProductResponseDto {
     return {
       id: (product as any).id,
       vendorId: (product.vendorId as any).toString(),

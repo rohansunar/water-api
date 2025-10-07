@@ -1,8 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, IsNotEmpty, MinLength, IsOptional, IsEnum, IsNumber } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  IsNotEmpty,
+  MinLength,
+  IsOptional,
+  IsEnum,
+  IsNumber,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { UserRole } from '../interfaces/user.interface';
-import { PaginationQueryDto, PaginationMetaDto, PaginatedResponseDto } from '../utils/pagination.util';
+import {
+  PaginationQueryDto,
+  PaginationMetaDto,
+  PaginatedResponseDto,
+} from '../utils/pagination.util';
 
 export class AdminLoginDto {
   @ApiProperty({
@@ -165,7 +177,7 @@ export class AdminUserListResponseDto {
 
   @ApiProperty({
     description: 'Wallet balance',
-    example: 500.00,
+    example: 500.0,
   })
   walletBalance: number;
 
@@ -259,7 +271,7 @@ export class AdminTransactionListQueryDto extends PaginationQueryDto {
 
   @ApiProperty({
     description: 'Filter by amount range - min',
-    example: 100.00,
+    example: 100.0,
     required: false,
   })
   @IsOptional()
@@ -269,7 +281,7 @@ export class AdminTransactionListQueryDto extends PaginationQueryDto {
 
   @ApiProperty({
     description: 'Filter by amount range - max',
-    example: 1000.00,
+    example: 1000.0,
     required: false,
   })
   @IsOptional()

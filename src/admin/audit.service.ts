@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaService } from '../common/database/prisma.service';
 
 export interface AuditLogData {
   adminId: bigint;
@@ -16,11 +16,12 @@ export interface AuditLogData {
 @Injectable()
 export class AuditService {
   private readonly logger = new Logger(AuditService.name);
-  private prisma = new PrismaClient();
+
+  constructor(private readonly prismaService: PrismaService) {}
 
   async logAction(logData: AuditLogData): Promise<void> {
     try {
-      await this.prisma.auditLog.create({
+      await this.prismaService.auditLog.create({
         data: {
           adminId: logData.adminId,
           action: logData.action,
@@ -69,7 +70,7 @@ export class AuditService {
         if (filters.endDate) where.createdAt.lte = filters.endDate;
       }
 
-      const logs = await this.prisma.auditLog.findMany({
+      const logs = await this.prismaService.auditLog.findMany({
         where,
         include: {
           admin: {
@@ -90,7 +91,7 @@ export class AuditService {
 
   async getAuditLogById(id: bigint): Promise<any> {
     try {
-      const log = await this.prisma.auditLog.findUnique({
+      const log = await this.prismaService.auditLog.findUnique({
         where: { id },
         include: {
           admin: {
