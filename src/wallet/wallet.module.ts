@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { WalletController } from './wallet.controller';
-import { WalletService } from './wallet.service';
+import { WalletController } from './controllers/wallet.controller';
+import { WalletService } from './services/wallet.service';
 import {
   Wallet,
   WalletSchema,

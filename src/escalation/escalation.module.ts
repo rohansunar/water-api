@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { EscalationService } from './escalation.service';
+import { EscalationService } from './services/escalation.service';
 
 @Module({
   providers: [EscalationService],

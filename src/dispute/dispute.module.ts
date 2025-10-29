@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { DisputeService } from './dispute.service';
+import { DisputeService } from './services/dispute.service';
 import { RefundModule } from '../refund/refund.module';
 
 @Module({

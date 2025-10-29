@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ComplaintController } from './complaint.controller';
-import { ComplaintService } from './complaint.service';
+import { ComplaintController } from './controllers/complaint.controller';
+import { ComplaintService } from './services/complaint.service';
 import { UserModule } from '../modules/user/user.module';
 import { OrderModule } from '../order/order.module';
 

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { CommissionController } from './commission.controller';
-import { CommissionService } from './commission.service';
+import { CommissionController } from './controllers/commission.controller';
+import { CommissionService } from './services/commission.service';
 
 @Module({
   controllers: [CommissionController],

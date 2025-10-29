@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { StoreController } from './store.controller';
-import { StoreService } from './store.service';
+import { StoreController } from './controllers/store.controller';
+import { StoreService } from './services/store.service';
 import {
   VendorStore,
   VendorStoreSchema,
