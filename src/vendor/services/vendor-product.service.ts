@@ -24,7 +24,7 @@ import {
   VendorProductResponseDto,
   VendorProductVariantResponseDto,
   VendorProductMappingResponseDto,
-} from '../dtos/vendor.dto';
+} from '../dto/vendor.dto';
 
 @Injectable()
 export class VendorProductService {

@@ -12,7 +12,7 @@ import {
   VendorSignupDto,
   VendorLoginDto,
   VendorAuthResponseDto,
-} from '../dtos/vendor.dto';
+} from '../dto/vendor.dto';
 import { Public } from '../../auth/decorators/public.decorator';
 
 @ApiTags('Vendor Authentication')

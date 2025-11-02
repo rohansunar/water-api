@@ -50,7 +50,7 @@ import {
   PaginatedResponseDto,
   VendorProductVariantResponseDto,
   UpdateProductVariantDto,
-} from '../dtos/vendor.dto';
+} from '../dto/vendor.dto';
 
 @Controller('vendors')
 @UseGuards(JwtAuthGuard, RolesGuard)

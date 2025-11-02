@@ -30,7 +30,7 @@ import {
   VendorProductResponseDto,
   VendorProductVariantResponseDto,
   VendorProductMappingResponseDto,
-} from '../dtos/vendor.dto';
+} from '../dto/vendor.dto';
 import { VendorJwtAuthGuard } from '../guards/vendor-jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 

@@ -15,7 +15,7 @@ import {
   VendorLoginDto,
   VendorAuthResponseDto,
   VendorProfileDto,
-} from '../dtos/vendor.dto';
+} from '../dto/vendor.dto';
 
 @Injectable()
 export class VendorAuthService {

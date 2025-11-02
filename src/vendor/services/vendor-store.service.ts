@@ -16,7 +16,7 @@ import {
   CreateStoreDto,
   UpdateStoreDto,
   StoreResponseDto,
-} from '../dtos/vendor.dto';
+} from '../dto/vendor.dto';
 import { VendorService } from './vendor.service';
 
 @Injectable()
