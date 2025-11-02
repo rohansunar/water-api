@@ -9,8 +9,8 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { DisputePriority } from '../interfaces/dispute.interface';
-import { EscalationStatus } from '../interfaces/escalation.interface';
+import { DisputePriority } from '../../dispute/interfaces/dispute.interface';
+import { EscalationStatus } from '../../escalation/interfaces/escalation.interface';
 
 export class CreateEscalationDto {
   @ApiProperty({

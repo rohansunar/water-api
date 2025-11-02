@@ -17,7 +17,7 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { UserRole } from '../../common/interfaces/user.interface';
 import { User } from '../../common/interfaces/user.interface';
 import { CommissionService } from '../services/commission.service';
-import { CommissionScope } from '../../common/interfaces/commission.interface';
+import { CommissionScope } from '../interfaces/commission.interface';
 import {
   CreateCommissionRuleDto,
   UpdateCommissionRuleDto,

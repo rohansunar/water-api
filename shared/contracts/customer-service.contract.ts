@@ -1,4 +1,4 @@
-import { CustomerRole } from '../../src/common/interfaces/customer.interface';
+import { CustomerRole } from '../../src/customer/interfaces/customer.interface';
 
 export interface ICustomerServiceContract {
   // Customer Management

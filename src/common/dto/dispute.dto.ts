@@ -17,7 +17,7 @@ import {
   DisputeStatus,
   DisputePriority,
   DisputeCategory,
-} from '../interfaces/dispute.interface';
+} from '../../dispute/interfaces/dispute.interface';
 
 export class DisputeEvidenceDto {
   @ApiProperty({

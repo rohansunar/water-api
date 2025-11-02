@@ -10,7 +10,7 @@ import {
   ComplaintStatus,
   ComplaintType,
   ComplaintPriority,
-} from '../../common/interfaces/complaint.interface';
+} from '../interfaces/complaint.interface';
 import {
   CreateComplaintDto,
   ComplaintResponseDto,

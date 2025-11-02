@@ -6,7 +6,7 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { OrderStatus } from '../interfaces/order.interface';
+import { OrderStatus } from '../../order/interfaces/order.interface';
 import { PaginationQueryDto } from '../utils/pagination.util';
 
 export class AdminUpdateOrderStatusDto {

@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
-import { RefundStatus } from '../../common/interfaces/refund.interface';
+import { RefundStatus } from '../interfaces/refund.interface';
 import {
   CreateRefundDto,
   ApproveRefundDto,
@@ -15,7 +15,7 @@ import {
   RefundListQueryDto,
 } from '../../common/dto/refund.dto';
 import { LedgerService } from '../../ledger/services/ledger.service';
-import { LedgerEntryType } from '../../common/interfaces/ledger.interface';
+import { LedgerEntryType } from '../../ledger/interfaces/ledger.interface';
 
 @Injectable()
 export class RefundService {

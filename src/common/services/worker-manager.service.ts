@@ -73,7 +73,7 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
     for (const worker of this.workers) {
       try {
         const metrics = await worker.getQueueMetrics();
-        if (metrics.isActive) {
+        if (metrics && metrics.isActive) {
           this.logger.debug(
             `${worker.constructor.name} health: OK, Queue: ${JSON.stringify(metrics)}`,
           );
@@ -100,7 +100,7 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
 
       // Log warnings for high queue lengths
       for (const { name, metrics } of queueMetrics) {
-        if (metrics.isActive) {
+        if (metrics && metrics.isActive) {
           const totalJobs = (metrics.waiting || 0) + (metrics.active || 0);
 
           if (totalJobs > 100) {
@@ -130,7 +130,7 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
 
       const summary = {
         totalWorkers: this.workers.length,
-        activeWorkers: allMetrics.filter((m) => m.metrics.isActive).length,
+        activeWorkers: allMetrics.filter((m) => m.metrics && m.metrics.isActive).length,
         workers: allMetrics,
         timestamp: new Date().toISOString(),
       };

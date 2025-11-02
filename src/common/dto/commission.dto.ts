@@ -7,7 +7,7 @@ import {
   Min,
   Max,
 } from 'class-validator';
-import { CommissionScope } from '../interfaces/commission.interface';
+import { CommissionScope } from '../../commission/interfaces/commission.interface';
 
 export class CreateCommissionRuleDto {
   @IsEnum(CommissionScope)

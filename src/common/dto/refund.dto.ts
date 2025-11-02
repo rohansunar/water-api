@@ -9,7 +9,7 @@ import {
   IsDateString,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { RefundStatus } from '../interfaces/refund.interface';
+import { RefundStatus } from '../../refund/interfaces/refund.interface';
 import { Type } from 'class-transformer';
 
 export class CreateRefundDto {

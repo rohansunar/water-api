@@ -118,8 +118,7 @@
       "ts"
     ],
     "roots": [
-      "src",
-      "tests"
+      "src"
     ],
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {

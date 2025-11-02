@@ -11,6 +11,7 @@ import {
 import { SubscriptionService } from '../services/subscription.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { User } from '../../common/interfaces/user.interface';
 import {
   CreateSubscriptionDto,
   UpdateSubscriptionDto,

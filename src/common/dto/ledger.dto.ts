@@ -18,7 +18,7 @@ import {
   PayoutMethod,
   BankDetails,
   UpiDetails,
-} from '../interfaces/ledger.interface';
+} from '../../ledger/interfaces/ledger.interface';
 
 // Ledger Entry DTOs
 export class CreateLedgerEntryDto {

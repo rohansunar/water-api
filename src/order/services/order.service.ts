@@ -11,7 +11,7 @@ import {
   OrderSchedule,
   PaymentMethod,
   PaymentStatus,
-} from '../../common/interfaces/order.interface';
+} from '../interfaces/order.interface';
 import { CreateOrderDto, OrderResponseDto } from '../../common/dto/order.dto';
 import { ProductService } from '../../product/services/product.service';
 import { LedgerService } from '../../ledger/services/ledger.service';

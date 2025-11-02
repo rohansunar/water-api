@@ -1,4 +1,4 @@
-import { DisputePriority } from './dispute.interface';
+import { DisputePriority } from '../../dispute/interfaces/dispute.interface';
 
 export interface Escalation {
   id: bigint;

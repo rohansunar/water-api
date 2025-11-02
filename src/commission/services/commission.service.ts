@@ -9,7 +9,7 @@ import {
   CommissionScope,
   CommissionRule,
   CommissionCalculation,
-} from '../../common/interfaces/commission.interface';
+} from '../interfaces/commission.interface';
 import {
   CreateCommissionRuleDto,
   UpdateCommissionRuleDto,

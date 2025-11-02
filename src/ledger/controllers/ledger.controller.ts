@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { User, UserRole } from '../../common/interfaces/user.interface';
 import {
   CreateLedgerEntryDto,
   UpdateLedgerEntryDto,
@@ -30,7 +31,7 @@ import {
   LedgerEntryType,
   LedgerEntryStatus,
   PayoutStatus,
-} from '../../common/interfaces/ledger.interface';
+} from '../interfaces/ledger.interface';
 
 /**
  * Ledger Controller

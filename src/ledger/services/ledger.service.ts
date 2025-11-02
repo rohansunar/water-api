@@ -20,7 +20,7 @@ import {
   AnalyticsPeriod,
   VendorAnalytics,
   LedgerSummary,
-} from '../../common/interfaces/ledger.interface';
+} from '../interfaces/ledger.interface';
 import {
   CreateLedgerEntryDto,
   UpdateLedgerEntryDto,

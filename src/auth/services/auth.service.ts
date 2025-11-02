@@ -20,7 +20,7 @@ import {
 import {
   Customer,
   CustomerRole,
-} from '../../common/interfaces/customer.interface';
+} from '../../customer/interfaces/customer.interface';
 import { CreateCustomerDto } from '../../common/dto/customer.dto';
 
 @Injectable()

@@ -4,6 +4,7 @@ import { LedgerService } from '../../ledger/services/ledger.service';
 import { LedgerSummaryResponseDto } from '../../common/dto/ledger.dto';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 import { ProductModerationService } from '../../product/services/product-moderation.service';
+import { User, UserRole } from '../../common/interfaces/user.interface';
 import {
   AdminPaginationQueryDto,
   AdminPaginatedResponseDto,
@@ -23,7 +24,7 @@ import {
   AdminOrderQueryDto,
   AdminOrderResponseDto,
 } from '../../common/dto/order-management.dto';
-import { OrderStatus } from '../../common/interfaces/order.interface';
+import { OrderStatus } from '../../order/interfaces/order.interface';
 import {
   LedgerEntryResponseDto,
   PayoutResponseDto,
@@ -33,7 +34,7 @@ import {
   LedgerEntryStatus,
   PayoutStatus,
   PayoutMethod,
-} from '../../common/interfaces/ledger.interface';
+} from '../../ledger/interfaces/ledger.interface';
 
 export interface AdminDashboardStats {
   totalUsers: number;

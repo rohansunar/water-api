@@ -9,7 +9,7 @@ import {
   OrderResponseDto,
   UpdateOrderStatusDto,
 } from '../../common/dto/order.dto';
-import { OrderStatus } from '../../common/interfaces/order.interface';
+import { OrderStatus } from '../../order/interfaces/order.interface';
 import {
   // Earnings Management DTOs
   EarningsHistoryDto,

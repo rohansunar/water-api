@@ -10,7 +10,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { SubscriptionFrequency } from '../interfaces/subscription.interface';
+import { SubscriptionFrequency } from '../../subscription/interfaces/subscription.interface';
 import { DeliveryAddressDto } from './order.dto';
 
 export class CreateSubscriptionDto {

@@ -9,7 +9,7 @@ import {
   Vendor,
   DeliveryZone,
   DayOfWeek,
-} from '../common/interfaces/vendor.interface';
+} from './interfaces/vendor.interface';
 import {
   CreateProductDto,
   ProductResponseDto,

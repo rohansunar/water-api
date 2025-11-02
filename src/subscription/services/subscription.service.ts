@@ -11,7 +11,7 @@ import {
   SubscriptionFrequency,
   DeliveryStatus,
   PaymentMethod,
-} from '../../common/interfaces/subscription.interface';
+} from '../interfaces/subscription.interface';
 import {
   CreateSubscriptionDto,
   UpdateSubscriptionDto,

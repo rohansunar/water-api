@@ -13,7 +13,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { CustomerRole } from '../interfaces/customer.interface';
+import { CustomerRole } from '../../customer/interfaces/customer.interface';
 
 export class CreateCustomerDto {
   @ApiProperty({

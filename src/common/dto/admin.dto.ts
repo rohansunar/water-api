@@ -14,6 +14,7 @@ import {
   PaginationMetaDto,
   PaginatedResponseDto,
 } from '../utils/pagination.util';
+import { UserRole } from '../interfaces/user.interface';
 
 export class AdminLoginDto {
   @ApiProperty({

@@ -8,7 +8,7 @@ import { PrismaService } from '../../common/database/prisma.service';
 import {
   DisputeStatus,
   DisputePriority,
-} from '../../common/interfaces/dispute.interface';
+} from '../interfaces/dispute.interface';
 import {
   CreateDisputeDto,
   ResolveDisputeDto,
