@@ -14,7 +14,6 @@ import { AdminRolesGuard } from '../guards/admin-roles.guard';
 import { AdminRoles } from '../decorators/admin-roles.decorator';
 import { AdminCurrentUser } from '../decorators/admin-current-user.decorator';
 import { AuditService } from '../services/audit.service';
-import { UserRole } from '../../common/interfaces/user.interface';
 import {
   AdminService,
   AdminDashboardStats,

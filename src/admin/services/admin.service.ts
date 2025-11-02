@@ -1,7 +1,6 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { VendorService } from '../../vendor/vendor.service';
 import { LedgerService } from '../../ledger/services/ledger.service';
-import { User, UserRole } from '../../common/interfaces/user.interface';
 import { LedgerSummaryResponseDto } from '../../common/dto/ledger.dto';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 import { ProductModerationService } from '../../product/services/product-moderation.service';

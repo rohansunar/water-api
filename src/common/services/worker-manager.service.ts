@@ -8,7 +8,6 @@ import { TaskAssignmentWorker } from './task-assignment.worker';
 import { NotificationWorker } from './notification.worker';
 import { ReconciliationWorker } from './reconciliation.worker';
 import { RetryWorker } from './retry.worker';
-import { FraudDetectionWorker } from './fraud-detection.worker';
 
 @Injectable()
 export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
@@ -21,7 +20,6 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
     private readonly notificationWorker: NotificationWorker,
     private readonly reconciliationWorker: ReconciliationWorker,
     private readonly retryWorker: RetryWorker,
-    private readonly fraudDetectionWorker: FraudDetectionWorker,
   ) {}
 
   async onModuleInit() {
@@ -41,7 +39,6 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
         this.notificationWorker,
         this.reconciliationWorker,
         this.retryWorker,
-        this.fraudDetectionWorker,
       ];
 
       this.logger.log('All workers initialized successfully');
@@ -229,12 +226,7 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
   }
 
   async addFraudDetectionJob(data: any): Promise<string> {
-    try {
-      return await this.fraudDetectionWorker.addJob('fraud-detection', data);
-    } catch (error) {
-      this.logger.error('Failed to add fraud detection job:', error);
-      throw error;
-    }
+    throw new Error('Fraud detection worker not available');
   }
 
   private async gracefulShutdown(): Promise<void> {
