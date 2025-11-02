@@ -3,7 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from '../services/auth.service';
-import { User as UserEntity } from '../../modules/user/entities/user.entity';
+import { User } from '../../common/interfaces/user.interface';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 
 export interface JwtPayload {
@@ -31,7 +31,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: JwtPayload): Promise<UserEntity> {
+  async validate(payload: JwtPayload): Promise<User> {
     try {
       const user = await this.authService.validateUser(payload.sub);
       return user;

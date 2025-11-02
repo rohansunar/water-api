@@ -7,7 +7,6 @@ import {
   SubscriptionSchema,
 } from '../common/schemas/subscription.schema';
 import { ProductModule } from '../product/product.module';
-import { UserModule } from '../modules/user/user.module';
 import { OrderModule } from '../order/order.module';
 
 @Module({
@@ -16,7 +15,6 @@ import { OrderModule } from '../order/order.module';
       { name: Subscription.name, schema: SubscriptionSchema },
     ]),
     ProductModule,
-    UserModule,
     OrderModule,
   ],
   controllers: [SubscriptionController],

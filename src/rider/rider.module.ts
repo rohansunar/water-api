@@ -7,7 +7,6 @@ import { RiderService } from './services/rider.service';
 import { RiderAuthService } from './services/rider-auth.service';
 import { OtpService } from '../common/services/otp.service';
 import { OrderModule } from '../order/order.module';
-import { UserModule } from '../modules/user/user.module';
 
 @Module({
   imports: [
@@ -23,7 +22,6 @@ import { UserModule } from '../modules/user/user.module';
       inject: [ConfigService],
     }),
     OrderModule,
-    UserModule,
   ],
   controllers: [RiderController, RiderAuthController],
   providers: [RiderService, RiderAuthService, OtpService],

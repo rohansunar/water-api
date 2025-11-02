@@ -13,7 +13,6 @@ import {
 } from '../common/schemas/delivery-task.schema';
 import { Payment, PaymentSchema } from '../common/schemas/payment.schema';
 import { ProductModule } from '../product/product.module';
-import { UserModule } from '../modules/user/user.module';
 import { LedgerModule } from '../ledger/ledger.module';
 import { CommissionModule } from '../commission/commission.module';
 
@@ -26,7 +25,6 @@ import { CommissionModule } from '../commission/commission.module';
       { name: Payment.name, schema: PaymentSchema },
     ]),
     ProductModule,
-    UserModule,
     LedgerModule,
     CommissionModule,
   ],

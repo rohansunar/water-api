@@ -13,14 +13,12 @@ import { VendorModule } from './vendor/vendor.module';
 import { OrderModule } from './order/order.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { RiderModule } from './rider/rider.module';
-import { WalletModule } from './wallet/wallet.module';
 import { ComplaintModule } from './complaint/complaint.module';
 import { LedgerModule } from './ledger/ledger.module';
 import { AdminModule } from './admin/admin.module';
 import { CommissionModule } from './commission/commission.module';
 import { RefundModule } from './refund/refund.module';
 import { DisputeModule } from './dispute/dispute.module';
-import { EscalationModule } from './escalation/escalation.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { EventBusModule } from './common/events/event-bus.module';
 import { CustomLoggerService } from './common/logger/logger.service';
@@ -71,14 +69,12 @@ import { RedisModule } from './common/services/redis.module';
     OrderModule,
     SubscriptionModule,
     RiderModule,
-    WalletModule,
     ComplaintModule,
     LedgerModule,
     AdminModule,
     CommissionModule,
     RefundModule,
     DisputeModule,
-    EscalationModule,
     StoreModule,
   ],
   controllers: [AppController],

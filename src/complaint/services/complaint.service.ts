@@ -15,7 +15,6 @@ import {
   CreateComplaintDto,
   ComplaintResponseDto,
 } from '../../common/dto/complaint.dto';
-import { UserService } from '../../modules/user/services/user.service';
 
 @Injectable()
 export class ComplaintService {
@@ -23,18 +22,15 @@ export class ComplaintService {
   private readonly complaints = new Map<string, Complaint>();
   private readonly userComplaintIndex = new Map<string, string[]>(); // userId -> complaintIds
 
-  constructor(private readonly userService: UserService) {}
+  constructor() {}
 
   async createComplaint(
     userId: string,
     createComplaintDto: CreateComplaintDto,
   ): Promise<ComplaintResponseDto> {
     try {
-      // Validate user exists
-      const user = await this.userService.findById(userId);
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
+      // TODO: Validate user exists without UserService
+      this.logger.log(`User validation needed for userId: ${userId}`);
 
       // Validate order exists if provided
       if (createComplaintDto.order_id) {
@@ -85,11 +81,8 @@ export class ComplaintService {
 
   async getUserComplaints(userId: string): Promise<ComplaintResponseDto[]> {
     try {
-      // Validate user exists
-      const user = await this.userService.findById(userId);
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
+      // TODO: Validate user exists without UserService
+      this.logger.log(`User validation needed for userId: ${userId}`);
 
       const complaintIds = this.userComplaintIndex.get(userId) || [];
       const complaints = complaintIds

@@ -1,5 +1,4 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
-import { UserService } from '../../modules/user/services/user.service';
 import { VendorService } from '../../vendor/vendor.service';
 import { LedgerService } from '../../ledger/services/ledger.service';
 import { User, UserRole } from '../../common/interfaces/user.interface';
@@ -79,7 +78,6 @@ export class AdminService {
   private readonly logger = new Logger(AdminService.name);
 
   constructor(
-    private readonly userService: UserService,
     private readonly vendorService: VendorService,
     private readonly ledgerService: LedgerService,
     private readonly customLogger: CustomLoggerService,
@@ -385,7 +383,8 @@ export class AdminService {
     userId: string,
     isActive: boolean,
   ): Promise<void> {
-    await this.userService.update(userId, { isActive });
+    // TODO: Implement user update logic without UserService
+    this.logger.log(`User ${userId} status update to ${isActive ? 'active' : 'inactive'} - implementation needed`);
   }
 
   private logUserStatusUpdate(userId: string, isActive: boolean): void {

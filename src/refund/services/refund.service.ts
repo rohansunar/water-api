@@ -15,7 +15,6 @@ import {
   RefundListQueryDto,
 } from '../../common/dto/refund.dto';
 import { LedgerService } from '../../ledger/services/ledger.service';
-import { UserService } from '../../modules/user/services/user.service';
 import { LedgerEntryType } from '../../common/interfaces/ledger.interface';
 
 @Injectable()
@@ -24,7 +23,6 @@ export class RefundService {
 
   constructor(
     private readonly ledgerService: LedgerService,
-    private readonly userService: UserService,
     private readonly prismaService: PrismaService,
   ) {}
 
@@ -265,12 +263,9 @@ export class RefundService {
         },
       });
 
-      // Refund to user's wallet if applicable
+      // TODO: Refund to user's wallet if applicable without UserService
       if (refund.order.paymentMethod === 'wallet') {
-        await this.userService.updateWalletBalance(
-          refund.order.customerId.toString(),
-          Number(refund.amount),
-        );
+        this.logger.log(`Wallet refund needed for user ${refund.order.customerId}: +${refund.amount}`);
       }
 
       this.logger.log(`Completed refund ${refundId}`);

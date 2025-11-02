@@ -20,8 +20,8 @@ import {
 import { CustomerService } from '../services/customer.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { User as UserEntity } from '../../modules/user/entities/user.entity';
 import { CustomerProfileDto } from '../../common/dto/auth.dto';
+import { User } from '../../common/interfaces/user.interface';
 import {
   CreateAddressDto,
   UpdateAddressDto,
@@ -78,7 +78,7 @@ export class CustomerController {
     },
   })
   async getProfile(
-    @CurrentUser() customer: UserEntity,
+    @CurrentUser() customer: User,
   ): Promise<CustomerProfileDto> {
     const startTime = Date.now();
 
@@ -154,7 +154,7 @@ export class CustomerController {
     description: 'Customer not found',
   })
   async updateMonthlyPaymentMode(
-    @CurrentUser() customer: UserEntity,
+    @CurrentUser() customer: User,
     @Body() updateDto: { monthlyPaymentMode: boolean },
   ): Promise<{ message: string; monthlyPaymentMode: boolean }> {
     const startTime = Date.now();
@@ -212,7 +212,7 @@ export class CustomerController {
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   async getCustomerAddresses(
-    @CurrentUser() customer: UserEntity,
+    @CurrentUser() customer: User,
   ): Promise<AddressResponseDto[]> {
     const startTime = Date.now();
 
@@ -264,7 +264,7 @@ export class CustomerController {
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   async createAddress(
-    @CurrentUser() customer: UserEntity,
+    @CurrentUser() customer: User,
     @Body() createAddressDto: CreateAddressDto,
   ): Promise<AddressResponseDto> {
     const startTime = Date.now();
@@ -322,7 +322,7 @@ export class CustomerController {
     description: 'Address not found',
   })
   async updateAddress(
-    @CurrentUser() customer: UserEntity,
+    @CurrentUser() customer: User,
     @Param('id') addressId: string,
     @Body() updateAddressDto: UpdateAddressDto,
   ): Promise<AddressResponseDto> {
@@ -388,7 +388,7 @@ export class CustomerController {
     description: 'Address not found',
   })
   async deleteAddress(
-    @CurrentUser() customer: UserEntity,
+    @CurrentUser() customer: User,
     @Param('id') addressId: string,
   ): Promise<{ message: string }> {
     const startTime = Date.now();
@@ -454,7 +454,7 @@ export class CustomerController {
     description: 'Address not found',
   })
   async setDefaultAddress(
-    @CurrentUser() customer: UserEntity,
+    @CurrentUser() customer: User,
     @Param('id') addressId: string,
   ): Promise<{ message: string }> {
     const startTime = Date.now();
@@ -504,7 +504,7 @@ export class CustomerController {
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   async getOrderHistory(
-    @CurrentUser() customer: UserEntity,
+    @CurrentUser() customer: User,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<any> {
     const startTime = Date.now();
@@ -558,7 +558,7 @@ export class CustomerController {
     description: 'Order not found',
   })
   async getOrderDetails(
-    @CurrentUser() customer: UserEntity,
+    @CurrentUser() customer: User,
     @Param('id') orderId: string,
   ): Promise<any> {
     const startTime = Date.now();
@@ -617,7 +617,7 @@ export class CustomerController {
     description: 'Order not found',
   })
   async cancelOrder(
-    @CurrentUser() customer: UserEntity,
+    @CurrentUser() customer: User,
     @Param('id') orderId: string,
     @Body() cancelOrderDto: any,
   ): Promise<{ message: string }> {
@@ -678,7 +678,7 @@ export class CustomerController {
     description: 'Order not found',
   })
   async requestRefund(
-    @CurrentUser() customer: UserEntity,
+    @CurrentUser() customer: User,
     @Param('id') orderId: string,
     @Body() refundRequestDto: any,
   ): Promise<{ message: string }> {
@@ -733,7 +733,7 @@ export class CustomerController {
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   async getCustomerSubscriptions(
-    @CurrentUser() customer: UserEntity,
+    @CurrentUser() customer: User,
   ): Promise<any[]> {
     const startTime = Date.now();
 
@@ -784,7 +784,7 @@ export class CustomerController {
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   async createSubscription(
-    @CurrentUser() customer: UserEntity,
+    @CurrentUser() customer: User,
     @Body() createSubscriptionDto: any,
   ): Promise<any> {
     const startTime = Date.now();
@@ -841,7 +841,7 @@ export class CustomerController {
     description: 'Subscription not found',
   })
   async updateSubscription(
-    @CurrentUser() customer: UserEntity,
+    @CurrentUser() customer: User,
     @Param('id') subscriptionId: string,
     @Body() updateSubscriptionDto: any,
   ): Promise<any> {
@@ -902,7 +902,7 @@ export class CustomerController {
     description: 'Subscription not found',
   })
   async cancelSubscription(
-    @CurrentUser() customer: UserEntity,
+    @CurrentUser() customer: User,
     @Param('id') subscriptionId: string,
     @Body() cancelSubscriptionDto: any,
   ): Promise<{ message: string }> {
@@ -965,7 +965,7 @@ export class CustomerController {
     description: 'Customer not found',
   })
   async updateProfile(
-    @CurrentUser() customer: UserEntity,
+    @CurrentUser() customer: User,
     @Body() updateProfileDto: any,
   ): Promise<CustomerProfileDto> {
     const startTime = Date.now();
@@ -1031,7 +1031,7 @@ export class CustomerController {
     description: 'Customer not found',
   })
   async updatePreferences(
-    @CurrentUser() customer: UserEntity,
+    @CurrentUser() customer: User,
     @Body() updatePreferencesDto: any,
   ): Promise<{ message: string }> {
     const startTime = Date.now();
