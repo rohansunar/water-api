@@ -283,4 +283,9 @@ export class NotificationWorker extends WorkerBaseService {
     // Notification caching disabled since Redis is removed
     this.logger.debug(`Notification caching disabled for ${recipientId} - Redis removed`);
   }
+
+  async getQueueMetrics(): Promise<any> {
+    // Return inactive status since Redis is removed
+    return { isActive: false, reason: 'Redis removed' };
+  }
 }

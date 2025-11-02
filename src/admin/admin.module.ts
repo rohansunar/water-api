@@ -7,7 +7,6 @@ import { LedgerModule } from '../ledger/ledger.module';
 import { LoggerModule } from '../common/logger/logger.module';
 import { ProductModerationModule } from '../product/product-moderation.module';
 import { RefundModule } from '../refund/refund.module';
-import { DisputeModule } from '../dispute/dispute.module';
 import { OrderModule } from '../order/order.module';
 
 @Module({
@@ -18,7 +17,6 @@ import { OrderModule } from '../order/order.module';
     LoggerModule,
     ProductModerationModule,
     RefundModule,
-    DisputeModule,
     OrderModule,
   ],
   controllers: [AdminController],

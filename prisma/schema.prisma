@@ -116,7 +116,6 @@ model Admin {
   moderatedProducts Product[]
   processedRefunds  Refund[] @relation("RefundProcessor")
   approvedRefunds   Refund[] @relation("RefundApprover")
-  resolvedDisputes  Dispute[]
   createdEscalations Escalation[] @relation("EscalationCreator")
   resolvedEscalations Escalation[] @relation("EscalationResolver")
   auditLogs         AuditLog[]
@@ -276,7 +275,6 @@ model Order {
   payments          Payment[]
   ledgerEntries     LedgerEntry[]
   refunds           Refund[]
-  disputes          Dispute[]
   deliveryTask      DeliveryTask?
   cashTransactions  CashTransaction[]
 
@@ -406,37 +404,6 @@ enum RefundStatus {
   CANCELLED
 }
 
-enum DisputeStatus {
-  OPEN
-  INVESTIGATING
-  RESOLVED
-  CLOSED
-  ESCALATED
-}
-
-enum DisputePriority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-}
-
-enum DisputeCategory {
-  DELIVERY_DELAY
-  PRODUCT_QUALITY
-  WRONG_ITEM
-  MISSING_ITEM
-  PAYMENT_ISSUE
-  SERVICE_ISSUE
-  OTHER
-}
-
-enum EscalationStatus {
-  PENDING
-  IN_REVIEW
-  RESOLVED
-  CLOSED
-}
 
 model CommissionRule {
   id                BigInt   @id @default(autoincrement())
@@ -480,53 +447,6 @@ model CommissionRule {
     @@map("refunds")
   }
   
-  model Dispute {
-    id                BigInt   @id @default(autoincrement())
-    orderId           BigInt
-    orderCreatedAt    DateTime @db.Timestamptz
-    raisedBy          BigInt   // customer or vendor id
-    raisedByType      String   // 'customer' or 'vendor'
-    reason            String
-    description       String
-    status            DisputeStatus @default(OPEN)
-    priority          DisputePriority @default(MEDIUM)
-    category          DisputeCategory
-    evidence          Json?    // files, messages, etc.
-    resolution        String?
-    resolvedBy        BigInt?
-    resolvedAt        DateTime? @db.Timestamptz
-    createdAt         DateTime @default(now()) @db.Timestamptz
-    updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
-  
-    // Relations
-    order             Order    @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt])
-    resolver          Admin?   @relation(fields: [resolvedBy], references: [id])
-    escalations       Escalation[]
-  
-    @@map("disputes")
-  }
-  
-  model Escalation {
-    id                BigInt   @id @default(autoincrement())
-    disputeId         BigInt
-    escalatedBy       BigInt   // admin id
-    escalatedTo       String   // role level: 'senior_admin', 'finance', 'management'
-    reason            String
-    priority          DisputePriority @default(HIGH)
-    status            EscalationStatus @default(PENDING)
-    resolvedBy        BigInt?
-    resolvedAt        DateTime? @db.Timestamptz
-    resolution        String?
-    createdAt         DateTime @default(now()) @db.Timestamptz
-    updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz
-  
-    // Relations
-    dispute           Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
-    escalator         Admin    @relation("EscalationCreator", fields: [escalatedBy], references: [id])
-    resolver          Admin?   @relation("EscalationResolver", fields: [resolvedBy], references: [id])
-  
-    @@map("escalations")
-  }
   
   model AuditLog {
     id                BigInt   @id @default(autoincrement())

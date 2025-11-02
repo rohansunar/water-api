@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
-import { VendorService } from '../../vendor/vendor.service';
+import { VendorService } from '../../vendor/services/vendor.service';
 import { LedgerService } from '../../ledger/services/ledger.service';
 import { LedgerSummaryResponseDto } from '../../common/dto/ledger.dto';
 import { CustomLoggerService } from '../../common/logger/logger.service';
@@ -712,7 +712,6 @@ export class AdminService {
         status: OrderStatus.PENDING,
         totalAmount: 150.5,
         paymentStatus: 'completed',
-        hasDisputes: false,
         createdAt: new Date('2024-01-15T10:30:00Z'),
         updatedAt: new Date('2024-01-15T10:30:00Z'),
       },
@@ -727,7 +726,6 @@ export class AdminService {
         status: OrderStatus.DELIVERED,
         totalAmount: 200.0,
         paymentStatus: 'completed',
-        hasDisputes: false,
         createdAt: new Date('2024-01-14T14:20:00Z'),
         updatedAt: new Date('2024-01-14T16:45:00Z'),
       },
@@ -742,7 +740,6 @@ export class AdminService {
         status: OrderStatus.CANCELLED,
         totalAmount: 75.25,
         paymentStatus: 'refunded',
-        hasDisputes: true,
         createdAt: new Date('2024-01-13T09:15:00Z'),
         updatedAt: new Date('2024-01-13T11:30:00Z'),
       },
@@ -773,11 +770,6 @@ export class AdminService {
       );
     }
 
-    if (query.disputed !== undefined) {
-      filteredOrders = filteredOrders.filter(
-        (order) => order.hasDisputes === query.disputed,
-      );
-    }
 
     if (query.search) {
       const searchLower = query.search.toLowerCase();

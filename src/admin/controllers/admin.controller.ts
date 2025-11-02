@@ -41,7 +41,6 @@ import {
   ProductModerationListQueryDto,
 } from '../../common/dto/product-moderation.dto';
 import { RefundService } from '../../refund/services/refund.service';
-import { DisputeService } from '../../dispute/services/dispute.service';
 import { OrderService } from '../../order/services/order.service';
 import {
   CreateRefundDto,
@@ -51,20 +50,6 @@ import {
   RefundResponseDto,
   RefundListQueryDto,
 } from '../../common/dto/refund.dto';
-import {
-  CreateDisputeDto,
-  ResolveDisputeDto,
-  UpdateDisputeStatusDto,
-  DisputeResponseDto,
-  DisputeListQueryDto,
-} from '../../common/dto/dispute.dto';
-import {
-  CreateEscalationDto,
-  ResolveEscalationDto,
-  UpdateEscalationStatusDto,
-  EscalationResponseDto,
-  EscalationListQueryDto,
-} from '../../common/dto/escalation.dto';
 import {
   ComplaintResponseDto,
   ComplaintListQueryDto,
@@ -90,7 +75,6 @@ export class AdminController {
     private readonly auditService: AuditService,
     private readonly productModerationService: ProductModerationService,
     private readonly refundService: RefundService,
-    private readonly disputeService: DisputeService,
     private readonly orderService: OrderService,
   ) {}
 
@@ -464,74 +448,6 @@ export class AdminController {
     );
   }
 
-  // Dispute Management Endpoints
-  @Post('disputes')
-  async createDispute(
-    @Body() dto: CreateDisputeDto,
-    @AdminCurrentUser() user: any,
-  ): Promise<DisputeResponseDto> {
-    this.logger.log(
-      `Admin ${user.id} creating dispute for order ${dto.orderId}`,
-    );
-    return this.disputeService.createDispute(
-      dto.orderId,
-      BigInt(user.id),
-      'admin',
-      dto,
-    );
-  }
-
-  @Get('disputes')
-  async getDisputes(
-    @AdminCurrentUser() user: any,
-    @Query() query: DisputeListQueryDto,
-  ): Promise<{ disputes: DisputeResponseDto[]; total: number }> {
-    this.logger.log(`Admin ${user.id} retrieving disputes`);
-    return this.disputeService.getDisputes(query);
-  }
-
-  @Put('disputes/:disputeId/resolve')
-  async resolveDispute(
-    @Param('disputeId') disputeId: string,
-    @Body() dto: ResolveDisputeDto,
-    @AdminCurrentUser() user: any,
-  ): Promise<DisputeResponseDto> {
-    this.logger.log(`Admin ${user.id} resolving dispute ${disputeId}`);
-    return this.disputeService.resolveDispute(
-      BigInt(disputeId),
-      dto,
-      BigInt(user.id),
-    );
-  }
-
-  @Put('disputes/:disputeId/status')
-  async updateDisputeStatus(
-    @Param('disputeId') disputeId: string,
-    @Body() dto: UpdateDisputeStatusDto,
-    @AdminCurrentUser() user: any,
-  ): Promise<DisputeResponseDto> {
-    this.logger.log(`Admin ${user.id} updating dispute ${disputeId} status`);
-    return this.disputeService.updateDisputeStatus(
-      BigInt(disputeId),
-      dto,
-      BigInt(user.id),
-    );
-  }
-
-  @Post('disputes/:disputeId/escalate')
-  async escalateDispute(
-    @Param('disputeId') disputeId: string,
-    @Body() dto: CreateEscalationDto,
-    @AdminCurrentUser() user: any,
-  ): Promise<DisputeResponseDto> {
-    this.logger.log(`Admin ${user.id} escalating dispute ${disputeId}`);
-    return this.disputeService.escalateDispute(
-      BigInt(disputeId),
-      BigInt(user.id),
-      dto.escalatedTo,
-      dto.reason,
-    );
-  }
 
   // Complaint Management Endpoints
   @Get('complaints')

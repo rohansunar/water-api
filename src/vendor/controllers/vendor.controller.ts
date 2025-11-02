@@ -13,19 +13,19 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { VendorService } from '../services/vendor.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { User, UserRole } from '../common/interfaces/user.interface';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { User, UserRole } from '../../common/interfaces/user.interface';
 import {
   CreateProductDto,
   ProductResponseDto,
-} from '../common/dto/product.dto';
+} from '../../common/dto/product.dto';
 import {
   OrderResponseDto,
   UpdateOrderStatusDto,
-} from '../common/dto/order.dto';
+} from '../../common/dto/order.dto';
 import {
   UpdateStoreDto,
   StoreResponseDto,

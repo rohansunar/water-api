@@ -72,13 +72,26 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
   private async performHealthCheck(): Promise<void> {
     for (const worker of this.workers) {
       try {
+        this.logger.debug(`Checking health for worker: ${worker.constructor.name}`);
         const metrics = await worker.getQueueMetrics();
-        if (metrics && metrics.isActive) {
-          this.logger.debug(
-            `${worker.constructor.name} health: OK, Queue: ${JSON.stringify(metrics)}`,
-          );
+        this.logger.debug(`Metrics received for ${worker.constructor.name}:`, metrics);
+
+        // Handle case where metrics is undefined or null
+        if (!metrics) {
+          this.logger.warn(`${worker.constructor.name} health: DEGRADED - no metrics returned`);
+          continue;
+        }
+
+        if (typeof metrics.isActive === 'boolean') {
+          if (metrics.isActive) {
+            this.logger.debug(
+              `${worker.constructor.name} health: OK, Queue: ${JSON.stringify(metrics)}`,
+            );
+          } else {
+            this.logger.warn(`${worker.constructor.name} health: DEGRADED`);
+          }
         } else {
-          this.logger.warn(`${worker.constructor.name} health: DEGRADED`);
+          this.logger.warn(`${worker.constructor.name} health: DEGRADED - invalid metrics`);
         }
       } catch (error) {
         this.logger.error(
@@ -91,16 +104,30 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
 
   private async monitorQueueLengths(): Promise<void> {
     try {
+      this.logger.debug('Starting queue length monitoring');
       const queueMetrics = await Promise.all(
-        this.workers.map(async (worker) => ({
-          name: worker.constructor.name,
-          metrics: await worker.getQueueMetrics(),
-        })),
+        this.workers.map(async (worker) => {
+          this.logger.debug(`Getting metrics for worker: ${worker.constructor.name}`);
+          const metrics = await worker.getQueueMetrics();
+          this.logger.debug(`Metrics for ${worker.constructor.name}:`, metrics);
+          return {
+            name: worker.constructor.name,
+            metrics,
+          };
+        }),
       );
 
       // Log warnings for high queue lengths
       for (const { name, metrics } of queueMetrics) {
-        if (metrics && metrics.isActive) {
+        this.logger.debug(`Processing metrics for ${name}:`, metrics);
+
+        // Handle case where metrics is undefined or null
+        if (!metrics) {
+          this.logger.warn(`${name}: DEGRADED - no metrics returned`);
+          continue;
+        }
+
+        if (typeof metrics.isActive === 'boolean' && metrics.isActive) {
           const totalJobs = (metrics.waiting || 0) + (metrics.active || 0);
 
           if (totalJobs > 100) {
@@ -124,7 +151,7 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
       const allMetrics = await Promise.all(
         this.workers.map(async (worker) => ({
           name: worker.constructor.name,
-          metrics: await worker.getQueueMetrics(),
+          metrics: (await worker.getQueueMetrics()) || { isActive: false, reason: 'No metrics' },
         })),
       );
 
@@ -236,7 +263,7 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
       // Wait for active jobs to complete (with timeout)
       const shutdownPromises = this.workers.map(async (worker) => {
         try {
-          const metrics = await worker.getQueueMetrics();
+          const metrics = (await worker.getQueueMetrics()) || { active: 0, reason: 'No metrics' };
           if (metrics.active > 0) {
             this.logger.log(
               `Waiting for ${metrics.active} active jobs in ${worker.constructor.name} to complete...`,
@@ -264,7 +291,7 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
 
     while (Date.now() - startTime < timeout) {
       try {
-        const metrics = await worker.getQueueMetrics();
+        const metrics = (await worker.getQueueMetrics()) || { active: 0, reason: 'No metrics' };
         if (metrics.active === 0) {
           return;
         }

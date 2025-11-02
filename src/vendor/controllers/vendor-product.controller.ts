@@ -31,8 +31,8 @@ import {
   VendorProductVariantResponseDto,
   VendorProductMappingResponseDto,
 } from '../dtos/vendor.dto';
-import { VendorJwtAuthGuard } from './guards/vendor-jwt-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { VendorJwtAuthGuard } from '../guards/vendor-jwt-auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Vendor Products')
 @Controller('vendors/me/products')

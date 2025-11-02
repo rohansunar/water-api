@@ -571,4 +571,9 @@ export class ReconciliationWorker extends WorkerBaseService {
     // Reconciliation completion notification disabled since Redis is removed
     this.logger.debug(`Reconciliation completion notification disabled for vendor ${vendorId} - Redis removed`);
   }
+
+  async getQueueMetrics(): Promise<any> {
+    // Return inactive status since Redis is removed
+    return { isActive: false, reason: 'Redis removed' };
+  }
 }

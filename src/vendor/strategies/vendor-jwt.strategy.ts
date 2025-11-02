@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
-import { VendorAuthService } from '../vendor-auth.service';
+import { VendorAuthService } from '../services/vendor-auth.service';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 
 export interface VendorJwtPayload {

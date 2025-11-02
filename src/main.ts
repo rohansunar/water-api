@@ -130,9 +130,9 @@ async function bootstrap() {
   // const userService = app.get(UserService);
   // await userService.seedTestData();
 
-  const { VendorService } = await import('./vendor/vendor.service');
-  const vendorService = app.get(VendorService);
-  await vendorService.seedTestData();
+  // const { VendorService } = await import('./vendor/vendor.service');
+  // const vendorService = app.get(VendorService);
+  // await vendorService.seedTestData();
 
   // const { ProductService } = await import('./product/product.service');
   // const productService = app.get(ProductService);

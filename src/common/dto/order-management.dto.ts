@@ -72,13 +72,6 @@ export class AdminOrderQueryDto extends PaginationQueryDto {
   @IsUUID()
   vendorId?: string;
 
-  @ApiProperty({
-    description: 'Filter disputed orders',
-    example: true,
-    required: false,
-  })
-  @IsOptional()
-  disputed?: boolean;
 
   @ApiProperty({
     description: 'Search term (order number, customer name, etc.)',
@@ -152,11 +145,6 @@ export class AdminOrderResponseDto {
   })
   paymentStatus: string;
 
-  @ApiProperty({
-    description: 'Has active disputes',
-    example: false,
-  })
-  hasDisputes: boolean;
 
   @ApiProperty({
     description: 'Created timestamp',

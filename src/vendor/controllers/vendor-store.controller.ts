@@ -25,8 +25,8 @@ import {
   UpdateStoreDto,
   StoreResponseDto,
 } from '../dtos/vendor.dto';
-import { VendorJwtAuthGuard } from './guards/vendor-jwt-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { VendorJwtAuthGuard } from '../guards/vendor-jwt-auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Vendor Stores')
 @Controller('vendors/me/stores')

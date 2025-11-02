@@ -9,15 +9,15 @@ import {
   Vendor,
   DeliveryZone,
   DayOfWeek,
-} from './interfaces/vendor.interface';
+} from '../interfaces/vendor.interface';
 import {
   CreateProductDto,
   ProductResponseDto,
-} from '../common/dto/product.dto';
+} from '../../common/dto/product.dto';
 import {
   OrderResponseDto,
   UpdateOrderStatusDto,
-} from '../common/dto/order.dto';
+} from '../../common/dto/order.dto';
 import {
   UpdateStoreDto,
   StoreResponseDto,
@@ -41,7 +41,7 @@ import {
   PaginationQueryDto,
   PaginatedResponseDto,
   VendorProductVariantResponseDto,
-} from './dtos/vendor.dto';
+} from '../dtos/vendor.dto';
 
 @Injectable()
 export class VendorService {

@@ -18,7 +18,6 @@ import { LedgerModule } from './ledger/ledger.module';
 import { AdminModule } from './admin/admin.module';
 import { CommissionModule } from './commission/commission.module';
 import { RefundModule } from './refund/refund.module';
-import { DisputeModule } from './dispute/dispute.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { EventBusModule } from './common/events/event-bus.module';
 import { CustomLoggerService } from './common/logger/logger.service';
@@ -71,7 +70,6 @@ import { PrismaModule } from './common/database/prisma.module';
     AdminModule,
     CommissionModule,
     RefundModule,
-    DisputeModule,
     StoreModule,
   ],
   controllers: [AppController],

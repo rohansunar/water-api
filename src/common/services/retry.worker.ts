@@ -206,4 +206,9 @@ export class RetryWorker extends WorkerBaseService {
     // For now, return a mock value
     return 0;
   }
+
+  async getQueueMetrics(): Promise<any> {
+    // Return inactive status since Redis is removed
+    return { isActive: false, reason: 'Redis removed' };
+  }
 }

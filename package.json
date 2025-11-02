@@ -58,6 +58,7 @@
     "@types/joi": "^17.2.2",
     "@types/multer": "^2.0.0",
     "bcrypt": "^6.0.0",
+    "bullmq": "^5.63.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "cors": "^2.8.5",
@@ -132,7 +133,9 @@
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/src/$1"
     },
-    "setupFilesAfterEnv": ["<rootDir>/test/jest.setup.ts"]
+    "setupFilesAfterEnv": [
+      "<rootDir>/test/jest.setup.ts"
+    ]
   },
   "pnpm": {
     "onlyBuiltDependencies": [

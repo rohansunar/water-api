@@ -13,7 +13,7 @@ import {
   VendorLoginDto,
   VendorAuthResponseDto,
 } from '../dtos/vendor.dto';
-import { Public } from '../auth/decorators/public.decorator';
+import { Public } from '../../auth/decorators/public.decorator';
 
 @ApiTags('Vendor Authentication')
 @Controller('vendors/auth')
