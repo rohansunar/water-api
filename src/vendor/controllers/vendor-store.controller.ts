@@ -19,12 +19,12 @@ import {
   ApiBody,
   ApiQuery,
 } from '@nestjs/swagger';
-import { VendorStoreService } from './vendor-store.service';
+import { VendorStoreService } from '../services/vendor-store.service';
 import {
   CreateStoreDto,
   UpdateStoreDto,
   StoreResponseDto,
-} from '../common/dto/vendor.dto';
+} from '../dtos/vendor.dto';
 import { VendorJwtAuthGuard } from './guards/vendor-jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 

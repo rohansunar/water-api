@@ -41,7 +41,7 @@ import {
   PaginationQueryDto,
   PaginatedResponseDto,
   VendorProductVariantResponseDto,
-} from '../common/dto/vendor.dto';
+} from './dtos/vendor.dto';
 
 @Injectable()
 export class VendorService {

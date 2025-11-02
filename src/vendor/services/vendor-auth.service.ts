@@ -7,15 +7,15 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../common/database/prisma.service';
+import { PrismaService } from '../../common/database/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { CustomLoggerService } from '../common/logger/logger.service';
+import { CustomLoggerService } from '../../common/logger/logger.service';
 import {
   VendorSignupDto,
   VendorLoginDto,
   VendorAuthResponseDto,
   VendorProfileDto,
-} from '../common/dto/vendor.dto';
+} from '../dtos/vendor.dto';
 
 @Injectable()
 export class VendorAuthService {

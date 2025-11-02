@@ -7,12 +7,12 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Product, ProductDocument } from '../common/schemas/product.schema';
+import { Product, ProductDocument } from '../../common/schemas/product.schema';
 import {
   VendorStore,
   VendorStoreDocument,
-} from '../common/schemas/vendor-store.schema';
-import { CustomLoggerService } from '../common/logger/logger.service';
+} from '../../common/schemas/vendor-store.schema';
+import { CustomLoggerService } from '../../common/logger/logger.service';
 import { VendorService } from './vendor.service';
 import {
   CreateVendorProductDto,
@@ -24,7 +24,7 @@ import {
   VendorProductResponseDto,
   VendorProductVariantResponseDto,
   VendorProductMappingResponseDto,
-} from '../common/dto/vendor.dto';
+} from '../dtos/vendor.dto';
 
 @Injectable()
 export class VendorProductService {

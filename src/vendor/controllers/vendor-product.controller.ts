@@ -19,7 +19,7 @@ import {
   ApiBody,
   ApiQuery,
 } from '@nestjs/swagger';
-import { VendorProductService } from './vendor-product.service';
+import { VendorProductService } from '../services/vendor-product.service';
 import {
   CreateVendorProductDto,
   UpdateVendorProductDto,
@@ -30,7 +30,7 @@ import {
   VendorProductResponseDto,
   VendorProductVariantResponseDto,
   VendorProductMappingResponseDto,
-} from '../common/dto/vendor.dto';
+} from '../dtos/vendor.dto';
 import { VendorJwtAuthGuard } from './guards/vendor-jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 

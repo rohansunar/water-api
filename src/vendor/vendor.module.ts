@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { VendorController } from './vendor.controller';
-import { VendorService } from './vendor.service';
-import { VendorStoreController } from './vendor-store.controller';
-import { VendorStoreService } from './vendor-store.service';
-import { VendorProductController } from './vendor-product.controller';
-import { VendorProductService } from './vendor-product.service';
+import { VendorController } from './controllers/vendor.controller';
+import { VendorService } from './services/vendor.service';
+import { VendorStoreController } from './controllers/vendor-store.controller';
+import { VendorStoreService } from './services/vendor-store.service';
+import { VendorProductController } from './controllers/vendor-product.controller';
+import { VendorProductService } from './services/vendor-product.service';
 import { VendorAuthModule } from './vendor-auth.module';
 import {
   VendorStore,

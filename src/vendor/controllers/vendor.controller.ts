@@ -12,7 +12,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { VendorService } from './vendor.service';
+import { VendorService } from '../services/vendor.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -50,7 +50,7 @@ import {
   PaginatedResponseDto,
   VendorProductVariantResponseDto,
   UpdateProductVariantDto,
-} from '../common/dto/vendor.dto';
+} from '../dtos/vendor.dto';
 
 @Controller('vendors')
 @UseGuards(JwtAuthGuard, RolesGuard)

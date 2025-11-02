@@ -10,13 +10,13 @@ import { Model } from 'mongoose';
 import {
   VendorStore,
   VendorStoreDocument,
-} from '../common/schemas/vendor-store.schema';
-import { CustomLoggerService } from '../common/logger/logger.service';
+} from '../../common/schemas/vendor-store.schema';
+import { CustomLoggerService } from '../../common/logger/logger.service';
 import {
   CreateStoreDto,
   UpdateStoreDto,
   StoreResponseDto,
-} from '../common/dto/vendor.dto';
+} from '../dtos/vendor.dto';
 import { VendorService } from './vendor.service';
 
 @Injectable()

@@ -7,12 +7,12 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
-import { VendorAuthService } from './vendor-auth.service';
+import { VendorAuthService } from '../services/vendor-auth.service';
 import {
   VendorSignupDto,
   VendorLoginDto,
   VendorAuthResponseDto,
-} from '../common/dto/vendor.dto';
+} from '../dtos/vendor.dto';
 import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Vendor Authentication')
