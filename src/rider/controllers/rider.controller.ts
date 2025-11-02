@@ -33,11 +33,6 @@ import {
   UpdateAvailabilityDto,
   DeliveryRiderResponseDto,
   LocationUpdateResponseDto,
-  // Earnings Management DTOs
-  EarningsHistoryDto,
-  EarningsSummaryDto,
-  WithdrawalRequestDto,
-  WithdrawalHistoryDto,
   // Delivery History DTOs
   DeliveryHistoryDto,
   DeliveryStatsDto,
@@ -207,115 +202,6 @@ export class RiderController {
       user.id,
       availabilityDto.isAvailable,
     );
-  }
-
-  // ===== EARNINGS MANAGEMENT ENDPOINTS =====
-
-  @Get('earnings')
-  @ApiOperation({
-    summary: 'Get earnings history with pagination',
-    description:
-      'Retrieve paginated earnings history for the authenticated rider',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Earnings history retrieved successfully',
-    type: PaginationResponseDto<EarningsHistoryDto>,
-  })
-  async getEarningsHistory(
-    @CurrentUser() user: User,
-    @Query() paginationDto: PaginationQueryDto,
-  ): Promise<PaginationResponseDto<EarningsHistoryDto>> {
-    this.logger.log(`Getting earnings history for rider user: ${user.id}`);
-    return this.riderService.getEarningsHistory(user.id, paginationDto);
-  }
-
-  @Get('earnings/summary')
-  @ApiOperation({
-    summary: 'Get earnings summary',
-    description: 'Retrieve earnings summary for the current month',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Earnings summary retrieved successfully',
-    type: EarningsSummaryDto,
-  })
-  async getEarningsSummary(
-    @CurrentUser() user: User,
-  ): Promise<EarningsSummaryDto> {
-    this.logger.log(`Getting earnings summary for rider user: ${user.id}`);
-    return this.riderService.getEarningsSummary(user.id);
-  }
-
-  @Get('earnings/:id')
-  @ApiOperation({
-    summary: 'Get specific earning details',
-    description:
-      'Retrieve detailed information about a specific earning record',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Unique earning record identifier',
-    example: 'earning-123e4567-e89b-12d3-a456-426614174000',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Earning details retrieved successfully',
-    type: EarningsHistoryDto,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Earning record not found',
-  })
-  async getEarningDetails(
-    @Param('id') earningId: string,
-    @CurrentUser() user: User,
-  ): Promise<EarningsHistoryDto> {
-    this.logger.log(
-      `Getting earning details ${earningId} for rider user: ${user.id}`,
-    );
-    return this.riderService.getEarningDetails(user.id, earningId);
-  }
-
-  @Post('earnings/withdraw')
-  @ApiOperation({
-    summary: 'Request earnings withdrawal',
-    description: 'Submit a request to withdraw earnings to bank account',
-  })
-  @ApiBody({ type: WithdrawalRequestDto })
-  @ApiResponse({
-    status: 201,
-    description: 'Withdrawal request submitted successfully',
-    type: WithdrawalHistoryDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid withdrawal request or insufficient balance',
-  })
-  async requestWithdrawal(
-    @CurrentUser() user: User,
-    @Body() withdrawalDto: WithdrawalRequestDto,
-  ): Promise<WithdrawalHistoryDto> {
-    this.logger.log(`Processing withdrawal request for rider user: ${user.id}`);
-    return this.riderService.requestWithdrawal(user.id, withdrawalDto);
-  }
-
-  @Get('earnings/withdrawals')
-  @ApiOperation({
-    summary: 'Get withdrawal history',
-    description: 'Retrieve withdrawal history with pagination',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Withdrawal history retrieved successfully',
-    type: PaginationResponseDto<WithdrawalHistoryDto>,
-  })
-  async getWithdrawalHistory(
-    @CurrentUser() user: User,
-    @Query() paginationDto: PaginationQueryDto,
-  ): Promise<PaginationResponseDto<WithdrawalHistoryDto>> {
-    this.logger.log(`Getting withdrawal history for rider user: ${user.id}`);
-    return this.riderService.getWithdrawalHistory(user.id, paginationDto);
   }
 
   // ===== DELIVERY HISTORY ENDPOINTS =====
