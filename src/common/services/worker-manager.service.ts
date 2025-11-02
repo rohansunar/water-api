@@ -7,7 +7,6 @@ import {
 import { TaskAssignmentWorker } from './task-assignment.worker';
 import { NotificationWorker } from './notification.worker';
 import { ReconciliationWorker } from './reconciliation.worker';
-import { RetryWorker } from './retry.worker';
 
 @Injectable()
 export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
@@ -19,7 +18,6 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
     private readonly taskAssignmentWorker: TaskAssignmentWorker,
     private readonly notificationWorker: NotificationWorker,
     private readonly reconciliationWorker: ReconciliationWorker,
-    private readonly retryWorker: RetryWorker,
   ) {}
 
   async onModuleInit() {
@@ -38,7 +36,6 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
         this.taskAssignmentWorker,
         this.notificationWorker,
         this.reconciliationWorker,
-        this.retryWorker,
       ];
 
       this.logger.log('All workers initialized successfully');
@@ -169,14 +166,6 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async getRetryMetrics(): Promise<any> {
-    try {
-      return await this.retryWorker.getRetryMetrics();
-    } catch (error) {
-      this.logger.error('Failed to get retry metrics:', error);
-      return { error: 'Failed to retrieve retry metrics' };
-    }
-  }
 
   async pauseWorker(workerName: string): Promise<boolean> {
     try {
@@ -243,14 +232,6 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async addRetryJob(data: any): Promise<string> {
-    try {
-      return await this.retryWorker.addJob('retry', data);
-    } catch (error) {
-      this.logger.error('Failed to add retry job:', error);
-      throw error;
-    }
-  }
 
   async addFraudDetectionJob(data: any): Promise<string> {
     throw new Error('Fraud detection worker not available');

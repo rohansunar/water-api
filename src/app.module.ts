@@ -35,7 +35,6 @@ import { WorkerBaseService } from './common/services/worker-base.service';
 import { TaskAssignmentWorker } from './common/services/task-assignment.worker';
 import { NotificationWorker } from './common/services/notification.worker';
 import { ReconciliationWorker } from './common/services/reconciliation.worker';
-import { RetryWorker } from './common/services/retry.worker';
 import { WorkerManagerService } from './common/services/worker-manager.service';
 import { PrismaModule } from './common/database/prisma.module';
 
@@ -79,7 +78,6 @@ import { PrismaModule } from './common/database/prisma.module';
     TaskAssignmentWorker,
     NotificationWorker,
     ReconciliationWorker,
-    RetryWorker,
     WorkerManagerService,
     {
       provide: APP_GUARD,
