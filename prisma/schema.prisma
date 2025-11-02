@@ -116,8 +116,6 @@ model Admin {
   moderatedProducts Product[]
   processedRefunds  Refund[] @relation("RefundProcessor")
   approvedRefunds   Refund[] @relation("RefundApprover")
-  createdEscalations Escalation[] @relation("EscalationCreator")
-  resolvedEscalations Escalation[] @relation("EscalationResolver")
   auditLogs         AuditLog[]
 
   @@map("admins")
