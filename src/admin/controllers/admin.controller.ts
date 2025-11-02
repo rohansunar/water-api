@@ -43,7 +43,6 @@ import {
 } from '../../common/dto/product-moderation.dto';
 import { RefundService } from '../../refund/services/refund.service';
 import { DisputeService } from '../../dispute/services/dispute.service';
-import { EscalationService } from '../../escalation/services/escalation.service';
 import { OrderService } from '../../order/services/order.service';
 import {
   CreateRefundDto,
@@ -93,7 +92,6 @@ export class AdminController {
     private readonly productModerationService: ProductModerationService,
     private readonly refundService: RefundService,
     private readonly disputeService: DisputeService,
-    private readonly escalationService: EscalationService,
     private readonly orderService: OrderService,
   ) {}
 
@@ -582,43 +580,4 @@ export class AdminController {
     return this.adminService.getReports(query);
   }
 
-  // Escalation Management Endpoints
-  @Get('escalations')
-  async getEscalations(
-    @AdminCurrentUser() user: any,
-    @Query() query: EscalationListQueryDto,
-  ): Promise<{ escalations: EscalationResponseDto[]; total: number }> {
-    this.logger.log(`Admin ${user.id} retrieving escalations`);
-    return this.escalationService.getEscalations(query);
-  }
-
-  @Put('escalations/:escalationId/resolve')
-  async resolveEscalation(
-    @Param('escalationId') escalationId: string,
-    @Body() dto: ResolveEscalationDto,
-    @AdminCurrentUser() user: any,
-  ): Promise<EscalationResponseDto> {
-    this.logger.log(`Admin ${user.id} resolving escalation ${escalationId}`);
-    return this.escalationService.resolveEscalation(
-      BigInt(escalationId),
-      dto,
-      BigInt(user.id),
-    );
-  }
-
-  @Put('escalations/:escalationId/status')
-  async updateEscalationStatus(
-    @Param('escalationId') escalationId: string,
-    @Body() dto: UpdateEscalationStatusDto,
-    @AdminCurrentUser() user: any,
-  ): Promise<EscalationResponseDto> {
-    this.logger.log(
-      `Admin ${user.id} updating escalation ${escalationId} status`,
-    );
-    return this.escalationService.updateEscalationStatus(
-      BigInt(escalationId),
-      dto,
-      BigInt(user.id),
-    );
-  }
 }

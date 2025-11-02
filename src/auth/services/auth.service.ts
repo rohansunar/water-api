@@ -8,7 +8,6 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { UserService } from '../../modules/user/services/user.service';
 import { CustomerService } from '../../customer/services/customer.service';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 import {
@@ -18,12 +17,10 @@ import {
   UserProfileDto,
   CustomerProfileDto,
 } from '../../common/dto/auth.dto';
-import { User, UserRole } from '../../modules/user/entities/user.entity';
 import {
   Customer,
   CustomerRole,
 } from '../../common/interfaces/customer.interface';
-import { CreateUserDto } from '../../modules/user/dto/user.dto';
 import { CreateCustomerDto } from '../../common/dto/customer.dto';
 
 @Injectable()
@@ -39,7 +36,6 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly userService: UserService,
     private readonly customerService: CustomerService,
     private readonly customLogger: CustomLoggerService,
   ) {}
@@ -138,7 +134,6 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
       this.validateOtp(phone, otp);
 
       const customer = await this.findOrCreateCustomer(phone);
-      const user = await this.findOrCreateUser(phone);
       const token = this.generateToken(customer);
 
       this.customLogger.logSecurityEvent(
@@ -154,9 +149,8 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
       );
 
       const customerProfile = await this.buildCustomerProfile(customer);
-      const userProfile = await this.buildUserProfile(user);
 
-      return this.buildAuthResponse(token, customerProfile, userProfile);
+      return this.buildAuthResponse(token, customerProfile, null);
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         this.customLogger.logSecurityEvent(
@@ -257,45 +251,6 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async findOrCreateUser(phone: string): Promise<User> {
-    const startTime = Date.now();
-    try {
-      // Legacy: Also maintain user service compatibility
-      let user = await this.userService.findByPhoneDocument(phone);
-      if (!user) {
-        const createUserDto: CreateUserDto = {
-          phone,
-          role: UserRole.CUSTOMER,
-          isActive: true,
-          walletBalance: 0,
-        };
-        user = await this.userService.create(createUserDto);
-        this.customLogger.logDatabaseOperation(
-          'create',
-          'users',
-          Date.now() - startTime,
-          true,
-        );
-      } else {
-        this.customLogger.logDatabaseOperation(
-          'find',
-          'users',
-          Date.now() - startTime,
-          true,
-        );
-      }
-      return user;
-    } catch (error) {
-      this.customLogger.logDatabaseOperation(
-        'findOrCreate',
-        'users',
-        Date.now() - startTime,
-        false,
-        error,
-      );
-      throw error;
-    }
-  }
 
   private generateToken(customer: any): string {
     // Generate JWT token using customer data
@@ -329,34 +284,6 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
-  private async buildUserProfile(user: any): Promise<UserProfileDto> {
-    const userProfile = await this.userService.getUserProfile(user._id.toString());
-
-    // Legacy user profile for backward compatibility
-    return {
-      id: userProfile.id,
-      phone: userProfile.phone,
-      name: userProfile.name,
-      email: userProfile.email,
-      role: userProfile.role,
-      walletBalance: userProfile.walletBalance,
-      isActive: userProfile.isActive,
-      monthlyPaymentMode: userProfile.monthlyPaymentMode,
-      addresses: userProfile.addresses.map((addr) => ({
-        id: addr.id || '',
-        type: addr.label || 'home', // Use label as type since type doesn't exist
-        street: addr.street,
-        city: addr.city,
-        state: addr.state,
-        pincode: addr.pincode,
-        landmark: addr.landmark,
-        latitude: addr.latitude || 0,
-        longitude: addr.longitude || 0,
-        isDefault: addr.isDefault || false,
-      })),
-      createdAt: userProfile.createdAt,
-    };
-  }
 
   private buildAuthResponse(
     token: string,
@@ -370,35 +297,6 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
-  async validateUser(userId: string): Promise<User> {
-    const startTime = Date.now();
-    try {
-      const user = await this.userService.findById(userId);
-      this.customLogger.logDatabaseOperation(
-        'find',
-        'users',
-        Date.now() - startTime,
-        true,
-      );
-      if (!user || !user.isActive) {
-        throw new UnauthorizedException('User not found or inactive');
-      }
-      // UserData already has the id property
-      return user as unknown as User;
-    } catch (error) {
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      }
-      this.customLogger.logDatabaseOperation(
-        'find',
-        'users',
-        Date.now() - startTime,
-        false,
-        error,
-      );
-      throw error;
-    }
-  }
 
   private generateOTP(): string {
     // Generate 6-digit OTP

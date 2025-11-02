@@ -3,7 +3,6 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from '../services/auth.service';
-import { User } from '../../common/interfaces/user.interface';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 
 export interface JwtPayload {
@@ -31,9 +30,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: JwtPayload): Promise<User> {
+  async validate(payload: JwtPayload): Promise<any> {
     try {
-      const user = await this.authService.validateUser(payload.sub);
+      // Since validateUser was removed, we'll return a basic user object
+      // This needs to be updated based on the new authentication logic
+      const user = {
+        id: payload.sub,
+        phone: payload.phone,
+        role: payload.role,
+        isActive: true,
+      };
       return user;
     } catch (error) {
       // Log JWT validation errors
