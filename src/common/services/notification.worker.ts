@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { WorkerBaseService } from './worker-base.service';
-import { RedisService } from './redis.service';
 import { PrismaService } from '../database/prisma.service';
 
 export interface NotificationData {
@@ -23,10 +22,9 @@ export interface NotificationData {
 @Injectable()
 export class NotificationWorker extends WorkerBaseService {
   constructor(
-    protected readonly redisService: RedisService,
     private readonly prismaService: PrismaService,
   ) {
-    super(redisService, {
+    super({
       queueName: 'notifications',
       concurrency: 5,
       attempts: 3,
@@ -282,19 +280,7 @@ export class NotificationWorker extends WorkerBaseService {
     title: string,
     message: string,
   ): Promise<void> {
-    const cacheKey = `notification:${recipientId}:${Date.now()}`;
-    const notificationData = {
-      type,
-      title,
-      message,
-      timestamp: new Date().toISOString(),
-    };
-
-    await this.redisService.set(
-      cacheKey,
-      JSON.stringify(notificationData),
-      'EX',
-      86400,
-    ); // 24 hours
+    // Notification caching disabled since Redis is removed
+    this.logger.debug(`Notification caching disabled for ${recipientId} - Redis removed`);
   }
 }

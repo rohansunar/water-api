@@ -4,7 +4,6 @@ import {
   OnModuleInit,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { RedisService } from './redis.service';
 import { TaskAssignmentWorker } from './task-assignment.worker';
 import { NotificationWorker } from './notification.worker';
 import { ReconciliationWorker } from './reconciliation.worker';
@@ -18,7 +17,6 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
   private isShuttingDown = false;
 
   constructor(
-    private readonly redisService: RedisService,
     private readonly taskAssignmentWorker: TaskAssignmentWorker,
     private readonly notificationWorker: NotificationWorker,
     private readonly reconciliationWorker: ReconciliationWorker,

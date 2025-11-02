@@ -40,7 +40,6 @@ import { RetryWorker } from './common/services/retry.worker';
 import { FraudDetectionWorker } from './common/services/fraud-detection.worker';
 import { WorkerManagerService } from './common/services/worker-manager.service';
 import { PrismaModule } from './common/database/prisma.module';
-import { RedisModule } from './common/services/redis.module';
 
 @Module({
   imports: [
@@ -53,7 +52,6 @@ import { RedisModule } from './common/services/redis.module';
       process.env.MONGODB_URI || 'mongodb://localhost:27017/water-jar-delivery',
     ),
     PrismaModule,
-    RedisModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 1 minute

@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { WorkerBaseService } from './worker-base.service';
-import { RedisService } from './redis.service';
 import { PrismaService } from '../database/prisma.service';
 
 /**
@@ -144,10 +143,9 @@ export class TaskAssignmentWorker extends WorkerBaseService {
    * - Backoff: Exponential with 10s base delay - handles temporary failures gracefully
    */
   constructor(
-    protected readonly redisService: RedisService,
     private readonly prismaService: PrismaService,
   ) {
-    super(redisService, {
+    super({
       queueName: 'task-assignment',
       concurrency: 3,
       attempts: 5,
@@ -451,8 +449,8 @@ export class TaskAssignmentWorker extends WorkerBaseService {
     taskId: string,
     riderId: string,
   ): Promise<void> {
-    const cacheKey = `task:assignment:${taskId}`;
-    await this.redisService.set(cacheKey, riderId, 'EX', 3600); // 1 hour TTL
+    // Assignment caching disabled since Redis is removed
+    this.logger.debug(`Assignment caching disabled for task ${taskId} - Redis removed`);
   }
 
   /**
@@ -484,16 +482,8 @@ export class TaskAssignmentWorker extends WorkerBaseService {
    * - Audit trail for notification history and debugging
    */
   private async notifyRider(riderId: string, taskId: string): Promise<void> {
-    // Add notification to Redis queue for asynchronous processing
-    await this.redisService.getClient()?.lPush(
-      'notifications:queue',
-      JSON.stringify({
-        type: 'task_assigned',
-        riderId,
-        taskId,
-        timestamp: new Date().toISOString(),
-      }),
-    );
+    // Rider notification disabled since Redis is removed
+    this.logger.debug(`Rider notification disabled for task ${taskId} - Redis removed`);
   }
 
   /**

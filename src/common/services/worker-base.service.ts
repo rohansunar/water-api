@@ -5,7 +5,6 @@ import {
   OnModuleDestroy,
 } from '@nestjs/common';
 import { Queue, Worker, Job, QueueEvents } from 'bullmq';
-import { RedisService } from './redis.service';
 
 /**
  * Configuration interface for worker setup
@@ -117,11 +116,9 @@ export abstract class WorkerBaseService
 
   /**
    * Constructor for WorkerBaseService
-   * @param redisService - Redis service for queue connectivity
    * @param config - Worker configuration defining queue behavior
    */
   constructor(
-    protected readonly redisService: RedisService,
     protected readonly config: WorkerConfig,
   ) {}
 
@@ -161,95 +158,13 @@ export abstract class WorkerBaseService
    */
   private async initializeWorker(): Promise<void> {
     try {
-      // Get Redis client for queue connectivity
-      const redisClient = this.redisService.getClient();
-      if (!redisClient) {
-        this.logger.warn('Redis not available, worker will not start');
-        return;
-      }
+      // Redis not available, worker will not start
+      this.logger.warn('Redis not available, worker will not start');
+      return;
 
-      // Initialize queue with default job options and retry configuration
-      // Configures automatic job cleanup to prevent Redis memory bloat
-      this.queue = new Queue(this.config.queueName, {
-        connection: redisClient as any,
-        defaultJobOptions: {
-          // Retry configuration from worker config or defaults
-          attempts: this.config.attempts || 3,
-          backoff: this.config.backoff || {
-            type: 'exponential',
-            delay: 5000,
-          },
-          // Keep last 50 completed jobs for monitoring, remove older ones
-          removeOnComplete: 50,
-          // Keep last 20 failed jobs for debugging, remove older ones
-          removeOnFail: 20,
-        },
-      });
-
-      // Initialize worker with job processing logic
-      // The worker function implements the circuit breaker pattern and comprehensive error handling
-      this.worker = new Worker(
-        this.config.queueName,
-        async (job: Job) => {
-          // Circuit breaker check: prevents processing when system is failing
-          // This implements the core fault tolerance mechanism
-          if (!this.canExecute()) {
-            this.logger.warn(
-              `Circuit breaker is OPEN, rejecting job ${job.id}`,
-            );
-            throw new Error(
-              'Circuit breaker is open, service temporarily unavailable',
-            );
-          }
-
-          // Log job start and track processing time for performance monitoring
-          this.logger.debug(`Processing job ${job.id} of type ${job.name}`);
-          const startTime = Date.now();
-
-          try {
-            // Execute the actual job processing logic (implemented by subclasses)
-            const result = await this.processJob(job);
-            const duration = Date.now() - startTime;
-
-            // Performance monitoring: log slow jobs for optimization
-            if (duration > 30000) {
-              // 30 seconds threshold
-              this.logger.warn(
-                `Slow job processing for ${job.id}: ${duration}ms`,
-              );
-            }
-
-            // Record successful execution for circuit breaker state management
-            this.recordSuccess();
-            this.logger.debug(
-              `Job ${job.id} completed successfully in ${duration}ms`,
-            );
-            return result;
-          } catch (error) {
-            // Comprehensive error handling with duration tracking
-            const duration = Date.now() - startTime;
-            this.logger.error(
-              `Job ${job.id} failed after ${duration}ms:`,
-              error,
-            );
-
-            // Record failure for circuit breaker state management
-            // This may trigger circuit breaker to OPEN state if threshold exceeded
-            this.recordFailure();
-            throw error;
-          }
-        },
-        {
-          connection: redisClient as any,
-          // Concurrency control: limits simultaneous job processing
-          concurrency: this.config.concurrency || 5,
-        },
-      );
-
-      // Initialize queue events for monitoring job lifecycle events
-      this.queueEvents = new QueueEvents(this.config.queueName, {
-        connection: redisClient as any,
-      });
+      // Redis not available, cannot initialize queue and worker
+      this.logger.warn('Cannot initialize queue and worker without Redis');
+      return;
 
       // Set up event handlers for job lifecycle monitoring
       this.setupEventHandlers();
@@ -301,28 +216,11 @@ export abstract class WorkerBaseService
    * @throws Error if job cannot be added to queue
    */
   async addJob(name: string, data: any, options?: any): Promise<string> {
-    // Validate worker is active before adding jobs
-    if (!this.isWorkerActive) {
-      this.logger.warn(
-        `Worker ${this.config.queueName} not active, job not added`,
-      );
-      return '';
-    }
-
-    try {
-      // Add job to queue with provided options
-      const job = await this.queue.add(name, data, options);
-      this.logger.debug(
-        `Added job ${job.id} to queue ${this.config.queueName}`,
-      );
-      return job.id || '';
-    } catch (error) {
-      this.logger.error(
-        `Failed to add job to queue ${this.config.queueName}:`,
-        error,
-      );
-      throw error;
-    }
+    // Worker not active due to Redis removal
+    this.logger.warn(
+      `Worker ${this.config.queueName} not active (Redis removed), job not added`,
+    );
+    return '';
   }
 
   /**
@@ -331,32 +229,8 @@ export abstract class WorkerBaseService
    * @returns Promise resolving to queue metrics object
    */
   async getQueueMetrics(): Promise<any> {
-    // Return inactive status if worker is not running
-    if (!this.isWorkerActive) {
-      return { isActive: false };
-    }
-
-    try {
-      // Fetch all job states concurrently for performance
-      const [waiting, active, completed, failed] = await Promise.all([
-        this.queue.getWaiting(),
-        this.queue.getActive(),
-        this.queue.getCompleted(),
-        this.queue.getFailed(),
-      ]);
-
-      // Return comprehensive metrics for monitoring dashboards
-      return {
-        isActive: true,
-        waiting: waiting.length,
-        active: active.length,
-        completed: completed.length,
-        failed: failed.length,
-      };
-    } catch (error) {
-      this.logger.error('Failed to get queue metrics:', error);
-      return { isActive: false };
-    }
+    // Return inactive status since Redis is removed
+    return { isActive: false, reason: 'Redis removed' };
   }
 
   /**
@@ -370,28 +244,10 @@ export abstract class WorkerBaseService
       this.stopHealthCheck();
       this.stopMetricsCollection();
 
-      // Remove event listeners to prevent memory leaks
-      this.removeEventListeners();
-
-      // Close event listeners before worker and queue
-      if (this.queueEvents) {
-        await this.queueEvents.close();
-      }
-
-      // Close worker to stop accepting new jobs
-      if (this.worker) {
-        await this.worker.close();
-      }
-
-      // Close queue to release Redis connections
-      if (this.queue) {
-        await this.queue.close();
-      }
-
       // Mark worker as inactive
       this.isWorkerActive = false;
       this.logger.log(
-        `Worker ${this.config.queueName} cleaned up successfully`,
+        `Worker ${this.config.queueName} cleaned up successfully (Redis removed)`,
       );
     } catch (error) {
       this.logger.error(
@@ -615,19 +471,11 @@ export abstract class WorkerBaseService
 
   /**
    * Remove event listeners to prevent memory leaks
-   * Removes all event listeners from worker and queue events
+   * No event listeners to remove since Redis is not available
    * @private
    */
   private removeEventListeners(): void {
-    if (this.worker) {
-      this.worker.removeAllListeners('completed');
-      this.worker.removeAllListeners('failed');
-      this.worker.removeAllListeners('error');
-    }
-
-    if (this.queueEvents) {
-      this.queueEvents.removeAllListeners('waiting');
-    }
+    // No event listeners to remove since Redis is not available
   }
 
   /**

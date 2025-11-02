@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { WorkerBaseService } from './worker-base.service';
-import { RedisService } from './redis.service';
 import { PrismaService } from '../database/prisma.service';
 
 /**
@@ -72,10 +71,9 @@ export class ReconciliationWorker extends WorkerBaseService {
    * - Exponential backoff: 30-second initial delay for retries
    */
   constructor(
-    protected readonly redisService: RedisService,
     private readonly prismaService: PrismaService,
   ) {
-    super(redisService, {
+    super({
       queueName: 'reconciliation',
       concurrency: 2,
       attempts: 3,
@@ -546,22 +544,8 @@ export class ReconciliationWorker extends WorkerBaseService {
    * - Automatic expiration ensures data freshness
    */
   private async cacheReconciliationResult(reconciliation: any): Promise<void> {
-    // Create cache key using vendor ID and date for easy lookup
-    const cacheKey = `reconciliation:${reconciliation.vendorId}:${reconciliation.date.toISOString().split('T')[0]}`;
-
-    // Cache reconciliation summary with 24-hour expiration
-    await this.redisService.set(
-      cacheKey,
-      JSON.stringify({
-        id: reconciliation.id,
-        expectedAmount: reconciliation.expectedAmount,
-        actualAmount: reconciliation.actualAmount,
-        status: 'completed',
-        completedAt: new Date().toISOString(),
-      }),
-      'EX',
-      86400,
-    ); // 24 hours
+    // Reconciliation result caching disabled since Redis is removed
+    this.logger.debug(`Reconciliation result caching disabled for vendor ${reconciliation.vendorId} - Redis removed`);
   }
 
   /**
@@ -584,23 +568,7 @@ export class ReconciliationWorker extends WorkerBaseService {
     vendorId: string,
     reconciliation: any,
   ): Promise<void> {
-    // Queue notification for reconciliation completion
-    // This will be processed by the notification service
-    await this.redisService.getClient()?.lPush(
-      'notifications:queue',
-      JSON.stringify({
-        type: 'reconciliation_complete',
-        recipientId: vendorId,
-        recipientType: 'vendor',
-        title: 'Reconciliation Complete',
-        message: `Daily reconciliation completed. Expected: ₹${reconciliation.expectedAmount}, Actual: ₹${reconciliation.actualAmount}`,
-        metadata: {
-          reconciliationId: reconciliation.id,
-          date: reconciliation.date,
-        },
-        priority: 'normal',
-        channels: ['push', 'email'],
-      }),
-    );
+    // Reconciliation completion notification disabled since Redis is removed
+    this.logger.debug(`Reconciliation completion notification disabled for vendor ${vendorId} - Redis removed`);
   }
 }

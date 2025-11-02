@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { WorkerBaseService } from './worker-base.service';
-import { RedisService } from './redis.service';
 
 export interface RetryData {
   operation: 'notification' | 'upload' | 'payment' | 'sync';
@@ -21,8 +20,8 @@ export class RetryWorker extends WorkerBaseService {
     high: [10000, 60000, 300000], // 10sec, 1min, 5min
   };
 
-  constructor(protected readonly redisService: RedisService) {
-    super(redisService, {
+  constructor() {
+    super({
       queueName: 'retry-queue',
       concurrency: 3,
       attempts: 1, // Don't retry the retry worker itself
@@ -135,24 +134,9 @@ export class RetryWorker extends WorkerBaseService {
   }
 
   private async retryNotification(payload: any): Promise<any> {
-    const { type, recipientId, title, message, channels } = payload;
-
-    // Add to notification queue for reprocessing
-    await this.redisService.getClient()?.lPush(
-      'notifications:queue',
-      JSON.stringify({
-        type,
-        recipientId,
-        recipientType: payload.recipientType,
-        title,
-        message,
-        metadata: payload.metadata,
-        priority: payload.priority || 'normal',
-        channels: channels || ['push'],
-      }),
-    );
-
-    return { success: true, method: 'requeued' };
+    // Notification retry disabled since Redis is removed
+    this.logger.warn('Notification retry disabled - Redis removed');
+    return { success: false, method: 'disabled', reason: 'Redis removed' };
   }
 
   private async retryUpload(payload: any): Promise<any> {
@@ -169,51 +153,26 @@ export class RetryWorker extends WorkerBaseService {
   }
 
   private async retryPayment(payload: any): Promise<any> {
-    const { orderId, amount, paymentMethod } = payload;
-
-    // Add to payment processing queue
-    await this.redisService.getClient()?.lPush(
-      'payments:retry',
-      JSON.stringify({
-        orderId,
-        amount,
-        paymentMethod,
-        timestamp: new Date().toISOString(),
-      }),
-    );
-
-    return { success: true, method: 'requeued' };
+    // Payment retry disabled since Redis is removed
+    this.logger.warn('Payment retry disabled - Redis removed');
+    return { success: false, method: 'disabled', reason: 'Redis removed' };
   }
 
   private async retrySync(payload: any): Promise<any> {
-    const { entityType, entityId, data } = payload;
-
-    // Add to sync queue
-    await this.redisService.getClient()?.lPush(
-      'sync:queue',
-      JSON.stringify({
-        entityType,
-        entityId,
-        data,
-        timestamp: new Date().toISOString(),
-      }),
-    );
-
-    return { success: true, method: 'requeued' };
+    // Sync retry disabled since Redis is removed
+    this.logger.warn('Sync retry disabled - Redis removed');
+    return { success: false, method: 'disabled', reason: 'Redis removed' };
   }
 
   private async isAlreadyProcessed(idempotencyKey: string): Promise<boolean> {
-    const result = await this.redisService.get(`processed:${idempotencyKey}`);
-    return result !== null;
+    // Idempotency check disabled since Redis is removed
+    this.logger.debug(`Idempotency check disabled for ${idempotencyKey} - Redis removed`);
+    return false; // Allow processing to continue
   }
 
   private async markAsProcessed(idempotencyKey: string): Promise<void> {
-    await this.redisService.set(
-      `processed:${idempotencyKey}`,
-      'true',
-      'EX',
-      86400,
-    ); // 24 hours
+    // Mark as processed disabled since Redis is removed
+    this.logger.debug(`Mark as processed disabled for ${idempotencyKey} - Redis removed`);
   }
 
   private calculateNextRetryDelay(
@@ -233,57 +192,13 @@ export class RetryWorker extends WorkerBaseService {
   }
 
   private async handleMaxRetriesReached(retryData: RetryData): Promise<void> {
-    // Log to dead letter queue for manual review
-    const deadLetterData = {
-      ...retryData,
-      finalError: 'Max retries reached',
-      timestamp: new Date().toISOString(),
-    };
-
-    await this.redisService
-      .getClient()
-      ?.lPush('dead-letter-queue', JSON.stringify(deadLetterData));
-
-    // Send alert notification
-    await this.redisService.getClient()?.lPush(
-      'notifications:queue',
-      JSON.stringify({
-        type: 'system_alert',
-        recipientId: 'admin',
-        recipientType: 'admin',
-        title: 'Max Retries Reached',
-        message: `Operation ${retryData.operation} failed after ${retryData.maxRetries} retries`,
-        metadata: {
-          operation: retryData.operation,
-          maxRetries: retryData.maxRetries,
-          originalError: retryData.originalError,
-        },
-        priority: 'high',
-        channels: ['push', 'email'],
-      }),
-    );
+    // Dead letter queue disabled since Redis is removed
+    this.logger.warn(`Max retries reached for ${retryData.operation} - dead letter queue disabled (Redis removed)`);
   }
 
   async getRetryMetrics(): Promise<any> {
-    const client = this.redisService.getClient();
-    if (!client) return { isActive: false };
-
-    try {
-      const [retryQueueLength, deadLetterLength] = await Promise.all([
-        client.lLen('retry-queue'),
-        client.lLen('dead-letter-queue'),
-      ]);
-
-      return {
-        isActive: true,
-        retryQueueLength,
-        deadLetterLength,
-        processedToday: await this.getProcessedCountToday(),
-      };
-    } catch (error) {
-      this.logger.error('Failed to get retry metrics:', error);
-      return { isActive: false };
-    }
+    // Retry metrics disabled since Redis is removed
+    return { isActive: false, reason: 'Redis removed' };
   }
 
   private async getProcessedCountToday(): Promise<number> {

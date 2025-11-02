@@ -165,7 +165,6 @@ services:
       - DELIVERY_SERVICE_URL=http://delivery-service:3006
       - SUPPORT_SERVICE_URL=http://support-service:3007
       - JWT_SECRET=dev-jwt-secret
-      - REDIS_URL=redis://redis:6379
     depends_on:
       - user-service
       - product-service

@@ -6,7 +6,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { RedisService } from './redis.service';
 import * as crypto from 'crypto';
 
 export enum TaskStatus {
@@ -86,7 +85,6 @@ export class TaskStateMachineService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly redis: RedisService,
   ) {}
 
   /**
@@ -410,36 +408,24 @@ export class TaskStateMachineService {
   }
 
   /**
-   * Acquire distributed lock
+   * Acquire distributed lock - disabled since Redis is removed
    */
   private async acquireLock(
     lockKey: string,
     lockValue: string,
     timeout: number,
   ): Promise<boolean> {
-    const result = await this.redis.set(
-      lockKey,
-      lockValue,
-      'PX',
-      timeout,
-      'NX',
-    );
-    return result === 'OK';
+    // Redis not available, cannot acquire lock
+    this.logger.warn('Cannot acquire distributed lock - Redis removed');
+    return true; // Allow operation to proceed without locking
   }
 
   /**
-   * Release distributed lock
+   * Release distributed lock - disabled since Redis is removed
    */
   private async releaseLock(lockKey: string, lockValue: string): Promise<void> {
-    const script = `
-      if redis.call("get", KEYS[1]) == ARGV[1] then
-        return redis.call("del", KEYS[1])
-      else
-        return 0
-      end
-    `;
-
-    await this.redis.eval(script, 1, lockKey, lockValue);
+    // Redis not available, no lock to release
+    this.logger.debug('Cannot release distributed lock - Redis removed');
   }
 
   /**

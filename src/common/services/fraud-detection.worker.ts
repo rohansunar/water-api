@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { WorkerBaseService } from './worker-base.service';
-import { RedisService } from './redis.service';
 import { PrismaService } from '../database/prisma.service';
 
 /**
@@ -111,11 +110,9 @@ export class FraudDetectionWorker extends WorkerBaseService {
   /**
    * Constructor for FraudDetectionWorker
    *
-   * @param redisService - Redis service for caching and queue operations
    * @param prismaService - Database service for fraud analysis persistence
    */
   constructor(
-    protected readonly redisService: RedisService,
     private readonly prismaService: PrismaService,
   ) {
     // Initialize parent WorkerBaseService with fraud detection queue configuration
@@ -123,7 +120,7 @@ export class FraudDetectionWorker extends WorkerBaseService {
     // - concurrency: 2 - process up to 2 jobs simultaneously for performance
     // - attempts: 3 - retry failed jobs up to 3 times before giving up
     // - backoff: exponential with 15s delay - progressive retry delays to handle temporary failures
-    super(redisService, {
+    super({
       queueName: 'fraud-detection',
       concurrency: 2,
       attempts: 3,
@@ -566,29 +563,13 @@ export class FraudDetectionWorker extends WorkerBaseService {
       'high_fraud_risk',
     );
 
-    // Add to manual review queue
-    await this.redisService.getClient()?.lPush(
-      'fraud-review-queue',
-      JSON.stringify({
-        analysisId: analysis.id,
-        entityType: analysis.entityType,
-        entityId: analysis.entityId,
-        priority: 'high',
-      }),
-    );
+    // Add to manual review queue - disabled since Redis is removed
+    this.logger.warn('Cannot add to fraud review queue - Redis removed');
   }
 
   private async handleMediumFraud(analysis: any): Promise<void> {
-    // Add to monitoring queue
-    await this.redisService.getClient()?.lPush(
-      'fraud-monitoring-queue',
-      JSON.stringify({
-        analysisId: analysis.id,
-        entityType: analysis.entityType,
-        entityId: analysis.entityId,
-        priority: 'medium',
-      }),
-    );
+    // Add to monitoring queue - disabled since Redis is removed
+    this.logger.warn('Cannot add to fraud monitoring queue - Redis removed');
   }
 
   private async blockEntity(
@@ -610,25 +591,14 @@ export class FraudDetectionWorker extends WorkerBaseService {
   }
 
   private async notifyAdmin(title: string, data: any): Promise<void> {
-    await this.redisService.getClient()?.lPush(
-      'notifications:queue',
-      JSON.stringify({
-        type: 'system_alert',
-        recipientId: 'admin',
-        recipientType: 'admin',
-        title,
-        message: `Fraud detection alert: ${JSON.stringify(data)}`,
-        metadata: data,
-        priority: 'urgent',
-        channels: ['push', 'email', 'sms'],
-      }),
-    );
+    // Admin notification disabled since Redis is removed
+    this.logger.warn(`Admin notification disabled - Redis removed: ${title}`);
   }
 
   /**
    * Caches fraud score and risk level for performance optimization
    *
-   * This method stores fraud analysis results in Redis cache to:
+   * This method would store fraud analysis results in cache to:
    * - Improve performance for subsequent fraud checks
    * - Enable quick lookup of recent fraud assessments
    * - Support fraud pattern analysis and trend detection
@@ -648,17 +618,8 @@ export class FraudDetectionWorker extends WorkerBaseService {
     score: number,
     level: string,
   ): Promise<void> {
-    const cacheKey = `fraud:score:${entityId}`;
-    await this.redisService.set(
-      cacheKey,
-      JSON.stringify({
-        score,
-        level,
-        timestamp: new Date().toISOString(),
-      }),
-      'EX',
-      3600,
-    ); // 1 hour TTL for optimal performance/freshness balance
+    // Fraud score caching disabled since Redis is removed
+    this.logger.debug(`Fraud score caching disabled for ${entityId} - Redis removed`);
   }
 
   // ==================== HELPER METHODS ====================
