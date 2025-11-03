@@ -1,6 +1,4 @@
-import { Injectable } from '@nestjs/common';
-import { Job } from 'bullmq';
-import { WorkerBaseService } from './worker-base.service';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 
 /**
@@ -31,7 +29,7 @@ export interface TaskAssignmentData {
  * rider availability, task priority, and performance optimization.
  *
  * Architecture:
- * - Extends WorkerBaseService for BullMQ integration and common worker functionality
+ * - Standalone worker service with direct job processing
  * - Processes jobs from 'task-assignment' queue with configurable concurrency (3)
  * - Implements exponential backoff retry strategy for failed assignments
  * - Uses Redis for caching and notification queuing
@@ -126,44 +124,41 @@ export interface TaskAssignmentData {
  *    - System throughput and queue depth monitoring
  */
 @Injectable()
-export class TaskAssignmentWorker extends WorkerBaseService {
+export class TaskAssignmentWorker {
+  protected readonly logger = new Logger(this.constructor.name);
+
   /**
    * Constructor for TaskAssignmentWorker
    *
-   * Initializes the worker with Redis and Prisma services, configuring
-   * the BullMQ queue with optimized settings for task assignment processing.
+   * Initializes the worker with Prisma service for database operations.
    *
-   * @param redisService - Redis service for caching and notification queuing
    * @param prismaService - Prisma service for database operations
-   *
-   * Queue Configuration:
-   * - Queue Name: 'task-assignment' - dedicated queue for delivery task assignments
-   * - Concurrency: 3 - processes up to 3 tasks simultaneously for optimal throughput
-   * - Attempts: 5 - retries failed assignments up to 5 times before giving up
-   * - Backoff: Exponential with 10s base delay - handles temporary failures gracefully
    */
   constructor(
-    private readonly prismaService: PrismaService,
-  ) {
-    super({
-      queueName: 'task-assignment',
-      concurrency: 3,
-      attempts: 5,
-      backoff: {
-        type: 'exponential',
-        delay: 10000,
-      },
-    });
+     private readonly prismaService: PrismaService,
+   ) {}
+
+  async addJob(name: string, data: any, options?: any): Promise<string> {
+    // Worker not active due to Redis removal
+    this.logger.warn(
+      `Worker ${name} not active (Redis removed), job not added`,
+    );
+    return '';
+  }
+
+  async getQueueMetrics(): Promise<any> {
+    // Return inactive status since Redis is removed
+    return { isActive: false, reason: 'Redis removed' };
   }
 
   /**
-   * Main job processing method for task assignment
+   * Main task assignment method
    *
    * This is the core method that handles the complete task assignment workflow.
    * It implements a sophisticated algorithm that considers multiple factors
    * to optimally match delivery tasks with available riders.
    *
-   * @param job - BullMQ job containing task assignment data
+   * @param data - Task assignment data
    * @returns Promise resolving to assignment result with success status and details
    *
    * Assignment Workflow:
@@ -178,8 +173,7 @@ export class TaskAssignmentWorker extends WorkerBaseService {
    *
    * Error Handling:
    * - Returns failure result if no riders are available
-   * - Logs errors and re-throws for BullMQ retry mechanism
-   * - Supports up to 5 retry attempts with exponential backoff
+   * - Logs errors and throws for error handling
    *
    * Business Logic:
    * - Supports both automatic and manual rider assignment
@@ -187,8 +181,8 @@ export class TaskAssignmentWorker extends WorkerBaseService {
    * - Ensures real-time consistency between database and cache
    * - Provides comprehensive logging for monitoring and debugging
    */
-  protected async processJob(job: Job<TaskAssignmentData>): Promise<any> {
-    const { taskId, riderId, priority, location, estimatedDuration } = job.data;
+  async assignTask(data: TaskAssignmentData): Promise<any> {
+    const { taskId, riderId, priority, location, estimatedDuration } = data;
 
     try {
       // Step 1: Find available riders within 10km radius using geospatial queries

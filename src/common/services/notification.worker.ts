@@ -1,6 +1,4 @@
-import { Injectable } from '@nestjs/common';
-import { Job } from 'bullmq';
-import { WorkerBaseService } from './worker-base.service';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 
 export interface NotificationData {
@@ -20,86 +18,13 @@ export interface NotificationData {
 }
 
 @Injectable()
-export class NotificationWorker extends WorkerBaseService {
+export class NotificationWorker {
+  protected readonly logger = new Logger(this.constructor.name);
+
   constructor(
     private readonly prismaService: PrismaService,
-  ) {
-    super({
-      queueName: 'notifications',
-      concurrency: 5,
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 5000,
-      },
-    });
-  }
+  ) {}
 
-  protected async processJob(job: Job<NotificationData>): Promise<any> {
-    const {
-      type,
-      recipientId,
-      recipientType,
-      title,
-      message,
-      metadata,
-      priority,
-      channels,
-    } = job.data;
-
-    try {
-      // Get recipient details
-      const recipient = await this.getRecipientDetails(
-        recipientId,
-        recipientType,
-      );
-      if (!recipient) {
-        this.logger.warn(`Recipient ${recipientId} not found`);
-        return { success: false, reason: 'Recipient not found' };
-      }
-
-      // Determine notification channels
-      const notificationChannels =
-        channels || (await this.getPreferredChannels(recipient, type));
-
-      // Send notifications via different channels
-      const results = await Promise.allSettled(
-        notificationChannels.map((channel) =>
-          this.sendNotification(channel, recipient, title, message, metadata),
-        ),
-      );
-
-      // Log notification for audit trail
-      await this.logNotification(
-        recipientId,
-        recipientType,
-        type,
-        title,
-        message,
-        results,
-      );
-
-      // Cache notification for quick retrieval
-      await this.cacheNotification(recipientId, type, title, message);
-
-      const successCount = results.filter(
-        (r) => r.status === 'fulfilled',
-      ).length;
-      this.logger.log(
-        `Notification sent via ${successCount}/${notificationChannels.length} channels for ${recipientType} ${recipientId}`,
-      );
-
-      return {
-        success: successCount > 0,
-        channels: notificationChannels,
-        successCount,
-        totalCount: notificationChannels.length,
-      };
-    } catch (error) {
-      this.logger.error(`Failed to process notification ${job.id}:`, error);
-      throw error;
-    }
-  }
 
   private async getRecipientDetails(
     recipientId: string,
@@ -287,5 +212,13 @@ export class NotificationWorker extends WorkerBaseService {
   async getQueueMetrics(): Promise<any> {
     // Return inactive status since Redis is removed
     return { isActive: false, reason: 'Redis removed' };
+  }
+
+  async addJob(name: string, data: any, options?: any): Promise<string> {
+    // Worker not active due to Redis removal
+    this.logger.warn(
+      `Worker not active (Redis removed), job not added`,
+    );
+    return '';
   }
 }

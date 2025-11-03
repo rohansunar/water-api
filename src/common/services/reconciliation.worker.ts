@@ -1,6 +1,4 @@
-import { Injectable } from '@nestjs/common';
-import { Job } from 'bullmq';
-import { WorkerBaseService } from './worker-base.service';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 
 /**
@@ -30,18 +28,17 @@ export interface ReconciliationData {
  * between expected and actual transaction amounts.
  *
  * Architecture:
- * - Extends WorkerBaseService for queue-based job processing using BullMQ
- * - Processes reconciliation jobs asynchronously with configurable concurrency
- * - Integrates with Prisma ORM for database operations and Redis for caching
- * - Implements comprehensive error handling and retry mechanisms
+ * - Standalone service for financial reconciliation processing
+ * - Integrates with Prisma ORM for database operations
+ * - Implements comprehensive error handling and logging
  *
  * Key Features:
  * - Automated daily reconciliation processing for vendor transactions
  * - Multi-source transaction aggregation (cash transactions, order payments)
  * - Sophisticated discrepancy detection algorithms
  * - Financial audit trail management with detailed logging
- * - Real-time notification system for reconciliation completion
- * - Caching layer for performance optimization
+ * - Caching layer for performance optimization (disabled)
+ * - Notification system for reconciliation completion (disabled)
  *
  * Business Logic:
  * - Reconciles expected amounts (calculated from business rules) against actual amounts
@@ -51,41 +48,26 @@ export interface ReconciliationData {
  * - Supports both manual and automated reconciliation workflows
  *
  * Error Handling:
- * - Exponential backoff retry strategy for transient failures
  * - Comprehensive error logging with context information
  * - Graceful degradation for partial reconciliation failures
  * - Transaction rollback capabilities for data consistency
  */
 @Injectable()
-export class ReconciliationWorker extends WorkerBaseService {
+export class ReconciliationWorker {
+  /** Logger instance for structured logging with class name context */
+  private readonly logger = new Logger(this.constructor.name);
+
   /**
    * Constructor for ReconciliationWorker
    *
-   * @param redisService - Redis service for caching and queue operations
    * @param prismaService - Prisma service for database operations
-   *
-   * Configures the worker with:
-   * - Queue name: 'reconciliation' for job processing
-   * - Concurrency: 2 (processes up to 2 reconciliation jobs simultaneously)
-   * - Retry attempts: 3 (retries failed jobs up to 3 times)
-   * - Exponential backoff: 30-second initial delay for retries
    */
   constructor(
     private readonly prismaService: PrismaService,
-  ) {
-    super({
-      queueName: 'reconciliation',
-      concurrency: 2,
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 30000, // 30 seconds
-      },
-    });
-  }
+  ) {}
 
   /**
-   * Main job processing method for financial reconciliation
+   * Main reconciliation processing method for financial reconciliation
    *
    * This method orchestrates the complete reconciliation workflow:
    * 1. Data extraction and validation
@@ -94,10 +76,10 @@ export class ReconciliationWorker extends WorkerBaseService {
    * 4. Audit trail creation and ledger updates
    * 5. Caching and notification
    *
-   * @param job - BullMQ job containing reconciliation data
+   * @param data - Reconciliation data containing vendor, date, and financial information
    * @returns Promise resolving to reconciliation results with success status and metrics
    *
-   * @throws Error if reconciliation process fails (will trigger retry mechanism)
+   * @throws Error if reconciliation process fails
    *
    * Business Logic:
    * - Validates input data and ensures data integrity
@@ -106,7 +88,7 @@ export class ReconciliationWorker extends WorkerBaseService {
    * - Updates financial ledgers with reconciliation adjustments
    * - Provides real-time notifications for stakeholders
    */
-  protected async processJob(job: Job<ReconciliationData>): Promise<any> {
+  async processReconciliation(data: ReconciliationData): Promise<any> {
     const {
       vendorId,
       date,
@@ -114,7 +96,7 @@ export class ReconciliationWorker extends WorkerBaseService {
       actualAmount,
       transactionIds,
       notes,
-    } = job.data;
+    } = data;
 
     try {
       this.logger.log(
@@ -570,6 +552,25 @@ export class ReconciliationWorker extends WorkerBaseService {
   ): Promise<void> {
     // Reconciliation completion notification disabled since Redis is removed
     this.logger.debug(`Reconciliation completion notification disabled for vendor ${vendorId} - Redis removed`);
+  }
+
+  /**
+   * Adds a reconciliation job for processing
+   * Since Redis is removed, this method directly processes the reconciliation
+   * @param name - Job type/name identifier (ignored)
+   * @param data - Reconciliation data to process
+   * @param options - Optional job configuration (ignored)
+   * @returns Promise resolving to a job ID string
+   */
+  async addJob(name: string, data: ReconciliationData, options?: any): Promise<string> {
+    try {
+      this.logger.log(`Processing reconciliation job for vendor ${data.vendorId}`);
+      await this.processReconciliation(data);
+      return `reconciliation-${data.vendorId}-${Date.now()}`;
+    } catch (error) {
+      this.logger.error(`Failed to process reconciliation job for vendor ${data.vendorId}:`, error);
+      throw error;
+    }
   }
 
   async getQueueMetrics(): Promise<any> {
