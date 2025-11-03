@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { VendorService } from '../../vendor/services/vendor.service';
 import { LedgerService } from '../../ledger/services/ledger.service';
-import { LedgerSummaryResponseDto } from '../../common/dto/ledger.dto';
+import { LedgerSummaryResponseDto } from '../../ledger/dto/ledger.dto';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 import { ProductModerationService } from '../../product/services/product-moderation.service';
 import { User, UserRole } from '../../common/interfaces/user.interface';
@@ -10,25 +10,25 @@ import {
   AdminPaginatedResponseDto,
   AdminUserListResponseDto,
   AdminTransactionListQueryDto,
-} from '../../common/dto/admin.dto';
+} from '../dto/admin.dto';
 import {
   ComplaintResponseDto,
   ComplaintListQueryDto,
-} from '../../common/dto/complaint.dto';
+} from '../../complaint/dto/complaint.dto';
 import {
   ProductResponseDto,
   ProductSearchDto,
-} from '../../common/dto/product.dto';
+} from '../../product/dto/product.dto';
 import { PaginationUtil } from '../../common/utils/pagination.util';
 import {
   AdminOrderQueryDto,
   AdminOrderResponseDto,
-} from '../../common/dto/order-management.dto';
+} from '../dto/order-management.dto';
 import { OrderStatus } from '../../order/interfaces/order.interface';
 import {
   LedgerEntryResponseDto,
   PayoutResponseDto,
-} from '../../common/dto/ledger.dto';
+} from '../../ledger/dto/ledger.dto';
 import {
   LedgerEntryType,
   LedgerEntryStatus,

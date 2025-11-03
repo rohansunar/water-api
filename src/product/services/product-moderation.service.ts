@@ -13,7 +13,7 @@ import {
   BulkModerationDto,
   ProductModerationStatsDto,
   ProductModerationListQueryDto,
-} from '../../common/dto/product-moderation.dto';
+} from '../dto/product-moderation.dto';
 
 enum ProductModerationStatus {
   PENDING = 'PENDING',

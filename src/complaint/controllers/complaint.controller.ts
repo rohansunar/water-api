@@ -14,7 +14,7 @@ import { User } from '../../common/interfaces/user.interface';
 import {
   CreateComplaintDto,
   ComplaintResponseDto,
-} from '../../common/dto/complaint.dto';
+} from '../dto/complaint.dto';
 
 @Controller('complaints')
 @UseGuards(JwtAuthGuard)

@@ -13,8 +13,8 @@ import {
   PaginationQueryDto,
   PaginationMetaDto,
   PaginatedResponseDto,
-} from '../utils/pagination.util';
-import { UserRole } from '../interfaces/user.interface';
+} from '../../common/utils/pagination.util';
+import { UserRole } from '../../common/interfaces/user.interface';
 
 export class AdminLoginDto {
   @ApiProperty({

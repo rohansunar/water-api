@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   OrderResponseDto,
   UpdateOrderStatusDto,
-} from '../../common/dto/order.dto';
+} from '../../order/dto/order.dto';
 import { OrderStatus } from '../../order/interfaces/order.interface';
 import {
   // Delivery History DTOs
@@ -33,7 +33,7 @@ import {
   // Pagination DTOs
   PaginationQueryDto,
   PaginationResponseDto,
-} from '../../common/dto/rider.dto';
+} from '../dto/rider.dto';
 
 export interface DeliveryRider {
   id: string;

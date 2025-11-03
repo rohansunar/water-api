@@ -15,7 +15,7 @@ import {
   UpdateCommissionRuleDto,
   CommissionRuleResponseDto,
   CommissionCalculationDto,
-} from '../../common/dto/commission.dto';
+} from '../dto/commission.dto';
 
 /**
  * Commission Service - Multi-Level Commission Calculation Engine

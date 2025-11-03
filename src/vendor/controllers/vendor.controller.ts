@@ -21,11 +21,11 @@ import { User, UserRole } from '../../common/interfaces/user.interface';
 import {
   CreateProductDto,
   ProductResponseDto,
-} from '../../common/dto/product.dto';
+} from '../../product/dto/product.dto';
 import {
   OrderResponseDto,
   UpdateOrderStatusDto,
-} from '../../common/dto/order.dto';
+} from '../../order/dto/order.dto';
 import {
   UpdateStoreDto,
   StoreResponseDto,

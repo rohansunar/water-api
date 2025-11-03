@@ -30,7 +30,7 @@ import {
   GetAnalyticsDto,
   VendorAnalyticsResponseDto,
   LedgerSummaryResponseDto,
-} from '../../common/dto/ledger.dto';
+} from '../dto/ledger.dto';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 
 /**

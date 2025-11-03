@@ -22,7 +22,7 @@ import {
   CreateCommissionRuleDto,
   UpdateCommissionRuleDto,
   CommissionRuleResponseDto,
-} from '../../common/dto/commission.dto';
+} from '../dto/commission.dto';
 
 @Controller('admin/commissions/rules')
 @UseGuards(JwtAuthGuard, RolesGuard)

@@ -12,7 +12,7 @@ import { OrderService } from '../services/order.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { User } from '../../common/interfaces/user.interface';
-import { CreateOrderDto, OrderResponseDto } from '../../common/dto/order.dto';
+import { CreateOrderDto, OrderResponseDto } from '../dto/order.dto';
 
 @Controller('orders')
 @UseGuards(JwtAuthGuard)

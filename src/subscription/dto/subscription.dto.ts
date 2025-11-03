@@ -11,7 +11,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { SubscriptionFrequency } from '../../subscription/interfaces/subscription.interface';
-import { DeliveryAddressDto } from './order.dto';
+import { DeliveryAddressDto } from '../../order/dto/order.dto';
 
 export class CreateSubscriptionDto {
   @IsUUID()

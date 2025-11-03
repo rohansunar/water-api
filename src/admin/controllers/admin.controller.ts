@@ -25,12 +25,12 @@ import {
   AdminUserListResponseDto,
   AdminPaginatedResponseDto,
   AdminTransactionListQueryDto,
-} from '../../common/dto/admin.dto';
+} from '../dto/admin.dto';
 import {
   LedgerSummaryResponseDto,
   LedgerEntryResponseDto,
   PayoutResponseDto,
-} from '../../common/dto/ledger.dto';
+} from '../../ledger/dto/ledger.dto';
 import { ProductModerationService } from '../../product/services/product-moderation.service';
 import {
   ProductModerationDto,
@@ -39,7 +39,7 @@ import {
   BulkModerationDto,
   ProductModerationStatsDto,
   ProductModerationListQueryDto,
-} from '../../common/dto/product-moderation.dto';
+} from '../../product/dto/product-moderation.dto';
 import { RefundService } from '../../refund/services/refund.service';
 import { OrderService } from '../../order/services/order.service';
 import {
@@ -49,20 +49,20 @@ import {
   ProcessRefundDto,
   RefundResponseDto,
   RefundListQueryDto,
-} from '../../common/dto/refund.dto';
+} from '../../refund/dto/refund.dto';
 import {
   ComplaintResponseDto,
   ComplaintListQueryDto,
-} from '../../common/dto/complaint.dto';
+} from '../../complaint/dto/complaint.dto';
 import {
   ProductResponseDto,
   ProductSearchDto,
-} from '../../common/dto/product.dto';
+} from '../../product/dto/product.dto';
 import {
   AdminUpdateOrderStatusDto,
   AdminOrderQueryDto,
   AdminOrderResponseDto,
-} from '../../common/dto/order-management.dto';
+} from '../dto/order-management.dto';
 
 @Controller('admin')
 @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)

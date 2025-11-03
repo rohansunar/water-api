@@ -21,7 +21,7 @@ import {
   IsValidPincode,
   IsValidLatitude,
   IsValidLongitude,
-} from '../decorators/validation.decorators';
+} from '../../common/decorators/validation.decorators';
 
 export class DeliveryAddressDto {
   @IsString({ message: 'Street address must be a string' })

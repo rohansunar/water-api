@@ -16,7 +16,7 @@ import {
   CreateSubscriptionDto,
   UpdateSubscriptionDto,
   SubscriptionResponseDto,
-} from '../../common/dto/subscription.dto';
+} from '../dto/subscription.dto';
 import { ProductService } from '../../product/services/product.service';
 import { OrderService } from '../../order/services/order.service';
 

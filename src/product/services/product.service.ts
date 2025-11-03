@@ -8,7 +8,7 @@ import { Model } from 'mongoose';
 import {
   ProductResponseDto,
   CreateProductDto,
-} from '../../common/dto/product.dto';
+} from '../dto/product.dto';
 import { Product, ProductDocument } from '../../common/schemas/product.schema';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 import { ProductModerationService } from './product-moderation.service';

@@ -7,7 +7,7 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { OrderStatus } from '../../order/interfaces/order.interface';
-import { PaginationQueryDto } from '../utils/pagination.util';
+import { PaginationQueryDto } from '../../common/utils/pagination.util';
 
 export class AdminUpdateOrderStatusDto {
   @ApiProperty({

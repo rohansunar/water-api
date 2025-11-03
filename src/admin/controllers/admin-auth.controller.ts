@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { AdminAuthService } from '../services/admin-auth.service';
-import { AdminLoginDto, AdminAuthResponseDto } from '../../common/dto/admin.dto';
+import { AdminLoginDto, AdminAuthResponseDto } from '../dto/admin.dto';
 import { Public } from '../../auth/decorators/public.decorator';
 
 @ApiTags('Admin Authentication')

@@ -21,7 +21,7 @@ import { OtpService } from '../../common/services/otp.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { User, UserRole } from '../../common/interfaces/user.interface';
-import { DeliveryRiderResponseDto } from '../../common/dto/rider.dto';
+import { DeliveryRiderResponseDto } from '../dto/rider.dto';
 
 export interface LoginRequestDto {
   phone: string;

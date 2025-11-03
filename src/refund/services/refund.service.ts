@@ -13,7 +13,7 @@ import {
   ProcessRefundDto,
   RefundResponseDto,
   RefundListQueryDto,
-} from '../../common/dto/refund.dto';
+} from '../dto/refund.dto';
 import { LedgerService } from '../../ledger/services/ledger.service';
 import { LedgerEntryType } from '../../ledger/interfaces/ledger.interface';
 

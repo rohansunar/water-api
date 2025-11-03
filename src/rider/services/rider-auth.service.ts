@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../common/database/prisma.service';
-import { DeliveryRiderResponseDto } from '../../common/dto/rider.dto';
+import { DeliveryRiderResponseDto } from '../dto/rider.dto';
 import { TaskStatus } from '../../common/services/task-state-machine.service';
 
 export interface AuthResponseDto {

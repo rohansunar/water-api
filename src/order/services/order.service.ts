@@ -12,7 +12,7 @@ import {
   PaymentMethod,
   PaymentStatus,
 } from '../interfaces/order.interface';
-import { CreateOrderDto, OrderResponseDto } from '../../common/dto/order.dto';
+import { CreateOrderDto, OrderResponseDto } from '../dto/order.dto';
 import { ProductService } from '../../product/services/product.service';
 import { LedgerService } from '../../ledger/services/ledger.service';
 import { CommissionService } from '../../commission/services/commission.service';

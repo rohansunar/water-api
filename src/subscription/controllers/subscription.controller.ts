@@ -16,7 +16,7 @@ import {
   CreateSubscriptionDto,
   UpdateSubscriptionDto,
   SubscriptionResponseDto,
-} from '../../common/dto/subscription.dto';
+} from '../dto/subscription.dto';
 
 @Controller('subscriptions')
 @UseGuards(JwtAuthGuard)

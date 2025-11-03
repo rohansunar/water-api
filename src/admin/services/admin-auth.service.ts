@@ -13,7 +13,7 @@ import {
   AdminLoginDto,
   AdminAuthResponseDto,
   AdminProfileDto,
-} from '../../common/dto/admin.dto';
+} from '../dto/admin.dto';
 
 @Injectable()
 export class AdminAuthService {

@@ -1,6 +1,6 @@
 import { IsString, IsEnum, IsOptional, IsUUID, IsArray } from 'class-validator';
 import { ComplaintType } from '../../complaint/interfaces/complaint.interface';
-import { PaginationQueryDto } from '../utils/pagination.util';
+import { PaginationQueryDto } from '../../common/utils/pagination.util';
 
 export class CreateComplaintDto {
   @IsOptional()

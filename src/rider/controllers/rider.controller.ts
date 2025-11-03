@@ -27,7 +27,7 @@ import { User, UserRole } from '../../common/interfaces/user.interface';
 import {
   OrderResponseDto,
   UpdateOrderStatusDto,
-} from '../../common/dto/order.dto';
+} from '../../order/dto/order.dto';
 import {
   LocationUpdateDto,
   UpdateAvailabilityDto,
@@ -55,7 +55,7 @@ import {
   // Pagination DTOs
   PaginationQueryDto,
   PaginationResponseDto,
-} from '../../common/dto/rider.dto';
+} from '../dto/rider.dto';
 
 @ApiTags('Riders')
 @ApiBearerAuth('JWT-auth')

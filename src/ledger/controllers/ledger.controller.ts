@@ -26,7 +26,7 @@ import {
   GetAnalyticsDto,
   VendorAnalyticsResponseDto,
   LedgerSummaryResponseDto,
-} from '../../common/dto/ledger.dto';
+} from '../dto/ledger.dto';
 import {
   LedgerEntryType,
   LedgerEntryStatus,
