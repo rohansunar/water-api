@@ -223,58 +223,15 @@ export class VendorApprovalDto {
   rejectionReason?: string;
 }
 
-// Vendor Authentication DTOs
-export class VendorSignupDto {
-  @ApiProperty({
-    description: 'Business name of the vendor',
-    example: 'Fresh Water Solutions',
-  })
-  @IsString()
-  @IsNotEmpty()
-  businessName: string;
 
+export class VendorLoginDto {
   @ApiProperty({
-    description: 'Email address for vendor login',
-    example: 'vendor@freshwater.com',
-  })
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-
-  @ApiProperty({
-    description: 'Password for vendor account',
-    example: 'securePassword123',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(6)
-  password: string;
-
-  @ApiProperty({
-    description: 'Phone number for contact',
+    description: 'Vendor phone number',
     example: '+91-9876543210',
   })
   @IsString()
   @IsNotEmpty()
   phone: string;
-
-  @ApiProperty({
-    description: 'Business address',
-    example: '123 Business Street, Mumbai, 400001',
-  })
-  @IsString()
-  @IsNotEmpty()
-  address: string;
-}
-
-export class VendorLoginDto {
-  @ApiProperty({
-    description: 'Vendor email address',
-    example: 'vendor@freshwater.com',
-  })
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
 
   @ApiProperty({
     description: 'Vendor password',

@@ -36,7 +36,6 @@ model Customer {
 
 model Vendor {
   id                BigInt   @id @default(autoincrement())
-  uuid              String   @unique @default(uuid())
   phone             String?  @unique
   email             String?  @unique
   passwordHash      String?

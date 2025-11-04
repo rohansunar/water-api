@@ -2,7 +2,6 @@ import {
   Injectable,
   UnauthorizedException,
   ForbiddenException,
-  ConflictException,
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -11,7 +10,6 @@ import { PrismaService } from '../../common/database/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 import {
-  VendorSignupDto,
   VendorLoginDto,
   VendorAuthResponseDto,
   VendorProfileDto,
@@ -28,126 +26,24 @@ export class VendorAuthService {
     private readonly prismaService: PrismaService,
   ) {}
 
-  async signup(signupDto: VendorSignupDto): Promise<VendorAuthResponseDto> {
-    const startTime = Date.now();
-    try {
-      const { businessName, email, password, phone } = signupDto;
-
-      // Log vendor signup attempt
-      this.customLogger.logSecurityEvent(
-        'vendor_signup_attempt',
-        { email, businessName },
-        undefined,
-        undefined,
-      );
-
-      // Check if vendor already exists with this email
-      const findStartTime = Date.now();
-      const existingVendor = await this.prismaService.vendor.findUnique({
-        where: { email },
-      });
-      this.customLogger.logDatabaseOperation(
-        'find',
-        'vendors',
-        Date.now() - findStartTime,
-        !!existingVendor,
-      );
-
-      if (existingVendor) {
-        this.customLogger.logSecurityEvent(
-          'vendor_signup_failure',
-          { email, businessName, reason: 'email_already_exists' },
-          undefined,
-          undefined,
-        );
-        throw new ConflictException('Vendor with this email already exists');
-      }
-
-      // Hash password
-      const hashedPassword = await this.hashPassword(password);
-
-      // Create vendor
-      const createStartTime = Date.now();
-      const vendor = await this.prismaService.vendor.create({
-        data: {
-          name: businessName,
-          email,
-          passwordHash: hashedPassword,
-          phone,
-          isActive: true, // Auto-approve for now, can be changed to pending approval later
-        },
-      });
-      this.customLogger.logDatabaseOperation(
-        'create',
-        'vendors',
-        Date.now() - createStartTime,
-        true,
-      );
-
-      // Generate JWT token
-      const payload = {
-        sub: vendor.id.toString(),
-        email: vendor.email,
-        role: 'vendor',
-        businessName: vendor.name,
-      };
-
-      const token = this.jwtService.sign(payload);
-      const expiresIn = 3600; // 1 hour
-
-      this.customLogger.logSecurityEvent(
-        'vendor_signup_success',
-        { email, businessName, vendorId: vendor.id.toString() },
-        vendor.id.toString(),
-        undefined,
-      );
-      this.customLogger.logBusinessEvent(
-        'vendor_registered',
-        { vendorId: vendor.id.toString(), email, businessName },
-        vendor.id.toString(),
-      );
-
-      return {
-        token,
-        vendor: this.mapToProfileDto(vendor),
-        expiresIn,
-      };
-    } catch (error) {
-      if (
-        error instanceof ConflictException ||
-        error instanceof UnauthorizedException ||
-        error instanceof ForbiddenException
-      ) {
-        throw error;
-      }
-      this.customLogger.logSecurityEvent(
-        'vendor_signup_error',
-        { email: signupDto.email, error: error.message },
-        undefined,
-        undefined,
-      );
-      this.logger.error(`Vendor signup failed for ${signupDto.email}:`, error);
-      throw new ConflictException('Vendor registration failed');
-    }
-  }
 
   async login(loginDto: VendorLoginDto): Promise<VendorAuthResponseDto> {
     const startTime = Date.now();
     try {
-      const { email, password } = loginDto;
+      const { phone, password } = loginDto;
 
       // Log vendor login attempt
       this.customLogger.logSecurityEvent(
         'vendor_login_attempt',
-        { email },
+        { phone },
         undefined,
         undefined,
       );
 
-      // Find vendor by email
+      // Find vendor by phone
       const findStartTime = Date.now();
       const vendor = await this.prismaService.vendor.findUnique({
-        where: { email },
+        where: { phone },
       });
       this.customLogger.logDatabaseOperation(
         'find',
@@ -159,18 +55,18 @@ export class VendorAuthService {
       if (!vendor) {
         this.customLogger.logSecurityEvent(
           'vendor_login_failure',
-          { email, reason: 'vendor_not_found' },
+          { phone, reason: 'vendor_not_found' },
           undefined,
           undefined,
         );
-        throw new UnauthorizedException('Invalid email or password');
+        throw new UnauthorizedException('Invalid phone or password');
       }
 
       // Check if account is active
       if (!vendor.isActive) {
         this.customLogger.logSecurityEvent(
           'vendor_login_failure',
-          { email, vendorId: vendor.id.toString(), reason: 'account_inactive' },
+          { phone, vendorId: vendor.id.toString(), reason: 'account_inactive' },
           undefined,
           undefined,
         );
@@ -181,11 +77,11 @@ export class VendorAuthService {
       if (!vendor.passwordHash) {
         this.customLogger.logSecurityEvent(
           'vendor_login_failure',
-          { email, vendorId: vendor.id.toString(), reason: 'no_password_hash' },
+          { phone, vendorId: vendor.id.toString(), reason: 'no_password_hash' },
           undefined,
           undefined,
         );
-        throw new UnauthorizedException('Invalid email or password');
+        throw new UnauthorizedException('Invalid phone or password');
       }
 
       const isPasswordValid = await bcrypt.compare(
@@ -195,17 +91,17 @@ export class VendorAuthService {
       if (!isPasswordValid) {
         this.customLogger.logSecurityEvent(
           'vendor_login_failure',
-          { email, vendorId: vendor.id.toString(), reason: 'invalid_password' },
+          { phone, vendorId: vendor.id.toString(), reason: 'invalid_password' },
           undefined,
           undefined,
         );
-        throw new UnauthorizedException('Invalid email or password');
+        throw new UnauthorizedException('Invalid phone or password');
       }
 
       // Generate JWT token
       const payload = {
         sub: vendor.id.toString(),
-        email: vendor.email,
+        phone: vendor.phone,
         role: 'vendor',
         businessName: vendor.name,
       };
@@ -228,13 +124,13 @@ export class VendorAuthService {
 
       this.customLogger.logSecurityEvent(
         'vendor_login_success',
-        { email, vendorId: vendor.id.toString() },
+        { phone, vendorId: vendor.id.toString() },
         vendor.id.toString(),
         undefined,
       );
       this.customLogger.logBusinessEvent(
         'vendor_authenticated',
-        { vendorId: vendor.id.toString(), email },
+        { vendorId: vendor.id.toString(), phone },
         vendor.id.toString(),
       );
 
@@ -252,11 +148,11 @@ export class VendorAuthService {
       }
       this.customLogger.logSecurityEvent(
         'vendor_login_error',
-        { email: loginDto.email, error: error.message },
+        { phone: loginDto.phone, error: error.message },
         undefined,
         undefined,
       );
-      this.logger.error(`Vendor login failed for ${loginDto.email}:`, error);
+      this.logger.error(`Vendor login failed for ${loginDto.phone}:`, error);
       throw new UnauthorizedException('Authentication failed');
     }
   }
