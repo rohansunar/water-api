@@ -4,7 +4,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { OtpCode } from '@prisma/client';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 

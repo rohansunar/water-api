@@ -31,7 +31,6 @@ export class VendorAuthService {
     private readonly otpService: OtpService,
   ) {}
 
-
   async login(loginDto: VendorLoginDto): Promise<VendorAuthResponseDto> {
     const startTime = Date.now();
     try {
@@ -219,11 +218,6 @@ export class VendorAuthService {
         undefined,
       );
 
-      // Check if vendor exists and is active
-      const vendor = await this.prismaService.vendor.findUnique({
-        where: { phone },
-      });
-
       // Generate and send OTP
       const otpResult = await this.otpService.generateOtp({
         phone,
@@ -232,15 +226,8 @@ export class VendorAuthService {
 
       this.customLogger.logSecurityEvent(
         'vendor_otp_send_success',
-        { phone, vendorId: vendor.id.toString() },
-        vendor.id.toString(),
+        { phone },
         undefined,
-      );
-
-      this.customLogger.logBusinessEvent(
-        'vendor_otp_sent',
-        { vendorId: vendor.id.toString(), phone },
-        vendor.id.toString(),
       );
 
       return {
@@ -261,12 +248,17 @@ export class VendorAuthService {
         undefined,
         undefined,
       );
-      this.logger.error(`Vendor OTP send failed for ${sendOtpDto.phone}:`, error);
+      this.logger.error(
+        `Vendor OTP send failed for ${sendOtpDto.phone}:`,
+        error,
+      );
       throw new UnauthorizedException('Failed to send OTP');
     }
   }
 
-  async verifyOtp(verifyOtpDto: VendorVerifyOtpDto): Promise<VendorAuthResponseDto> {
+  async verifyOtp(
+    verifyOtpDto: VendorVerifyOtpDto,
+  ): Promise<VendorAuthResponseDto> {
     const startTime = Date.now();
     try {
       const { phone, otp } = verifyOtpDto;
@@ -296,19 +288,46 @@ export class VendorAuthService {
         throw new UnauthorizedException('Invalid OTP');
       }
 
-      // Find vendor
-      const vendor = await this.prismaService.vendor.findUnique({
+      // After successful OTP verification, upsert vendor
+      const upsertStartTime = Date.now();
+      const vendor = await this.prismaService.vendor.upsert({
         where: { phone },
+        update: {
+          lastActiveAt: new Date(),
+        },
+        create: {
+          phone,
+          name: phone, // Use phone as default name for OTP-based registration
+          isVerified: true,
+          lastActiveAt: new Date(),
+        },
       });
+      this.customLogger.logDatabaseOperation(
+        'upsert',
+        'vendors',
+        Date.now() - upsertStartTime,
+        true,
+      );
 
-      if (!vendor || !vendor.isActive) {
+      // Log appropriate business event based on whether vendor was created or updated
+      if (vendor.createdAt.getTime() === vendor.updatedAt.getTime()) {
+        // Newly created vendor (createdAt equals updatedAt)
+        this.customLogger.logBusinessEvent(
+          'vendor_registered_via_otp',
+          { vendorId: vendor.id.toString(), phone },
+          vendor.id.toString(),
+        );
+      }
+
+      // Check if vendor account is active
+      if (!vendor.isActive) {
         this.customLogger.logSecurityEvent(
           'vendor_otp_verify_failure',
-          { phone, reason: 'vendor_not_found_or_inactive' },
+          { phone, vendorId: vendor.id.toString(), reason: 'account_inactive' },
           undefined,
           undefined,
         );
-        throw new UnauthorizedException('Vendor not found or inactive');
+        throw new ForbiddenException('Account is inactive');
       }
 
       // Generate JWT token
@@ -320,13 +339,7 @@ export class VendorAuthService {
       };
 
       const token = this.jwtService.sign(payload);
-      const expiresIn = 3600; // 1 hour
-
-      // Update last active timestamp
-      await this.prismaService.vendor.update({
-        where: { id: vendor.id },
-        data: { lastActiveAt: new Date() },
-      });
+      const expiresIn = 36000; // 10 hour
 
       this.customLogger.logSecurityEvent(
         'vendor_otp_verify_success',
@@ -356,7 +369,10 @@ export class VendorAuthService {
         undefined,
         undefined,
       );
-      this.logger.error(`Vendor OTP verification failed for ${verifyOtpDto.phone}:`, error);
+      this.logger.error(
+        `Vendor OTP verification failed for ${verifyOtpDto.phone}:`,
+        error,
+      );
       throw new UnauthorizedException('OTP verification failed');
     }
   }

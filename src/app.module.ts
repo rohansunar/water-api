@@ -28,7 +28,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { RetryInterceptor } from './common/interceptors/retry.interceptor';
 import { CustomThrottlerGuard } from './common/guards/rate-limit.guard';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
-import { SecurityMiddleware } from './common/middleware/security.middleware';
+// import { SecurityMiddleware } from './common/middleware/security.middleware';
 import { GracefulDegradationMiddleware } from './common/middleware/graceful-degradation.middleware';
 import { StoreModule } from './store/store.module';
 // import { NotificationWorker } from './common/services/notification.worker';
@@ -105,7 +105,7 @@ export class AppModule implements NestModule {
     consumer
       .apply(
         RequestIdMiddleware,
-        SecurityMiddleware,
+        // SecurityMiddleware,
         GracefulDegradationMiddleware,
       )
       .forRoutes('*');
