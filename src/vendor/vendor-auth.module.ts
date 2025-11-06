@@ -6,6 +6,7 @@ import { VendorAuthController } from './controllers/vendor-auth.controller';
 import { VendorAuthService } from './services/vendor-auth.service';
 import { VendorJwtStrategy } from './strategies/vendor-jwt.strategy';
 import { VendorJwtAuthGuard } from './guards/vendor-jwt-auth.guard';
+import { OtpService } from '../common/services/otp.service';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { VendorJwtAuthGuard } from './guards/vendor-jwt-auth.guard';
     }),
   ],
   controllers: [VendorAuthController],
-  providers: [VendorAuthService, VendorJwtStrategy, VendorJwtAuthGuard],
+  providers: [VendorAuthService, VendorJwtStrategy, VendorJwtAuthGuard, OtpService],
   exports: [VendorAuthService, VendorJwtStrategy, VendorJwtAuthGuard],
 })
 export class VendorAuthModule {}

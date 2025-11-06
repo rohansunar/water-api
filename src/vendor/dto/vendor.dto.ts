@@ -10,6 +10,8 @@ import {
   IsArray,
   IsNotEmpty,
   MinLength,
+  MaxLength,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -291,6 +293,59 @@ export class VendorProfileDto {
     example: '2024-01-15T10:30:00Z',
   })
   updatedAt: Date;
+}
+
+export class VendorSendOtpDto {
+  @ApiProperty({
+    description: 'Vendor phone number for OTP',
+    example: '+91-9876543210',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @IsPhoneNumber('IN')
+  phone: string;
+}
+
+export class VendorVerifyOtpDto {
+  @ApiProperty({
+    description: 'Vendor phone number',
+    example: '+91-9876543210',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @IsPhoneNumber('IN')
+  phone: string;
+
+  @ApiProperty({
+    description: 'OTP code received',
+    example: '123456',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(6)
+  @MinLength(6)
+  @Matches(/^\d{6}$/, { message: 'OTP must be exactly 6 digits' })
+  otp: string;
+}
+
+export class VendorOtpResponseDto {
+  @ApiProperty({
+    description: 'Success status',
+    example: true,
+  })
+  success: boolean;
+
+  @ApiProperty({
+    description: 'Response message',
+    example: 'OTP sent successfully to your phone number',
+  })
+  message: string;
+
+  @ApiProperty({
+    description: 'OTP expiry time in minutes',
+    example: 30,
+  })
+  expiresIn?: number;
 }
 
 export class VendorAuthResponseDto {

@@ -1,9 +1,7 @@
 import {
   Injectable,
   Logger,
-  BadRequestException,
   UnauthorizedException,
-  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { OtpCode } from '@prisma/client';
@@ -12,28 +10,19 @@ import { ConfigService } from '@nestjs/config';
 
 export interface OtpRequest {
   phone: string;
-  purpose: 'rider_login' | 'delivery_verification' | 'password_reset';
+  purpose: 'rider_login' | 'delivery_verification' | 'password_reset' | 'vendor_login';
 }
 
 export interface OtpVerification {
   phone: string;
   otp: string;
-  purpose: 'rider_login' | 'delivery_verification' | 'password_reset';
+  purpose: 'rider_login' | 'delivery_verification' | 'password_reset' | 'vendor_login';
 }
 
 @Injectable()
 export class OtpService {
   private readonly logger = new Logger(OtpService.name);
-  private readonly maxAttempts = 5;
-  private readonly otpExpiryMinutes = 30;
-  private readonly rateLimitWindowMs = 60 * 1000; // 1 minute
-  private readonly maxRequestsPerWindow = 3;
-
-  // Rate limiting store (in production, use Redis)
-  private readonly rateLimitStore = new Map<
-    string,
-    { count: number; resetTime: Date }
-  >();
+  private readonly otpExpiryMinutes = 5;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -48,22 +37,44 @@ export class OtpService {
   ): Promise<{ message: string; success: boolean }> {
     const { phone, purpose } = request;
 
-    // Check rate limiting
-    if (!this.checkRateLimit(phone)) {
-      throw new BadRequestException(
-        'Too many OTP requests. Please try again later.',
-      );
-    }
-
-    // Check for existing valid OTP
-    await this.validateExistingOtp(phone, purpose);
-
     // Generate and store OTP
     const otp = this.generateSecureOtp();
     const hashedOtp = this.hashOtp(otp);
     const expiresAt = this.calculateExpiryTime();
 
-    await this.storeOtp(phone, purpose, hashedOtp, expiresAt);
+    // Check if a record with this phone and purpose already exists
+    const existingOtp = await this.prisma.otpCode.findFirst({
+      where: {
+        phone,
+        purpose,
+      },
+    });
+
+    if (existingOtp) {
+      // Update existing record
+      await this.prisma.otpCode.update({
+        where: { id: existingOtp.id },
+        data: {
+          code: hashedOtp,
+          expiresAt,
+          attempts: 0,
+          isUsed: false,
+          usedAt: null,
+        },
+      });
+    } else {
+      // Create new record
+      await this.prisma.otpCode.create({
+        data: {
+          phone,
+          code: hashedOtp,
+          purpose,
+          expiresAt,
+          attempts: 0,
+          isUsed: false,
+        },
+      });
+    }
 
     // Log OTP generation (in production, send via SMS)
     this.logger.log(`OTP generated for ${phone} (${purpose}): ${otp}`);
@@ -82,19 +93,14 @@ export class OtpService {
   ): Promise<{ valid: boolean; message: string }> {
     const { phone, otp, purpose } = verification;
 
-    // Find and validate OTP record
+    // Find OTP record
     const otpRecord = await this.findOtpRecord(phone, purpose);
-    await this.validateOtpRecord(otpRecord);
 
     // Verify OTP hash
     const isValid = await this.verifyOtpHash(otp, otpRecord.code);
 
     if (!isValid) {
-      await this.handleFailedAttempt(otpRecord);
-      const remainingAttempts = this.maxAttempts - (otpRecord.attempts + 1);
-      throw new UnauthorizedException(
-        `Invalid OTP. ${remainingAttempts} attempts remaining.`,
-      );
+      throw new UnauthorizedException('Invalid OTP');
     }
 
     // Mark OTP as used
@@ -163,56 +169,10 @@ export class OtpService {
   }
 
   /**
-   * Validate existing OTP for phone and purpose
-   */
-  private async validateExistingOtp(
-    phone: string,
-    purpose: string,
-  ): Promise<void> {
-    const existingOtp = await this.prisma.otpCode.findFirst({
-      where: {
-        phone,
-        purpose,
-        isUsed: false,
-        expiresAt: {
-          gt: new Date(),
-        },
-      },
-    });
-
-    if (existingOtp) {
-      throw new ConflictException(
-        'A valid OTP already exists for this phone number and purpose.',
-      );
-    }
-  }
-
-  /**
    * Calculate OTP expiry time
    */
   private calculateExpiryTime(): Date {
     return new Date(Date.now() + this.otpExpiryMinutes * 60 * 1000);
-  }
-
-  /**
-   * Store OTP in database
-   */
-  private async storeOtp(
-    phone: string,
-    purpose: string,
-    hashedOtp: string,
-    expiresAt: Date,
-  ): Promise<void> {
-    await this.prisma.otpCode.create({
-      data: {
-        phone,
-        code: hashedOtp,
-        purpose,
-        expiresAt,
-        attempts: 0,
-        isUsed: false,
-      },
-    });
   }
 
   /**
@@ -262,42 +222,6 @@ export class OtpService {
     return otpRecord;
   }
 
-  /**
-   * Validate OTP record (expiry and attempts)
-   */
-  private async validateOtpRecord(otpRecord: any): Promise<void> {
-    // Check if OTP has expired
-    if (new Date() > otpRecord.expiresAt) {
-      await this.prisma.otpCode.update({
-        where: { id: otpRecord.id },
-        data: { isUsed: true },
-      });
-      throw new UnauthorizedException(
-        'OTP has expired. Please request a new OTP.',
-      );
-    }
-
-    // Check if too many attempts
-    if (otpRecord.attempts >= this.maxAttempts) {
-      await this.prisma.otpCode.update({
-        where: { id: otpRecord.id },
-        data: { isUsed: true },
-      });
-      throw new UnauthorizedException(
-        'Too many failed attempts. Please request a new OTP.',
-      );
-    }
-  }
-
-  /**
-   * Handle failed OTP attempt
-   */
-  private async handleFailedAttempt(otpRecord: any): Promise<void> {
-    await this.prisma.otpCode.update({
-      where: { id: otpRecord.id },
-      data: { attempts: { increment: 1 } },
-    });
-  }
 
   /**
    * Mark OTP as used
@@ -326,45 +250,4 @@ export class OtpService {
     );
   }
 
-  /**
-   * Check rate limiting for OTP requests
-   */
-  private checkRateLimit(phone: string): boolean {
-    const now = new Date();
-    const record = this.rateLimitStore.get(phone);
-
-    if (!record || now > record.resetTime) {
-      // Reset or create new record
-      this.rateLimitStore.set(phone, {
-        count: 1,
-        resetTime: new Date(now.getTime() + this.rateLimitWindowMs),
-      });
-      return true;
-    }
-
-    if (record.count >= this.maxRequestsPerWindow) {
-      return false;
-    }
-
-    record.count++;
-    return true;
-  }
-
-  /**
-   * Clean up rate limit store (should be called periodically)
-   */
-  cleanupRateLimitStore(): void {
-    const now = new Date();
-    const entriesToDelete: string[] = [];
-
-    this.rateLimitStore.forEach((record, phone) => {
-      if (now > record.resetTime) {
-        entriesToDelete.push(phone);
-      }
-    });
-
-    entriesToDelete.forEach((phone) => {
-      this.rateLimitStore.delete(phone);
-    });
-  }
 }

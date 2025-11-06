@@ -593,7 +593,7 @@ model CommissionRule {
 
   model OtpCode {
     id                BigInt   @id @default(autoincrement())
-    phone             String   @unique
+    phone             String
     code              String   // Hashed OTP code
     purpose           String   // 'rider_login', 'delivery_verification', 'password_reset'
     expiresAt         DateTime @db.Timestamptz
@@ -602,6 +602,8 @@ model CommissionRule {
     createdAt         DateTime @default(now()) @db.Timestamptz
     usedAt            DateTime? @db.Timestamptz
 
+    @@unique([phone, purpose])
+    @@index([phone, purpose, isUsed, expiresAt])
     @@map("otp_codes")
   }
 

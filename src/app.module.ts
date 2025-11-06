@@ -31,10 +31,9 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { SecurityMiddleware } from './common/middleware/security.middleware';
 import { GracefulDegradationMiddleware } from './common/middleware/graceful-degradation.middleware';
 import { StoreModule } from './store/store.module';
-import { TaskAssignmentWorker } from './common/services/task-assignment.worker';
-import { NotificationWorker } from './common/services/notification.worker';
-import { ReconciliationWorker } from './common/services/reconciliation.worker';
-import { WorkerManagerService } from './common/services/worker-manager.service';
+// import { NotificationWorker } from './common/services/notification.worker';
+// import { ReconciliationWorker } from './common/services/reconciliation.worker';
+// import { WorkerManagerService } from './common/services/worker-manager.service';
 import { PrismaModule } from './common/database/prisma.module';
 
 @Module({
@@ -74,10 +73,9 @@ import { PrismaModule } from './common/database/prisma.module';
   providers: [
     AppService,
     DatabaseInitService,
-    TaskAssignmentWorker,
-    NotificationWorker,
-    ReconciliationWorker,
-    WorkerManagerService,
+    // NotificationWorker,
+    // ReconciliationWorker,
+    // WorkerManagerService,
     {
       provide: APP_GUARD,
       useClass: CustomThrottlerGuard,

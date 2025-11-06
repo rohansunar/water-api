@@ -4,7 +4,6 @@ import {
   OnModuleInit,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { TaskAssignmentWorker } from './task-assignment.worker';
 import { NotificationWorker } from './notification.worker';
 import { ReconciliationWorker } from './reconciliation.worker';
 
@@ -15,7 +14,6 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
   private isShuttingDown = false;
 
   constructor(
-    private readonly taskAssignmentWorker: TaskAssignmentWorker,
     private readonly notificationWorker: NotificationWorker,
     private readonly reconciliationWorker: ReconciliationWorker,
   ) {}
@@ -33,7 +31,6 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
   private async initializeWorkers(): Promise<void> {
     try {
       this.workers = [
-        this.taskAssignmentWorker,
         this.notificationWorker,
         this.reconciliationWorker,
       ];
@@ -205,14 +202,6 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async addTaskAssignmentJob(data: any): Promise<string> {
-    try {
-      return await this.taskAssignmentWorker.addJob('task-assignment', data);
-    } catch (error) {
-      this.logger.error('Failed to add task assignment job:', error);
-      throw error;
-    }
-  }
 
   async addNotificationJob(data: any): Promise<string> {
     try {

@@ -9,10 +9,14 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../common/database/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { CustomLoggerService } from '../../common/logger/logger.service';
+import { OtpService } from '../../common/services/otp.service';
 import {
   VendorLoginDto,
   VendorAuthResponseDto,
   VendorProfileDto,
+  VendorSendOtpDto,
+  VendorVerifyOtpDto,
+  VendorOtpResponseDto,
 } from '../dto/vendor.dto';
 
 @Injectable()
@@ -24,6 +28,7 @@ export class VendorAuthService {
     private readonly configService: ConfigService,
     private readonly customLogger: CustomLoggerService,
     private readonly prismaService: PrismaService,
+    private readonly otpService: OtpService,
   ) {}
 
 
@@ -199,6 +204,161 @@ export class VendorAuthService {
   async hashPassword(password: string): Promise<string> {
     const saltRounds = 12;
     return bcrypt.hash(password, saltRounds);
+  }
+
+  async sendOtp(sendOtpDto: VendorSendOtpDto): Promise<VendorOtpResponseDto> {
+    const startTime = Date.now();
+    try {
+      const { phone } = sendOtpDto;
+
+      // Log OTP send attempt
+      this.customLogger.logSecurityEvent(
+        'vendor_otp_send_attempt',
+        { phone },
+        undefined,
+        undefined,
+      );
+
+      // Check if vendor exists and is active
+      const vendor = await this.prismaService.vendor.findUnique({
+        where: { phone },
+      });
+
+      // Generate and send OTP
+      const otpResult = await this.otpService.generateOtp({
+        phone,
+        purpose: 'vendor_login',
+      });
+
+      this.customLogger.logSecurityEvent(
+        'vendor_otp_send_success',
+        { phone, vendorId: vendor.id.toString() },
+        vendor.id.toString(),
+        undefined,
+      );
+
+      this.customLogger.logBusinessEvent(
+        'vendor_otp_sent',
+        { vendorId: vendor.id.toString(), phone },
+        vendor.id.toString(),
+      );
+
+      return {
+        success: otpResult.success,
+        message: otpResult.message,
+        expiresIn: 30, // 30 minutes
+      };
+    } catch (error) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      this.customLogger.logSecurityEvent(
+        'vendor_otp_send_error',
+        { phone: sendOtpDto.phone, error: error.message },
+        undefined,
+        undefined,
+      );
+      this.logger.error(`Vendor OTP send failed for ${sendOtpDto.phone}:`, error);
+      throw new UnauthorizedException('Failed to send OTP');
+    }
+  }
+
+  async verifyOtp(verifyOtpDto: VendorVerifyOtpDto): Promise<VendorAuthResponseDto> {
+    const startTime = Date.now();
+    try {
+      const { phone, otp } = verifyOtpDto;
+
+      // Log OTP verification attempt
+      this.customLogger.logSecurityEvent(
+        'vendor_otp_verify_attempt',
+        { phone },
+        undefined,
+        undefined,
+      );
+
+      // Verify OTP
+      const otpResult = await this.otpService.verifyOtp({
+        phone,
+        otp,
+        purpose: 'vendor_login',
+      });
+
+      if (!otpResult.valid) {
+        this.customLogger.logSecurityEvent(
+          'vendor_otp_verify_failure',
+          { phone, reason: 'invalid_otp' },
+          undefined,
+          undefined,
+        );
+        throw new UnauthorizedException('Invalid OTP');
+      }
+
+      // Find vendor
+      const vendor = await this.prismaService.vendor.findUnique({
+        where: { phone },
+      });
+
+      if (!vendor || !vendor.isActive) {
+        this.customLogger.logSecurityEvent(
+          'vendor_otp_verify_failure',
+          { phone, reason: 'vendor_not_found_or_inactive' },
+          undefined,
+          undefined,
+        );
+        throw new UnauthorizedException('Vendor not found or inactive');
+      }
+
+      // Generate JWT token
+      const payload = {
+        sub: vendor.id.toString(),
+        phone: vendor.phone,
+        role: 'vendor',
+        businessName: vendor.name,
+      };
+
+      const token = this.jwtService.sign(payload);
+      const expiresIn = 3600; // 1 hour
+
+      // Update last active timestamp
+      await this.prismaService.vendor.update({
+        where: { id: vendor.id },
+        data: { lastActiveAt: new Date() },
+      });
+
+      this.customLogger.logSecurityEvent(
+        'vendor_otp_verify_success',
+        { phone, vendorId: vendor.id.toString() },
+        vendor.id.toString(),
+        undefined,
+      );
+
+      this.customLogger.logBusinessEvent(
+        'vendor_authenticated_via_otp',
+        { vendorId: vendor.id.toString(), phone },
+        vendor.id.toString(),
+      );
+
+      return {
+        token,
+        vendor: this.mapToProfileDto(vendor),
+        expiresIn,
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      this.customLogger.logSecurityEvent(
+        'vendor_otp_verify_error',
+        { phone: verifyOtpDto.phone, error: error.message },
+        undefined,
+        undefined,
+      );
+      this.logger.error(`Vendor OTP verification failed for ${verifyOtpDto.phone}:`, error);
+      throw new UnauthorizedException('OTP verification failed');
+    }
   }
 
   private mapToProfileDto(vendor: any): VendorProfileDto {
