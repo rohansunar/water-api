@@ -225,24 +225,6 @@ export class VendorApprovalDto {
   rejectionReason?: string;
 }
 
-export class VendorLoginDto {
-  @ApiProperty({
-    description: 'Vendor phone number',
-    example: '+91-9876543210',
-  })
-  @IsString()
-  @IsNotEmpty()
-  phone: string;
-
-  @ApiProperty({
-    description: 'Vendor password',
-    example: 'securePassword123',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(6)
-  password: string;
-}
 
 export class VendorProfileDto {
   @ApiProperty({
