@@ -95,12 +95,13 @@ export class VendorProductController {
   })
   async createProduct(
     @Body() createProductDto: CreateVendorProductDto,
-    @CurrentUser('sub') vendorId: string,
+    @CurrentUser('sub') vendorId: any,
   ): Promise<VendorProductResponseDto> {
+    const {id} = vendorId;
     this.logger.log(
-      `Product creation attempt for vendor: ${vendorId}, product title: ${createProductDto.title}`,
+      `Product creation attempt for vendor: ${id}, product title: ${createProductDto.title}`,
     );
-    return this.vendorProductService.createProduct(vendorId, createProductDto);
+    return this.vendorProductService.createProduct(id, createProductDto);
   }
 
   @Get()

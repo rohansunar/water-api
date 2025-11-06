@@ -14,6 +14,7 @@ import {
 } from '../../common/schemas/vendor-store.schema';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 import { VendorService } from './vendor.service';
+import { Prisma } from '@prisma/client';
 import {
   CreateVendorProductDto,
   UpdateVendorProductDto,

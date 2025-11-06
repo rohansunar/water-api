@@ -80,10 +80,10 @@ import { PrismaModule } from './common/database/prisma.module';
       provide: APP_GUARD,
       useClass: CustomThrottlerGuard,
     },
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: JwtAuthGuard,
+    // },
     {
       provide: APP_FILTER,
       useFactory: (customLogger: CustomLoggerService) =>

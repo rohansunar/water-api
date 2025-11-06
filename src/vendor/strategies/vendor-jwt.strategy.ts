@@ -7,8 +7,9 @@ import { CustomLoggerService } from '../../common/logger/logger.service';
 
 export interface VendorJwtPayload {
   sub: string;
-  email: string;
+  phone: string;
   role: string;
+  businessName: string;
   iat?: number;
   exp?: number;
 }
@@ -39,7 +40,7 @@ export class VendorJwtStrategy extends PassportStrategy(
 
   async validate(payload: VendorJwtPayload): Promise<any> {
     this.customLogger.log(
-      `[DEBUG] VendorJwtStrategy.validate invoked for vendor ID: ${payload.sub}, email: ${payload.email}`,
+      `[DEBUG] VendorJwtStrategy.validate invoked for vendor ID: ${payload.sub}, phone: ${payload.phone}`,
     );
     this.customLogger.debug(
       `VendorJwtStrategy.validate called with payload: ${JSON.stringify(payload)}`,
@@ -51,7 +52,7 @@ export class VendorJwtStrategy extends PassportStrategy(
       );
       return {
         id: vendor.id.toString(),
-        email: vendor.email,
+        phone: vendor.phone,
         name: vendor.name,
         isActive: vendor.isActive,
       };
@@ -61,7 +62,7 @@ export class VendorJwtStrategy extends PassportStrategy(
         'vendor_jwt_validation_failure',
         {
           vendorId: payload.sub,
-          email: payload.email,
+          phone: payload.phone,
           error: error.message,
           errorName: error.name,
         },

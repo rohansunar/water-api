@@ -37,11 +37,22 @@ export class OtpService {
    */
   async generateOtp(
     request: OtpRequest,
-  ): Promise<{ message: string; success: boolean }> {
+  ): Promise<{ message: string; success: boolean; otp?: string }> {
     const { phone, purpose } = request;
 
-    // Generate and store OTP
-    const otp = this.generateSecureOtp();
+    // Check if in test mode (environment variable)
+    const isTestMode = this.configService.get('NODE_ENV') === 'test' ||
+                      this.configService.get('OTP_TEST_MODE') === 'true';
+
+    let otp: string;
+    if (isTestMode) {
+      // Use fixed OTP for testing
+      otp = '123456';
+    } else {
+      // Generate and store OTP
+      otp = this.generateSecureOtp();
+    }
+
     const hashedOtp = this.hashOtp(otp);
     const expiresAt = this.calculateExpiryTime();
 
@@ -82,10 +93,16 @@ export class OtpService {
     // Log OTP generation (in production, send via SMS)
     this.logger.log(`OTP generated for ${phone} (${purpose}): ${otp}`);
 
-    return {
+    const response: { message: string; success: boolean; otp?: string } = {
       message: 'OTP sent successfully to your phone number',
       success: true,
     };
+
+    if (isTestMode) {
+      response.otp = otp;
+    }
+
+    return response;
   }
 
   /**
