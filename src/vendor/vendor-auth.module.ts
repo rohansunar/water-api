@@ -26,7 +26,12 @@ import { OtpService } from '../common/services/otp.service';
     }),
   ],
   controllers: [VendorAuthController],
-  providers: [VendorAuthService, VendorJwtStrategy, VendorJwtAuthGuard, OtpService],
+  providers: [
+    VendorAuthService,
+    VendorJwtStrategy,
+    VendorJwtAuthGuard,
+    OtpService,
+  ],
   exports: [VendorAuthService, VendorJwtStrategy, VendorJwtAuthGuard],
 })
 export class VendorAuthModule {}

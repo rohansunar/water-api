@@ -62,9 +62,7 @@ export class ReconciliationWorker {
    *
    * @param prismaService - Prisma service for database operations
    */
-  constructor(
-    private readonly prismaService: PrismaService,
-  ) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   /**
    * Main reconciliation processing method for financial reconciliation
@@ -527,7 +525,9 @@ export class ReconciliationWorker {
    */
   private async cacheReconciliationResult(reconciliation: any): Promise<void> {
     // Reconciliation result caching disabled since Redis is removed
-    this.logger.debug(`Reconciliation result caching disabled for vendor ${reconciliation.vendorId} - Redis removed`);
+    this.logger.debug(
+      `Reconciliation result caching disabled for vendor ${reconciliation.vendorId} - Redis removed`,
+    );
   }
 
   /**
@@ -551,7 +551,9 @@ export class ReconciliationWorker {
     reconciliation: any,
   ): Promise<void> {
     // Reconciliation completion notification disabled since Redis is removed
-    this.logger.debug(`Reconciliation completion notification disabled for vendor ${vendorId} - Redis removed`);
+    this.logger.debug(
+      `Reconciliation completion notification disabled for vendor ${vendorId} - Redis removed`,
+    );
   }
 
   /**
@@ -562,13 +564,22 @@ export class ReconciliationWorker {
    * @param options - Optional job configuration (ignored)
    * @returns Promise resolving to a job ID string
    */
-  async addJob(name: string, data: ReconciliationData, options?: any): Promise<string> {
+  async addJob(
+    name: string,
+    data: ReconciliationData,
+    options?: any,
+  ): Promise<string> {
     try {
-      this.logger.log(`Processing reconciliation job for vendor ${data.vendorId}`);
+      this.logger.log(
+        `Processing reconciliation job for vendor ${data.vendorId}`,
+      );
       await this.processReconciliation(data);
       return `reconciliation-${data.vendorId}-${Date.now()}`;
     } catch (error) {
-      this.logger.error(`Failed to process reconciliation job for vendor ${data.vendorId}:`, error);
+      this.logger.error(
+        `Failed to process reconciliation job for vendor ${data.vendorId}:`,
+        error,
+      );
       throw error;
     }
   }

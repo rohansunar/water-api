@@ -21,10 +21,7 @@ export interface NotificationData {
 export class NotificationWorker {
   protected readonly logger = new Logger(this.constructor.name);
 
-  constructor(
-    private readonly prismaService: PrismaService,
-  ) {}
-
+  constructor(private readonly prismaService: PrismaService) {}
 
   private async getRecipientDetails(
     recipientId: string,
@@ -206,7 +203,9 @@ export class NotificationWorker {
     message: string,
   ): Promise<void> {
     // Notification caching disabled since Redis is removed
-    this.logger.debug(`Notification caching disabled for ${recipientId} - Redis removed`);
+    this.logger.debug(
+      `Notification caching disabled for ${recipientId} - Redis removed`,
+    );
   }
 
   async getQueueMetrics(): Promise<any> {
@@ -216,9 +215,7 @@ export class NotificationWorker {
 
   async addJob(name: string, data: any, options?: any): Promise<string> {
     // Worker not active due to Redis removal
-    this.logger.warn(
-      `Worker not active (Redis removed), job not added`,
-    );
+    this.logger.warn(`Worker not active (Redis removed), job not added`);
     return '';
   }
 }

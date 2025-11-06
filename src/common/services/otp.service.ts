@@ -1,21 +1,25 @@
-import {
-  Injectable,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 
 export interface OtpRequest {
   phone: string;
-  purpose: 'rider_login' | 'delivery_verification' | 'password_reset' | 'vendor_login';
+  purpose:
+    | 'rider_login'
+    | 'delivery_verification'
+    | 'password_reset'
+    | 'vendor_login';
 }
 
 export interface OtpVerification {
   phone: string;
   otp: string;
-  purpose: 'rider_login' | 'delivery_verification' | 'password_reset' | 'vendor_login';
+  purpose:
+    | 'rider_login'
+    | 'delivery_verification'
+    | 'password_reset'
+    | 'vendor_login';
 }
 
 @Injectable()
@@ -221,7 +225,6 @@ export class OtpService {
     return otpRecord;
   }
 
-
   /**
    * Mark OTP as used
    */
@@ -248,5 +251,4 @@ export class OtpService {
       Buffer.from(hashedOtp, 'hex'),
     );
   }
-
 }

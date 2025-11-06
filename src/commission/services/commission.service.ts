@@ -363,9 +363,10 @@ export class CommissionService {
         ) {
           // Fallback: Check if existing rule has scopeId for backward compatibility
           // This handles cases where scopeId might be inherited from existing rule
-          const existingRule = await this.prismaService.commissionRule.findUnique({
-            where: { id },
-          });
+          const existingRule =
+            await this.prismaService.commissionRule.findUnique({
+              where: { id },
+            });
           if (!existingRule?.scopeId && !updateDto.scopeId) {
             throw new BadRequestException(
               `scopeId is required for scope ${updateDto.scope}`,
@@ -584,7 +585,9 @@ export class CommissionService {
    * @param orderAmount - The order amount
    * @returns Default commission calculation
    */
-  private getDefaultCommissionCalculation(orderAmount: number): CommissionCalculationDto {
+  private getDefaultCommissionCalculation(
+    orderAmount: number,
+  ): CommissionCalculationDto {
     return {
       ruleId: '0',
       percentage: 10,

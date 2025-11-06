@@ -11,10 +11,7 @@ import {
   ComplaintType,
   ComplaintPriority,
 } from '../interfaces/complaint.interface';
-import {
-  CreateComplaintDto,
-  ComplaintResponseDto,
-} from '../dto/complaint.dto';
+import { CreateComplaintDto, ComplaintResponseDto } from '../dto/complaint.dto';
 
 @Injectable()
 export class ComplaintService {

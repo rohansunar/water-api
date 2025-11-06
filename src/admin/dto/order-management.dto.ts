@@ -72,7 +72,6 @@ export class AdminOrderQueryDto extends PaginationQueryDto {
   @IsUUID()
   vendorId?: string;
 
-
   @ApiProperty({
     description: 'Search term (order number, customer name, etc.)',
     example: 'ORD-001',
@@ -144,7 +143,6 @@ export class AdminOrderResponseDto {
     example: 'completed',
   })
   paymentStatus: string;
-
 
   @ApiProperty({
     description: 'Created timestamp',

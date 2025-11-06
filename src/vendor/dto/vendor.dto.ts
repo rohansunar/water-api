@@ -225,7 +225,6 @@ export class VendorApprovalDto {
   rejectionReason?: string;
 }
 
-
 export class VendorLoginDto {
   @ApiProperty({
     description: 'Vendor phone number',

@@ -384,7 +384,9 @@ export class AdminService {
     isActive: boolean,
   ): Promise<void> {
     // TODO: Implement user update logic without UserService
-    this.logger.log(`User ${userId} status update to ${isActive ? 'active' : 'inactive'} - implementation needed`);
+    this.logger.log(
+      `User ${userId} status update to ${isActive ? 'active' : 'inactive'} - implementation needed`,
+    );
   }
 
   private logUserStatusUpdate(userId: string, isActive: boolean): void {
@@ -770,7 +772,6 @@ export class AdminService {
       );
     }
 
-
     if (query.search) {
       const searchLower = query.search.toLowerCase();
       filteredOrders = filteredOrders.filter(
@@ -979,13 +980,13 @@ export class AdminService {
 
     if (query.amountMin !== undefined) {
       filteredTransactions = filteredTransactions.filter(
-        (t) => t.amount >= query.amountMin!,
+        (t) => t.amount >= query.amountMin,
       );
     }
 
     if (query.amountMax !== undefined) {
       filteredTransactions = filteredTransactions.filter(
-        (t) => t.amount <= query.amountMax!,
+        (t) => t.amount <= query.amountMax,
       );
     }
 
@@ -1020,13 +1021,13 @@ export class AdminService {
 
     if (query.amountMin !== undefined) {
       filteredPayouts = filteredPayouts.filter(
-        (p) => p.amount >= query.amountMin!,
+        (p) => p.amount >= query.amountMin,
       );
     }
 
     if (query.amountMax !== undefined) {
       filteredPayouts = filteredPayouts.filter(
-        (p) => p.amount <= query.amountMax!,
+        (p) => p.amount <= query.amountMax,
       );
     }
 

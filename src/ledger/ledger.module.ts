@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { LedgerController, AdminLedgerController } from './controllers/ledger.controller';
+import {
+  LedgerController,
+  AdminLedgerController,
+} from './controllers/ledger.controller';
 import { LedgerService } from './services/ledger.service';
 import {
   LedgerEntry,

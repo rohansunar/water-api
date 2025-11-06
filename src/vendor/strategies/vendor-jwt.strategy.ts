@@ -23,14 +23,18 @@ export class VendorJwtStrategy extends PassportStrategy(
     private readonly vendorAuthService: VendorAuthService,
     private readonly customLogger: CustomLoggerService,
   ) {
+    const secret = configService.get<string>(
+      'JWT_VENDOR_SECRET',
+      'vendor-jwt-secret-key',
+    );
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>(
-        'JWT_VENDOR_SECRET',
-        'vendor-jwt-secret-key',
-      ),
+      secretOrKey: secret,
     });
+    this.customLogger.log(
+      `[DEBUG] VendorJwtStrategy initialized with secret: ${secret.substring(0, 10)}...`,
+    );
   }
 
   async validate(payload: VendorJwtPayload): Promise<any> {

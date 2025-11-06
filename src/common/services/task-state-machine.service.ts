@@ -83,9 +83,7 @@ export class TaskStateMachineService {
     ],
   };
 
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Assign a task to a rider with distributed locking

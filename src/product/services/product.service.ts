@@ -5,10 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import {
-  ProductResponseDto,
-  CreateProductDto,
-} from '../dto/product.dto';
+import { ProductResponseDto, CreateProductDto } from '../dto/product.dto';
 import { Product, ProductDocument } from '../../common/schemas/product.schema';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 import { ProductModerationService } from './product-moderation.service';

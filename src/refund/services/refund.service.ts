@@ -200,7 +200,7 @@ export class RefundService {
 
       // Create ledger entry for refund
       await this.ledgerService.createLedgerEntry({
-        vendorId: refund.order.vendorId!.toString(),
+        vendorId: refund.order.vendorId.toString(),
         orderId: refund.order.id.toString(),
         userId: refund.order.customerId.toString(),
         amount: -Number(refund.amount),
@@ -265,7 +265,9 @@ export class RefundService {
 
       // TODO: Refund to user's wallet if applicable without UserService
       if (refund.order.paymentMethod === 'wallet') {
-        this.logger.log(`Wallet refund needed for user ${refund.order.customerId}: +${refund.amount}`);
+        this.logger.log(
+          `Wallet refund needed for user ${refund.order.customerId}: +${refund.amount}`,
+        );
       }
 
       this.logger.log(`Completed refund ${refundId}`);

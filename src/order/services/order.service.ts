@@ -123,7 +123,11 @@ export class OrderService {
 
       // === STEP 2: User Validation ===
       // TODO: Implement user profile retrieval without UserService
-      const userProfile = { walletBalance: 0, addresses: [], phone: '0000000000' }; // Mock user profile
+      const userProfile = {
+        walletBalance: 0,
+        addresses: [],
+        phone: '0000000000',
+      }; // Mock user profile
       this.logger.log(`User validation needed for userId: ${userId}`);
 
       // === STEP 3: Pricing Calculation ===
@@ -187,7 +191,9 @@ export class OrderService {
       // === STEP 8: Wallet Operations ===
       // TODO: Implement wallet balance deduction without UserService
       if (createOrderDto.payment_method === PaymentMethod.WALLET) {
-        this.logger.log(`Wallet deduction needed for user ${userId}: -${totalAmount}`);
+        this.logger.log(
+          `Wallet deduction needed for user ${userId}: -${totalAmount}`,
+        );
       }
 
       // === STEP 9: Data Storage ===
@@ -539,7 +545,9 @@ export class OrderService {
   private async processRefund(order: Order): Promise<void> {
     if (order.paymentMethod === PaymentMethod.WALLET) {
       // TODO: Credit the full order amount back to user's wallet without UserService
-      this.logger.log(`Wallet refund needed for user ${order.userId}: +${order.totalAmount}`);
+      this.logger.log(
+        `Wallet refund needed for user ${order.userId}: +${order.totalAmount}`,
+      );
     }
     // For other payment methods, mark as refunded
     // In production, this would integrate with payment gateway for actual refunds

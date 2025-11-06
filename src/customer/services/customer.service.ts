@@ -14,7 +14,10 @@ import {
   PaginationQueryDto,
 } from '../../common/dto/customer.dto';
 import { CustomLoggerService } from '../../common/logger/logger.service';
-import { Customer, CustomerDocument } from '../../common/schemas/customer.schema';
+import {
+  Customer,
+  CustomerDocument,
+} from '../../common/schemas/customer.schema';
 import { Address, AddressDocument } from '../../common/schemas/address.schema';
 
 @Injectable()

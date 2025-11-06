@@ -77,9 +77,7 @@ export class CustomerController {
       },
     },
   })
-  async getProfile(
-    @CurrentUser() customer: User,
-  ): Promise<CustomerProfileDto> {
+  async getProfile(@CurrentUser() customer: User): Promise<CustomerProfileDto> {
     const startTime = Date.now();
 
     try {
@@ -217,7 +215,9 @@ export class CustomerController {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Getting addresses for customer: ${customer._id.toString()}`);
+      this.logger.log(
+        `Getting addresses for customer: ${customer._id.toString()}`,
+      );
       const addresses = await this.customerService.getCustomerAddresses(
         customer._id.toString(),
       );
@@ -270,7 +270,9 @@ export class CustomerController {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Creating address for customer: ${customer._id.toString()}`);
+      this.logger.log(
+        `Creating address for customer: ${customer._id.toString()}`,
+      );
       const address = await this.customerService.createAddress(
         customer._id.toString(),
         createAddressDto,
@@ -397,7 +399,10 @@ export class CustomerController {
       this.logger.log(
         `Deleting address ${addressId} for customer: ${customer._id.toString()}`,
       );
-      await this.customerService.deleteAddress(customer._id.toString(), addressId);
+      await this.customerService.deleteAddress(
+        customer._id.toString(),
+        addressId,
+      );
 
       const duration = Date.now() - startTime;
       this.logger.logApiRequest(
@@ -463,7 +468,10 @@ export class CustomerController {
       this.logger.log(
         `Setting address ${addressId} as default for customer: ${customer._id.toString()}`,
       );
-      await this.customerService.setDefaultAddress(customer._id.toString(), addressId);
+      await this.customerService.setDefaultAddress(
+        customer._id.toString(),
+        addressId,
+      );
 
       const duration = Date.now() - startTime;
       this.logger.logApiRequest(
@@ -510,7 +518,9 @@ export class CustomerController {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Getting order history for customer: ${customer._id.toString()}`);
+      this.logger.log(
+        `Getting order history for customer: ${customer._id.toString()}`,
+      );
       const result = await this.customerService.getOrderHistory(
         customer._id.toString(),
         paginationQuery.page || 1,
@@ -738,7 +748,9 @@ export class CustomerController {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Getting subscriptions for customer: ${customer._id.toString()}`);
+      this.logger.log(
+        `Getting subscriptions for customer: ${customer._id.toString()}`,
+      );
       const subscriptions = await this.customerService.getCustomerSubscriptions(
         customer._id.toString(),
       );
@@ -790,7 +802,9 @@ export class CustomerController {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Creating subscription for customer: ${customer._id.toString()}`);
+      this.logger.log(
+        `Creating subscription for customer: ${customer._id.toString()}`,
+      );
       const subscription = await this.customerService.createSubscription(
         customer._id.toString(),
         createSubscriptionDto,
@@ -971,7 +985,9 @@ export class CustomerController {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Updating profile for customer: ${customer._id.toString()}`);
+      this.logger.log(
+        `Updating profile for customer: ${customer._id.toString()}`,
+      );
       const profile = await this.customerService.updateProfile(
         customer._id.toString(),
         updateProfileDto,
@@ -1037,7 +1053,9 @@ export class CustomerController {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Updating preferences for customer: ${customer._id.toString()}`);
+      this.logger.log(
+        `Updating preferences for customer: ${customer._id.toString()}`,
+      );
       await this.customerService.updatePreferences(
         customer._id.toString(),
         updatePreferencesDto,

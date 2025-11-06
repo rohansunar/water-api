@@ -25,7 +25,6 @@ export class VendorAuthController {
 
   constructor(private readonly vendorAuthService: VendorAuthService) {}
 
-
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -73,7 +72,8 @@ export class VendorAuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Send OTP for vendor login',
-    description: 'Generate and send OTP to vendor phone number for authentication',
+    description:
+      'Generate and send OTP to vendor phone number for authentication',
   })
   @ApiBody({ type: VendorSendOtpDto })
   @ApiResponse({
@@ -88,7 +88,10 @@ export class VendorAuthController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 400 },
-        message: { type: 'string', example: 'Too many OTP requests. Please try again later.' },
+        message: {
+          type: 'string',
+          example: 'Too many OTP requests. Please try again later.',
+        },
         error: { type: 'string', example: 'Bad Request' },
       },
     },
@@ -163,7 +166,9 @@ export class VendorAuthController {
   async verifyOtp(
     @Body() verifyOtpDto: VendorVerifyOtpDto,
   ): Promise<VendorAuthResponseDto> {
-    this.logger.log(`Vendor OTP verification attempt for phone: ${verifyOtpDto.phone}`);
+    this.logger.log(
+      `Vendor OTP verification attempt for phone: ${verifyOtpDto.phone}`,
+    );
     return this.vendorAuthService.verifyOtp(verifyOtpDto);
   }
 }

@@ -11,10 +11,7 @@ import { ComplaintService } from '../services/complaint.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { User } from '../../common/interfaces/user.interface';
-import {
-  CreateComplaintDto,
-  ComplaintResponseDto,
-} from '../dto/complaint.dto';
+import { CreateComplaintDto, ComplaintResponseDto } from '../dto/complaint.dto';
 
 @Controller('complaints')
 @UseGuards(JwtAuthGuard)

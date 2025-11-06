@@ -448,7 +448,6 @@ export class AdminController {
     );
   }
 
-
   // Complaint Management Endpoints
   @Get('complaints')
   async getComplaints(
@@ -494,5 +493,4 @@ export class AdminController {
     );
     return this.adminService.getReports(query);
   }
-
 }

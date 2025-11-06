@@ -112,6 +112,9 @@ export class VendorAuthService {
 
       const token = this.jwtService.sign(payload);
       const expiresIn = 3600; // 1 hour
+      this.customLogger.log(
+        `[DEBUG] Vendor login token signed with payload: ${JSON.stringify(payload)}, expiresIn: ${expiresIn}`,
+      );
 
       // Update last active timestamp
       const updateStartTime = Date.now();
@@ -308,7 +311,6 @@ export class VendorAuthService {
         Date.now() - upsertStartTime,
         true,
       );
-
 
       // Generate JWT token
       const payload = {

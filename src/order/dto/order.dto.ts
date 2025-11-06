@@ -13,7 +13,10 @@ import {
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { OrderSchedule, PaymentMethod } from '../../order/interfaces/order.interface';
+import {
+  OrderSchedule,
+  PaymentMethod,
+} from '../../order/interfaces/order.interface';
 import {
   IsValidUUID,
   IsValidQuantity,

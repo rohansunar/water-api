@@ -6,7 +6,10 @@ import {
   IsBoolean,
   IsEnum,
 } from 'class-validator';
-import { ProductCategory, ProductSize } from '../../product/interfaces/product.interface';
+import {
+  ProductCategory,
+  ProductSize,
+} from '../../product/interfaces/product.interface';
 
 export class ProductResponseDto {
   id: string;

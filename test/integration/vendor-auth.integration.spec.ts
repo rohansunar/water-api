@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/common/database/prisma.service';
@@ -17,7 +20,9 @@ describe('Vendor Authentication (Integration)', () => {
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
+    app = moduleFixture.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter(),
+    );
     await app.init();
 
     prismaService = app.get(PrismaService);
@@ -31,7 +36,8 @@ describe('Vendor Authentication (Integration)', () => {
     });
 
     // Create a test vendor for authentication
-    const hashedPassword = await vendorAuthService.hashPassword('testPassword123');
+    const hashedPassword =
+      await vendorAuthService.hashPassword('testPassword123');
     testVendor = await prismaService.vendor.create({
       data: {
         phone: '+91-test-9876543210',
@@ -72,8 +78,14 @@ describe('Vendor Authentication (Integration)', () => {
       expect(typeof response.body.token).toBe('string');
       expect(response.body.token.length).toBeGreaterThan(0);
       expect(response.body.vendor).toHaveProperty('id');
-      expect(response.body.vendor).toHaveProperty('businessName', 'Test Vendor');
-      expect(response.body.vendor).toHaveProperty('phone', '+91-test-9876543210');
+      expect(response.body.vendor).toHaveProperty(
+        'businessName',
+        'Test Vendor',
+      );
+      expect(response.body.vendor).toHaveProperty(
+        'phone',
+        '+91-test-9876543210',
+      );
       expect(response.body.expiresIn).toBe(3600);
     });
 
@@ -89,7 +101,10 @@ describe('Vendor Authentication (Integration)', () => {
         .expect(401);
 
       expect(response.body).toHaveProperty('statusCode', 401);
-      expect(response.body).toHaveProperty('message', 'Invalid phone or password');
+      expect(response.body).toHaveProperty(
+        'message',
+        'Invalid phone or password',
+      );
       expect(response.body).toHaveProperty('error', 'Unauthorized');
     });
 
@@ -105,7 +120,10 @@ describe('Vendor Authentication (Integration)', () => {
         .expect(401);
 
       expect(response.body).toHaveProperty('statusCode', 401);
-      expect(response.body).toHaveProperty('message', 'Invalid phone or password');
+      expect(response.body).toHaveProperty(
+        'message',
+        'Invalid phone or password',
+      );
       expect(response.body).toHaveProperty('error', 'Unauthorized');
     });
 
@@ -196,8 +214,10 @@ describe('Vendor Authentication (Integration)', () => {
       });
 
       expect(afterLogin.lastActiveAt).not.toBeNull();
-      expect(new Date(afterLogin.lastActiveAt!).getTime()).toBeGreaterThan(
-        beforeLogin.lastActiveAt ? new Date(beforeLogin.lastActiveAt).getTime() : 0
+      expect(new Date(afterLogin.lastActiveAt).getTime()).toBeGreaterThan(
+        beforeLogin.lastActiveAt
+          ? new Date(beforeLogin.lastActiveAt).getTime()
+          : 0,
       );
     });
   });

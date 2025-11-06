@@ -104,8 +104,11 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     if (this.otpStore.size >= this.maxOtpStoreSize) {
       // Remove 10% of oldest entries when limit is reached
       const entriesToRemove = Math.ceil(this.maxOtpStoreSize * 0.1);
-      const keysToRemove = Array.from(this.otpStore.keys()).slice(0, entriesToRemove);
-      keysToRemove.forEach(key => this.otpStore.delete(key));
+      const keysToRemove = Array.from(this.otpStore.keys()).slice(
+        0,
+        entriesToRemove,
+      );
+      keysToRemove.forEach((key) => this.otpStore.delete(key));
     }
 
     // Store OTP with expiration and attempt tracking
@@ -138,14 +141,14 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
 
       this.customLogger.logSecurityEvent(
         'otp_verification_success',
-        { phone, customerId: (customer as any)._id },
+        { phone, customerId: customer._id },
         undefined,
         undefined,
       );
       this.customLogger.logBusinessEvent(
         'customer_authenticated',
-        { customerId: (customer as any)._id, phone },
-        (customer as any)._id,
+        { customerId: customer._id, phone },
+        customer._id,
       );
 
       const customerProfile = await this.buildCustomerProfile(customer);
@@ -251,7 +254,6 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-
   private generateToken(customer: any): string {
     // Generate JWT token using customer data
     const payload = {
@@ -284,7 +286,6 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
-
   private buildAuthResponse(
     token: string,
     customerProfile: CustomerProfileDto,
@@ -296,7 +297,6 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
       user: userProfile, // Legacy property for backward compatibility
     };
   }
-
 
   private generateOTP(): string {
     // Generate 6-digit OTP
@@ -319,13 +319,18 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     // Additional cleanup: remove oldest entries if store is still too large
     if (this.otpStore.size >= this.maxOtpStoreSize) {
       const entriesToRemove = Math.ceil(this.maxOtpStoreSize * 0.2); // Remove 20% more
-      const keysToRemove = Array.from(this.otpStore.keys()).slice(0, entriesToRemove);
-      keysToRemove.forEach(key => this.otpStore.delete(key));
+      const keysToRemove = Array.from(this.otpStore.keys()).slice(
+        0,
+        entriesToRemove,
+      );
+      keysToRemove.forEach((key) => this.otpStore.delete(key));
       cleanedCount += keysToRemove.length;
     }
 
     if (cleanedCount > 0) {
-      this.logger.log(`OTP cleanup: removed ${cleanedCount} entries (${initialSize} → ${this.otpStore.size})`);
+      this.logger.log(
+        `OTP cleanup: removed ${cleanedCount} entries (${initialSize} → ${this.otpStore.size})`,
+      );
     }
   }
 }

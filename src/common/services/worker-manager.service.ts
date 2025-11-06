@@ -30,10 +30,7 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
 
   private async initializeWorkers(): Promise<void> {
     try {
-      this.workers = [
-        this.notificationWorker,
-        this.reconciliationWorker,
-      ];
+      this.workers = [this.notificationWorker, this.reconciliationWorker];
 
       this.logger.log('All workers initialized successfully');
     } catch (error) {
@@ -66,13 +63,20 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
   private async performHealthCheck(): Promise<void> {
     for (const worker of this.workers) {
       try {
-        this.logger.debug(`Checking health for worker: ${worker.constructor.name}`);
+        this.logger.debug(
+          `Checking health for worker: ${worker.constructor.name}`,
+        );
         const metrics = await worker.getQueueMetrics();
-        this.logger.debug(`Metrics received for ${worker.constructor.name}:`, metrics);
+        this.logger.debug(
+          `Metrics received for ${worker.constructor.name}:`,
+          metrics,
+        );
 
         // Handle case where metrics is undefined or null
         if (!metrics) {
-          this.logger.warn(`${worker.constructor.name} health: DEGRADED - no metrics returned`);
+          this.logger.warn(
+            `${worker.constructor.name} health: DEGRADED - no metrics returned`,
+          );
           continue;
         }
 
@@ -85,7 +89,9 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
             this.logger.warn(`${worker.constructor.name} health: DEGRADED`);
           }
         } else {
-          this.logger.warn(`${worker.constructor.name} health: DEGRADED - invalid metrics`);
+          this.logger.warn(
+            `${worker.constructor.name} health: DEGRADED - invalid metrics`,
+          );
         }
       } catch (error) {
         this.logger.error(
@@ -101,7 +107,9 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
       this.logger.debug('Starting queue length monitoring');
       const queueMetrics = await Promise.all(
         this.workers.map(async (worker) => {
-          this.logger.debug(`Getting metrics for worker: ${worker.constructor.name}`);
+          this.logger.debug(
+            `Getting metrics for worker: ${worker.constructor.name}`,
+          );
           const metrics = await worker.getQueueMetrics();
           this.logger.debug(`Metrics for ${worker.constructor.name}:`, metrics);
           return {
@@ -145,13 +153,17 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
       const allMetrics = await Promise.all(
         this.workers.map(async (worker) => ({
           name: worker.constructor.name,
-          metrics: (await worker.getQueueMetrics()) || { isActive: false, reason: 'No metrics' },
+          metrics: (await worker.getQueueMetrics()) || {
+            isActive: false,
+            reason: 'No metrics',
+          },
         })),
       );
 
       const summary = {
         totalWorkers: this.workers.length,
-        activeWorkers: allMetrics.filter((m) => m.metrics && m.metrics.isActive).length,
+        activeWorkers: allMetrics.filter((m) => m.metrics && m.metrics.isActive)
+          .length,
         workers: allMetrics,
         timestamp: new Date().toISOString(),
       };
@@ -162,7 +174,6 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
       return { error: 'Failed to retrieve metrics' };
     }
   }
-
 
   async pauseWorker(workerName: string): Promise<boolean> {
     try {
@@ -202,7 +213,6 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-
   async addNotificationJob(data: any): Promise<string> {
     try {
       return await this.notificationWorker.addJob('notification', data);
@@ -221,7 +231,6 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-
   async addFraudDetectionJob(data: any): Promise<string> {
     throw new Error('Fraud detection worker not available');
   }
@@ -233,7 +242,10 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
       // Wait for active jobs to complete (with timeout)
       const shutdownPromises = this.workers.map(async (worker) => {
         try {
-          const metrics = (await worker.getQueueMetrics()) || { active: 0, reason: 'No metrics' };
+          const metrics = (await worker.getQueueMetrics()) || {
+            active: 0,
+            reason: 'No metrics',
+          };
           if (metrics.active > 0) {
             this.logger.log(
               `Waiting for ${metrics.active} active jobs in ${worker.constructor.name} to complete...`,
@@ -261,7 +273,10 @@ export class WorkerManagerService implements OnModuleInit, OnModuleDestroy {
 
     while (Date.now() - startTime < timeout) {
       try {
-        const metrics = (await worker.getQueueMetrics()) || { active: 0, reason: 'No metrics' };
+        const metrics = (await worker.getQueueMetrics()) || {
+          active: 0,
+          reason: 'No metrics',
+        };
         if (metrics.active === 0) {
           return;
         }
