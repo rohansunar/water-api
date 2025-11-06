@@ -1,12 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/common/database/prisma.service';
 import { VendorAuthService } from '../../src/vendor/services/vendor-auth.service';
 
 describe('Vendor Authentication (Integration)', () => {
-  let app: INestApplication;
+  let app: NestFastifyApplication;
   let prismaService: PrismaService;
   let vendorAuthService: VendorAuthService;
   let testVendor: any;
@@ -16,7 +17,7 @@ describe('Vendor Authentication (Integration)', () => {
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
     await app.init();
 
     prismaService = app.get(PrismaService);

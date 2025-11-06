@@ -248,6 +248,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
           'Too many requests. Please try again later.',
       };
 
+      // For 401 errors, preserve specific messages if they are not the default 'Unauthorized'
+      if (status === HttpStatus.UNAUTHORIZED && message !== 'Unauthorized') {
+        return message;
+      }
+
       return userFriendlyMessages[status] || message;
     }
 

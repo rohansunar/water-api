@@ -309,26 +309,6 @@ export class VendorAuthService {
         true,
       );
 
-      // Log appropriate business event based on whether vendor was created or updated
-      if (vendor.createdAt.getTime() === vendor.updatedAt.getTime()) {
-        // Newly created vendor (createdAt equals updatedAt)
-        this.customLogger.logBusinessEvent(
-          'vendor_registered_via_otp',
-          { vendorId: vendor.id.toString(), phone },
-          vendor.id.toString(),
-        );
-      }
-
-      // Check if vendor account is active
-      if (!vendor.isActive) {
-        this.customLogger.logSecurityEvent(
-          'vendor_otp_verify_failure',
-          { phone, vendorId: vendor.id.toString(), reason: 'account_inactive' },
-          undefined,
-          undefined,
-        );
-        throw new ForbiddenException('Account is inactive');
-      }
 
       // Generate JWT token
       const payload = {
@@ -340,13 +320,6 @@ export class VendorAuthService {
 
       const token = this.jwtService.sign(payload);
       const expiresIn = 36000; // 10 hour
-
-      this.customLogger.logSecurityEvent(
-        'vendor_otp_verify_success',
-        { phone, vendorId: vendor.id.toString() },
-        vendor.id.toString(),
-        undefined,
-      );
 
       this.customLogger.logBusinessEvent(
         'vendor_authenticated_via_otp',

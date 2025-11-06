@@ -15,7 +15,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
   canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest();
-    const path = request.raw.url;
+    const path = request.url;
 
     // Skip authentication for admin routes - they use their own guards
     // if (path.startsWith('/admin')) {
