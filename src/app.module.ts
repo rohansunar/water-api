@@ -1,7 +1,6 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ConfigModule as CustomConfigModule } from './config/config.module';
-import { MongooseModule } from '@nestjs/mongoose';
 import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
@@ -43,9 +42,6 @@ import { PrismaModule } from './common/database/prisma.module';
       envFilePath: '.env',
     }),
     CustomConfigModule,
-    MongooseModule.forRoot(
-      process.env.MONGODB_URI || 'mongodb://localhost:27017/water-jar-delivery',
-    ),
     PrismaModule,
     ThrottlerModule.forRoot([
       {
@@ -104,9 +100,9 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(
-        RequestIdMiddleware,
+        // RequestIdMiddleware,
         // SecurityMiddleware,
-        GracefulDegradationMiddleware,
+        // GracefulDegradationMiddleware,
       )
       .forRoutes('*');
   }

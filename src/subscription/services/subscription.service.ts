@@ -56,9 +56,9 @@ export class SubscriptionService {
       this.logger.log(`User validation needed for userId: ${userId}`);
 
       // Calculate pricing
-      const itemTotal = product.price * createSubscriptionDto.quantity;
+      const itemTotal = Number(product.price) * createSubscriptionDto.quantity;
       const depositAmount = product.hasDeposit
-        ? product.depositAmount * createSubscriptionDto.quantity
+        ? Number(product.depositAmount) * createSubscriptionDto.quantity
         : 0;
       const deliveryFee = 15; // Default delivery fee
       const totalAmount = itemTotal + depositAmount + deliveryFee;
@@ -190,9 +190,9 @@ export class SubscriptionService {
         subscription.productId,
       );
       if (product) {
-        const itemTotal = product.price * subscription.quantity;
+        const itemTotal = Number(product.price) * subscription.quantity;
         const depositAmount = product.hasDeposit
-          ? product.depositAmount * subscription.quantity
+          ? Number(product.depositAmount) * subscription.quantity
           : 0;
         subscription.totalAmount = itemTotal + depositAmount + 15; // 15 is delivery fee
       }

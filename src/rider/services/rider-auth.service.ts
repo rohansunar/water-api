@@ -85,7 +85,7 @@ export class RiderAuthService {
               ],
             },
           },
-          orderBy: { scheduledPickup: 'asc' },
+          orderBy: { createdAt: 'asc' },
           take: 1,
         },
       },

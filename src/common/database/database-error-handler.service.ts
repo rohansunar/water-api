@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { MongoError } from 'mongodb';
 import { CustomLoggerService } from '../logger/logger.service';
 import {
   DatabaseException,
@@ -53,9 +52,6 @@ export class DatabaseErrorHandlerService {
       'ETIMEDOUT',
       'ENOTFOUND',
       'EPIPE',
-      'MongoNetworkError',
-      'MongoTimeoutError',
-      'MongoServerSelectionError',
     ],
   };
 
@@ -179,21 +175,6 @@ export class DatabaseErrorHandlerService {
       }
     }
 
-    // Check for specific MongoDB error codes that are retryable
-    const retryableMongoCodes = [
-      6, // HostUnreachable
-      7, // HostNotFound
-      89, // NetworkTimeout
-      91, // ShutdownInProgress
-      100, // ClientMarkedAsClosed
-      10107, // NotMaster
-      11600, // InterruptedAtShutdown
-      11602, // InterruptedDueToReplStateChange
-    ];
-
-    if (retryableMongoCodes.includes(errorCode)) {
-      return true;
-    }
 
     // Check for network-related error patterns
     const networkErrorPatterns = [
@@ -219,31 +200,8 @@ export class DatabaseErrorHandlerService {
     context: DatabaseErrorContext,
     retryable: boolean,
   ): BusinessException {
-    // Handle MongoDB specific errors
-    if (error instanceof MongoError || error.name === 'MongoError') {
-      return this.handleMongoError(error, context, retryable);
-    }
-
-    // Handle Mongoose validation errors
-    if (error.name === 'ValidationError') {
-      return new DatabaseException(
-        `Validation failed: ${error.message}`,
-        context.operation,
-        false,
-      );
-    }
-
-    // Handle Mongoose cast errors
-    if (error.name === 'CastError') {
-      return new DatabaseException(
-        `Invalid data format: ${error.message}`,
-        context.operation,
-        false,
-      );
-    }
-
-    // Handle duplicate key errors
-    if (error.code === 11000 || error.name === 'MongoServerError') {
+    // Handle duplicate key errors (Prisma P2002)
+    if (error.code === 'P2002') {
       const field = this.extractDuplicateField(error);
       return new DuplicateRecordException(context.collection, field);
     }
@@ -263,83 +221,16 @@ export class DatabaseErrorHandlerService {
     );
   }
 
-  /**
-   * Handle MongoDB specific errors
-   */
-  private handleMongoError(
-    error: MongoError,
-    context: DatabaseErrorContext,
-    retryable: boolean,
-  ): BusinessException {
-    switch (error.code) {
-      case 11000: // Duplicate key
-        const field = this.extractDuplicateField(error);
-        return new DuplicateRecordException(context.collection, field);
-
-      case 2: // BadValue
-        return new DatabaseException(
-          `Invalid query parameters: ${error.message}`,
-          context.operation,
-          false,
-        );
-
-      case 13: // Unauthorized
-        return new DatabaseException(
-          `Database authorization failed: ${error.message}`,
-          context.operation,
-          false,
-        );
-
-      case 18: // AuthenticationFailed
-        return new DatabaseException(
-          `Database authentication failed: ${error.message}`,
-          context.operation,
-          false,
-        );
-
-      case 50: // ExceededTimeLimit
-        return new DatabaseException(
-          `Database operation timed out: ${error.message}`,
-          context.operation,
-          true,
-        );
-
-      case 89: // NetworkTimeout
-        return new DatabaseException(
-          `Database network timeout: ${error.message}`,
-          context.operation,
-          true,
-        );
-
-      case 91: // ShutdownInProgress
-        return new DatabaseException(
-          `Database shutdown in progress: ${error.message}`,
-          context.operation,
-          true,
-        );
-
-      case 100: // ClientMarkedAsClosed
-        return new DatabaseConnectionException(
-          `Database client disconnected: ${error.message}`,
-        );
-
-      default:
-        return new DatabaseException(
-          `MongoDB error: ${error.message}`,
-          context.operation,
-          retryable,
-        );
-    }
-  }
 
   /**
-   * Extract field name from MongoDB duplicate key error
+   * Extract field name from duplicate key error
    */
   private extractDuplicateField(error: any): string {
     try {
-      const keyPattern = error.keyPattern || error.keyValue || {};
-      const fields = Object.keys(keyPattern);
-      return fields.length > 0 ? fields[0] : 'unknown';
+      if (error.meta && error.meta.target && error.meta.target.length > 0) {
+        return error.meta.target[0];
+      }
+      return 'unknown';
     } catch {
       return 'unknown';
     }

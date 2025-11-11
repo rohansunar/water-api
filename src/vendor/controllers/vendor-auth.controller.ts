@@ -13,6 +13,7 @@ import {
   VendorSendOtpDto,
   VendorVerifyOtpDto,
   VendorOtpResponseDto,
+  VendorLoginDto,
 } from '../dto/vendor.dto';
 import { Public } from '../../auth/decorators/public.decorator';
 
@@ -127,5 +128,60 @@ export class VendorAuthController {
       `Vendor OTP verification attempt for phone: ${verifyOtpDto.phone}`,
     );
     return this.vendorAuthService.verifyOtp(verifyOtpDto);
+  }
+
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Login vendor with phone and password',
+    description: 'Authenticate vendor using phone number and password',
+  })
+  @ApiBody({ type: VendorLoginDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful',
+    type: VendorAuthResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - invalid input',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'string', example: 'Validation failed' },
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid phone or password',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Invalid phone or password' },
+        error: { type: 'string', example: 'Unauthorized' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Account inactive',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 403 },
+        message: { type: 'string', example: 'Account is inactive' },
+        error: { type: 'string', example: 'Forbidden' },
+      },
+    },
+  })
+  async login(
+    @Body() loginDto: VendorLoginDto,
+  ): Promise<VendorAuthResponseDto> {
+    this.logger.log(`Vendor login attempt for phone: ${loginDto.phone}`);
+    return this.vendorAuthService.login(loginDto);
   }
 }

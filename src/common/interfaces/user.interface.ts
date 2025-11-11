@@ -1,4 +1,4 @@
-import { Address } from '../schemas/address.schema';
+import { Address } from '../../customer/interfaces/customer.interface';
 
 export interface User {
   id: string;

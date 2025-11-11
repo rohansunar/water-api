@@ -3,8 +3,6 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import { CustomerRole } from '../interfaces/customer.interface';
 import { CustomerProfileDto } from '../../common/dto/auth.dto';
 import {
@@ -14,53 +12,53 @@ import {
   PaginationQueryDto,
 } from '../../common/dto/customer.dto';
 import { CustomLoggerService } from '../../common/logger/logger.service';
-import {
-  Customer,
-  CustomerDocument,
-} from '../../common/schemas/customer.schema';
-import { Address, AddressDocument } from '../../common/schemas/address.schema';
+import { PrismaService } from '../../common/database/prisma.service';
 
 @Injectable()
 export class CustomerService {
   constructor(
-    @InjectModel(Customer.name) private customerModel: Model<CustomerDocument>,
-    @InjectModel(Address.name) private addressModel: Model<AddressDocument>,
+    private readonly prisma: PrismaService,
     private readonly logger: CustomLoggerService,
   ) {}
 
-  async findById(id: string): Promise<CustomerDocument | null> {
+  async findById(id: string): Promise<any | null> {
     try {
-      return await this.customerModel.findById(id).exec();
+      return await this.prisma.customer.findUnique({
+        where: { uuid: id },
+      });
     } catch (error) {
       this.logger.error(`Error finding customer by ID ${id}:`, error);
       return null;
     }
   }
 
-  async findByPhone(phone: string): Promise<CustomerDocument | null> {
+  async findByPhone(phone: string): Promise<any | null> {
     try {
-      return await this.customerModel.findOne({ phone }).exec();
+      return await this.prisma.customer.findUnique({
+        where: { phone },
+      });
     } catch (error) {
       this.logger.error(`Error finding customer by phone ${phone}:`, error);
       return null;
     }
   }
 
-  async create(customerData: Partial<Customer>): Promise<CustomerDocument> {
+  async create(customerData: any): Promise<any> {
     try {
-      const customer = await this.customerModel.create({
-        phone: customerData.phone,
-        name: customerData.name,
-        email: customerData.email,
-        addresses: customerData.addresses || [],
-        walletBalance: customerData.walletBalance || 0,
-        role: customerData.role || CustomerRole.CUSTOMER,
-        isActive: customerData.isActive !== false,
-        monthlyPaymentMode: customerData.monthlyPaymentMode || false,
+      const customer = await this.prisma.customer.create({
+        data: {
+          phone: customerData.phone,
+          name: customerData.name,
+          email: customerData.email,
+          walletBalance: customerData.walletBalance || 0,
+          role: customerData.role || CustomerRole.CUSTOMER,
+          isActive: customerData.isActive !== false,
+          monthlyPaymentMode: customerData.monthlyPaymentMode || false,
+        },
       });
 
       this.logger.log(
-        `Created new customer: ${customer._id} with phone: ${customer.phone}`,
+        `Created new customer: ${customer.uuid} with phone: ${customer.phone}`,
       );
       return customer;
     } catch (error) {
@@ -71,20 +69,16 @@ export class CustomerService {
 
   async update(
     id: string,
-    updateData: Partial<Customer>,
-  ): Promise<CustomerDocument> {
+    updateData: any,
+  ): Promise<any> {
     try {
-      const updatedCustomer = await this.customerModel
-        .findByIdAndUpdate(
-          id,
-          { ...updateData, updatedAt: new Date() },
-          { new: true, runValidators: true },
-        )
-        .exec();
-
-      if (!updatedCustomer) {
-        throw new NotFoundException('Customer not found');
-      }
+      const updatedCustomer = await this.prisma.customer.update({
+        where: { uuid: id },
+        data: {
+          ...updateData,
+          updatedAt: new Date(),
+        },
+      });
 
       this.logger.log(`Updated customer: ${id}`);
       return updatedCustomer;
@@ -96,13 +90,13 @@ export class CustomerService {
 
   async delete(id: string): Promise<void> {
     try {
-      const result = await this.customerModel
-        .findByIdAndUpdate(id, { isActive: false, updatedAt: new Date() })
-        .exec();
-
-      if (!result) {
-        throw new NotFoundException('Customer not found');
-      }
+      await this.prisma.customer.update({
+        where: { uuid: id },
+        data: {
+          isActive: false,
+          updatedAt: new Date(),
+        },
+      });
 
       this.logger.log(`Soft deleted customer: ${id}`);
     } catch (error) {
@@ -113,33 +107,35 @@ export class CustomerService {
 
   async getCustomerProfile(id: string): Promise<CustomerProfileDto> {
     try {
-      const customer = await this.customerModel
-        .findById(id)
-        .populate('addresses')
-        .exec();
+      const customer = await this.prisma.customer.findUnique({
+        where: { uuid: id },
+        include: {
+          addresses: true,
+        },
+      });
       if (!customer) {
         throw new NotFoundException('Customer not found');
       }
 
       return {
-        id: customer._id.toString(),
+        id: customer.uuid,
         phone: customer.phone,
         name: customer.name,
         email: customer.email,
         role: customer.role,
-        walletBalance: customer.walletBalance,
+        walletBalance: Number(customer.walletBalance),
         isActive: customer.isActive,
         monthlyPaymentMode: customer.monthlyPaymentMode,
-        addresses: customer.addresses.map((addr: any) => ({
-          id: addr._id.toString(),
+        addresses: customer.addresses.map((addr) => ({
+          id: addr.id.toString(),
           type: addr.type,
           street: addr.street,
           city: addr.city,
           state: addr.state,
           pincode: addr.pincode,
           landmark: addr.landmark,
-          latitude: addr.latitude,
-          longitude: addr.longitude,
+          latitude: addr.latitude ? Number(addr.latitude) : undefined,
+          longitude: addr.longitude ? Number(addr.longitude) : undefined,
           isDefault: addr.isDefault,
         })),
         createdAt: customer.createdAt,
@@ -153,19 +149,15 @@ export class CustomerService {
   async updateMonthlyPaymentMode(
     id: string,
     monthlyPaymentMode: boolean,
-  ): Promise<CustomerDocument> {
+  ): Promise<any> {
     try {
-      const updatedCustomer = await this.customerModel
-        .findByIdAndUpdate(
-          id,
-          { monthlyPaymentMode, updatedAt: new Date() },
-          { new: true },
-        )
-        .exec();
-
-      if (!updatedCustomer) {
-        throw new NotFoundException('Customer not found');
-      }
+      const updatedCustomer = await this.prisma.customer.update({
+        where: { uuid: id },
+        data: {
+          monthlyPaymentMode,
+          updatedAt: new Date(),
+        },
+      });
 
       this.logger.log(
         `Updated monthly payment mode for customer ${id}: ${monthlyPaymentMode}`,
@@ -184,30 +176,27 @@ export class CustomerService {
     id: string,
     amount: number,
     operation: 'add' | 'subtract' | 'set' = 'set',
-  ): Promise<CustomerDocument> {
+  ): Promise<any> {
     try {
-      const updateQuery: any = { updatedAt: new Date() };
+      let updateData: any = { updatedAt: new Date() };
 
       switch (operation) {
         case 'add':
-          updateQuery.$inc = { walletBalance: amount };
+          updateData.walletBalance = { increment: amount };
           break;
         case 'subtract':
-          updateQuery.$inc = { walletBalance: -amount };
+          updateData.walletBalance = { decrement: amount };
           break;
         case 'set':
         default:
-          updateQuery.walletBalance = amount;
+          updateData.walletBalance = amount;
           break;
       }
 
-      const updatedCustomer = await this.customerModel
-        .findByIdAndUpdate(id, updateQuery, { new: true })
-        .exec();
-
-      if (!updatedCustomer) {
-        throw new NotFoundException('Customer not found');
-      }
+      const updatedCustomer = await this.prisma.customer.update({
+        where: { uuid: id },
+        data: updateData,
+      });
 
       this.logger.log(
         `Updated wallet balance for customer ${id}: ${operation} ${amount}`,
@@ -223,18 +212,25 @@ export class CustomerService {
   }
 
   // Query methods
-  async findByRole(role: string): Promise<CustomerDocument[]> {
+  async findByRole(role: string): Promise<any[]> {
     try {
-      return await this.customerModel.find({ role, isActive: true }).exec();
+      return await this.prisma.customer.findMany({
+        where: {
+          role: role as any,
+          isActive: true,
+        },
+      });
     } catch (error) {
       this.logger.error(`Error finding customers by role ${role}:`, error);
       throw error;
     }
   }
 
-  async findActiveCustomers(): Promise<CustomerDocument[]> {
+  async findActiveCustomers(): Promise<any[]> {
     try {
-      return await this.customerModel.find({ isActive: true }).exec();
+      return await this.prisma.customer.findMany({
+        where: { isActive: true },
+      });
     } catch (error) {
       this.logger.error('Error finding active customers:', error);
       throw error;
@@ -244,19 +240,23 @@ export class CustomerService {
   async searchCustomers(
     query: string,
     limit: number = 10,
-  ): Promise<CustomerDocument[]> {
+  ): Promise<any[]> {
     try {
-      return await this.customerModel
-        .find({
-          $or: [
-            { name: { $regex: query, $options: 'i' } },
-            { email: { $regex: query, $options: 'i' } },
-            { phone: { $regex: query, $options: 'i' } },
+      return await this.prisma.customer.findMany({
+        where: {
+          AND: [
+            { isActive: true },
+            {
+              OR: [
+                { name: { contains: query, mode: 'insensitive' } },
+                { email: { contains: query, mode: 'insensitive' } },
+                { phone: { contains: query, mode: 'insensitive' } },
+              ],
+            },
           ],
-          isActive: true,
-        })
-        .limit(limit)
-        .exec();
+        },
+        take: limit,
+      });
     } catch (error) {
       this.logger.error(
         `Error searching customers with query ${query}:`,
@@ -269,7 +269,9 @@ export class CustomerService {
   // Validation methods
   async validateCustomerExists(id: string): Promise<boolean> {
     try {
-      const customer = await this.customerModel.findById(id).exec();
+      const customer = await this.prisma.customer.findUnique({
+        where: { uuid: id },
+      });
       return !!customer;
     } catch (error) {
       this.logger.error(`Error validating customer exists ${id}:`, error);
@@ -279,7 +281,9 @@ export class CustomerService {
 
   async validateCustomerActive(id: string): Promise<boolean> {
     try {
-      const customer = await this.customerModel.findById(id).exec();
+      const customer = await this.prisma.customer.findUnique({
+        where: { uuid: id },
+      });
       return !!(customer && customer.isActive);
     } catch (error) {
       this.logger.error(`Error validating customer active ${id}:`, error);
@@ -289,7 +293,9 @@ export class CustomerService {
 
   async validateCustomerRole(id: string, role: string): Promise<boolean> {
     try {
-      const customer = await this.customerModel.findById(id).exec();
+      const customer = await this.prisma.customer.findUnique({
+        where: { uuid: id },
+      });
       return !!(customer && customer.role === role);
     } catch (error) {
       this.logger.error(`Error validating customer role ${id}:`, error);
@@ -311,18 +317,19 @@ export class CustomerService {
       // Run queries in parallel for better performance
       const [totalCustomers, activeCustomers, roleStats, recentSignups] =
         await Promise.all([
-          this.customerModel.countDocuments().exec(),
-          this.customerModel.countDocuments({ isActive: true }).exec(),
-          this.customerModel
-            .aggregate([{ $group: { _id: '$role', count: { $sum: 1 } } }])
-            .exec(),
-          this.customerModel
-            .countDocuments({ createdAt: { $gte: thirtyDaysAgo } })
-            .exec(),
+          this.prisma.customer.count(),
+          this.prisma.customer.count({ where: { isActive: true } }),
+          this.prisma.customer.groupBy({
+            by: ['role'],
+            _count: { role: true },
+          }),
+          this.prisma.customer.count({
+            where: { createdAt: { gte: thirtyDaysAgo } },
+          }),
         ]);
 
       const customersByRole = roleStats.reduce((acc, stat) => {
-        acc[stat._id] = stat.count;
+        acc[stat.role] = stat._count.role;
         return acc;
       }, {});
 
@@ -379,8 +386,12 @@ export class CustomerService {
   // Development/Testing
   async clearTestData(): Promise<void> {
     try {
-      await this.customerModel.deleteMany({
-        phone: { $in: ['9999999999', '8888888888', '7777777777'] },
+      await this.prisma.customer.deleteMany({
+        where: {
+          phone: {
+            in: ['9999999999', '8888888888', '7777777777'],
+          },
+        },
       });
       this.logger.log('Customer test data cleared successfully');
     } catch (error) {
@@ -394,26 +405,31 @@ export class CustomerService {
     customerId: string,
   ): Promise<AddressResponseDto[]> {
     try {
-      const customer = await this.customerModel.findById(customerId).exec();
+      const customer = await this.prisma.customer.findUnique({
+        where: { uuid: customerId },
+      });
       if (!customer) {
         throw new NotFoundException('Customer not found');
       }
 
-      const addresses = await this.addressModel
-        .find({ customerId })
-        .sort({ isDefault: -1, createdAt: -1 })
-        .exec();
+      const addresses = await this.prisma.customerAddress.findMany({
+        where: { customerId: customer.id },
+        orderBy: [
+          { isDefault: 'desc' },
+          { createdAt: 'desc' },
+        ],
+      });
 
       return addresses.map((address) => ({
-        id: address._id.toString(),
+        id: address.id.toString(),
         type: address.type,
         street: address.street,
         city: address.city,
         state: address.state,
         pincode: address.pincode,
         landmark: address.landmark,
-        latitude: address.latitude,
-        longitude: address.longitude,
+        latitude: address.latitude ? Number(address.latitude) : undefined,
+        longitude: address.longitude ? Number(address.longitude) : undefined,
         isDefault: address.isDefault,
         createdAt: address.createdAt,
         updatedAt: address.updatedAt,
@@ -432,31 +448,38 @@ export class CustomerService {
     createAddressDto: CreateAddressDto,
   ): Promise<AddressResponseDto> {
     try {
-      const customer = await this.customerModel.findById(customerId).exec();
+      const customer = await this.prisma.customer.findUnique({
+        where: { uuid: customerId },
+      });
       if (!customer) {
         throw new NotFoundException('Customer not found');
       }
 
       // If this is set as default, unset other default addresses
       if (createAddressDto.isDefault) {
-        await this.addressModel.updateMany(
-          { customerId },
-          { isDefault: false },
-        );
+        await this.prisma.customerAddress.updateMany({
+          where: { customerId: customer.id },
+          data: { isDefault: false },
+        });
       }
 
-      const address = await this.addressModel.create({
-        customerId,
-        ...createAddressDto,
-      });
-
-      // Add address to customer's address list
-      await this.customerModel.findByIdAndUpdate(customerId, {
-        $push: { addresses: address._id },
+      const address = await this.prisma.customerAddress.create({
+        data: {
+          customerId: customer.id,
+          type: createAddressDto.type as any,
+          street: createAddressDto.street,
+          landmark: createAddressDto.landmark,
+          city: createAddressDto.city,
+          state: createAddressDto.state,
+          pincode: createAddressDto.pincode,
+          latitude: createAddressDto.latitude,
+          longitude: createAddressDto.longitude,
+          isDefault: createAddressDto.isDefault,
+        },
       });
 
       this.logger.log(
-        `Created address ${address._id} for customer ${customerId}`,
+        `Created address ${address.id} for customer ${customerId}`,
       );
       return this.getAddressResponse(address);
     } catch (error) {
@@ -474,9 +497,19 @@ export class CustomerService {
     updateAddressDto: UpdateAddressDto,
   ): Promise<AddressResponseDto> {
     try {
-      const address = await this.addressModel.findOne({
-        _id: addressId,
-        customerId,
+      const customer = await this.prisma.customer.findUnique({
+        where: { uuid: customerId },
+      });
+      if (!customer) {
+        throw new NotFoundException('Customer not found');
+      }
+
+      const addressIdBigInt = BigInt(addressId);
+      const address = await this.prisma.customerAddress.findUnique({
+        where: {
+          id: addressIdBigInt,
+          customerId: customer.id,
+        },
       });
 
       if (!address) {
@@ -485,15 +518,29 @@ export class CustomerService {
 
       // If this is set as default, unset other default addresses
       if (updateAddressDto.isDefault) {
-        await this.addressModel.updateMany(
-          { customerId, _id: { $ne: addressId } },
-          { isDefault: false },
-        );
+        await this.prisma.customerAddress.updateMany({
+          where: {
+            customerId: customer.id,
+            id: { not: addressIdBigInt },
+          },
+          data: { isDefault: false },
+        });
       }
 
-      const updatedAddress = await this.addressModel
-        .findByIdAndUpdate(addressId, updateAddressDto, { new: true })
-        .exec();
+      const updatedAddress = await this.prisma.customerAddress.update({
+        where: { id: addressIdBigInt },
+        data: {
+          type: updateAddressDto.type as any,
+          street: updateAddressDto.street,
+          landmark: updateAddressDto.landmark,
+          city: updateAddressDto.city,
+          state: updateAddressDto.state,
+          pincode: updateAddressDto.pincode,
+          latitude: updateAddressDto.latitude,
+          longitude: updateAddressDto.longitude,
+          isDefault: updateAddressDto.isDefault,
+        },
+      });
 
       this.logger.log(
         `Updated address ${addressId} for customer ${customerId}`,
@@ -510,20 +557,27 @@ export class CustomerService {
 
   async deleteAddress(customerId: string, addressId: string): Promise<void> {
     try {
-      const address = await this.addressModel.findOne({
-        _id: addressId,
-        customerId,
+      const customer = await this.prisma.customer.findUnique({
+        where: { uuid: customerId },
+      });
+      if (!customer) {
+        throw new NotFoundException('Customer not found');
+      }
+
+      const addressIdBigInt = BigInt(addressId);
+      const address = await this.prisma.customerAddress.findUnique({
+        where: {
+          id: addressIdBigInt,
+          customerId: customer.id,
+        },
       });
 
       if (!address) {
         throw new NotFoundException('Address not found');
       }
 
-      await this.addressModel.findByIdAndDelete(addressId);
-
-      // Remove address from customer's address list
-      await this.customerModel.findByIdAndUpdate(customerId, {
-        $pull: { addresses: addressId },
+      await this.prisma.customerAddress.delete({
+        where: { id: addressIdBigInt },
       });
 
       this.logger.log(
@@ -543,9 +597,19 @@ export class CustomerService {
     addressId: string,
   ): Promise<void> {
     try {
-      const address = await this.addressModel.findOne({
-        _id: addressId,
-        customerId,
+      const customer = await this.prisma.customer.findUnique({
+        where: { uuid: customerId },
+      });
+      if (!customer) {
+        throw new NotFoundException('Customer not found');
+      }
+
+      const addressIdBigInt = BigInt(addressId);
+      const address = await this.prisma.customerAddress.findUnique({
+        where: {
+          id: addressIdBigInt,
+          customerId: customer.id,
+        },
       });
 
       if (!address) {
@@ -553,10 +617,16 @@ export class CustomerService {
       }
 
       // Unset all other default addresses
-      await this.addressModel.updateMany({ customerId }, { isDefault: false });
+      await this.prisma.customerAddress.updateMany({
+        where: { customerId: customer.id },
+        data: { isDefault: false },
+      });
 
       // Set this address as default
-      await this.addressModel.findByIdAndUpdate(addressId, { isDefault: true });
+      await this.prisma.customerAddress.update({
+        where: { id: addressIdBigInt },
+        data: { isDefault: true },
+      });
 
       this.logger.log(
         `Set address ${addressId} as default for customer ${customerId}`,
@@ -570,17 +640,17 @@ export class CustomerService {
     }
   }
 
-  private getAddressResponse(address: AddressDocument): AddressResponseDto {
+  private getAddressResponse(address: any): AddressResponseDto {
     return {
-      id: address._id.toString(),
+      id: address.id.toString(),
       type: address.type,
       street: address.street,
       city: address.city,
       state: address.state,
       pincode: address.pincode,
       landmark: address.landmark,
-      latitude: address.latitude,
-      longitude: address.longitude,
+      latitude: address.latitude ? Number(address.latitude) : undefined,
+      longitude: address.longitude ? Number(address.longitude) : undefined,
       isDefault: address.isDefault,
       createdAt: address.createdAt,
       updatedAt: address.updatedAt,
@@ -747,14 +817,10 @@ export class CustomerService {
     updateData: any,
   ): Promise<CustomerProfileDto> {
     try {
-      const customer = await this.customerModel
-        .findByIdAndUpdate(customerId, updateData, { new: true })
-        .populate('addresses')
-        .exec();
-
-      if (!customer) {
-        throw new NotFoundException('Customer not found');
-      }
+      await this.prisma.customer.update({
+        where: { uuid: customerId },
+        data: updateData,
+      });
 
       this.logger.log(`Updated profile for customer ${customerId}`);
       return this.getCustomerProfile(customerId);

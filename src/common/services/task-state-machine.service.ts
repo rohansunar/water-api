@@ -271,11 +271,8 @@ export class TaskStateMachineService {
       },
       include: {
         order: true,
-        vendor: true,
-        store: true,
-        customer: true,
       },
-      orderBy: [{ priority: 'desc' }, { scheduledPickup: 'asc' }],
+      orderBy: [{ createdAt: 'desc' }],
       take: limit,
     });
 
@@ -301,11 +298,8 @@ export class TaskStateMachineService {
       where: whereClause,
       include: {
         order: true,
-        vendor: true,
-        store: true,
-        customer: true,
       },
-      orderBy: { scheduledPickup: 'asc' },
+      orderBy: { createdAt: 'asc' },
     });
 
     return tasks;
@@ -323,7 +317,6 @@ export class TaskStateMachineService {
       include: {
         rider: true,
         order: true,
-        vendor: true,
       },
     });
 
@@ -361,7 +354,6 @@ export class TaskStateMachineService {
       include: {
         rider: true,
         order: true,
-        vendor: true,
       },
     });
 

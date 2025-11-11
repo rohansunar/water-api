@@ -9,7 +9,6 @@ export class EnvValidationService {
     'DATABASE_URL',
     'JWT_SECRET',
     'JWT_ADMIN_SECRET',
-    'MONGODB_URI',
   ];
 
   private readonly optionalVars = [
@@ -17,7 +16,6 @@ export class EnvValidationService {
     'FRONTEND_URL',
     'LOG_LEVEL',
     'JWT_EXPIRES_IN',
-    'MONGODB_TEST_URI',
     'NODE_ENV',
     'LOG_DIR',
     'THROTTLE_TTL',
@@ -28,14 +26,12 @@ export class EnvValidationService {
     DATABASE_URL: Joi.string().uri().required(),
     JWT_SECRET: Joi.string().min(1).required(),
     JWT_ADMIN_SECRET: Joi.string().min(1).required(),
-    MONGODB_URI: Joi.string().uri().required(),
     PORT: Joi.number().integer().min(1).max(65535).optional(),
     FRONTEND_URL: Joi.string().uri().optional(),
     LOG_LEVEL: Joi.string()
       .valid('error', 'warn', 'info', 'debug', 'verbose')
       .optional(),
     JWT_EXPIRES_IN: Joi.string().optional(),
-    MONGODB_TEST_URI: Joi.string().uri().optional(),
     NODE_ENV: Joi.string()
       .valid('development', 'production', 'test')
       .optional(),

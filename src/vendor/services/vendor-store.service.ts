@@ -5,12 +5,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import {
-  VendorStore,
-  VendorStoreDocument,
-} from '../../common/schemas/vendor-store.schema';
+import { PrismaService } from '../../common/database/prisma.service';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 import {
   CreateStoreDto,
@@ -24,8 +19,7 @@ export class VendorStoreService {
   private readonly logger = new Logger(VendorStoreService.name);
 
   constructor(
-    @InjectModel(VendorStore.name)
-    private storeModel: Model<VendorStoreDocument>,
+    private readonly prisma: PrismaService,
     private readonly customLogger: CustomLoggerService,
     private readonly vendorService: VendorService,
   ) {}
@@ -57,9 +51,11 @@ export class VendorStoreService {
       }
 
       // Check if store name already exists for this vendor
-      const existingStore = await this.storeModel.findOne({
-        vendorId,
-        name,
+      const existingStore = await this.prisma.vendorStore.findFirst({
+        where: {
+          vendorId: BigInt(vendorId),
+          name,
+        },
       });
 
       if (existingStore) {
@@ -74,13 +70,15 @@ export class VendorStoreService {
       }
 
       // Create store
-      const store = await this.storeModel.create({
-        vendorId,
-        name,
-        address,
-        phone,
-        activeHours: active_hours || {},
-        isActive: true,
+      const store = await this.prisma.vendorStore.create({
+        data: {
+          vendorId: BigInt(vendorId),
+          name,
+          address,
+          phone,
+          activeHours: active_hours || {},
+          isActive: true,
+        },
       });
 
       this.customLogger.logBusinessEvent(
@@ -131,13 +129,21 @@ export class VendorStoreService {
 
       // Get stores with pagination
       const [stores, total] = await Promise.all([
-        this.storeModel
-          .find(filter)
-          .skip(skip)
-          .limit(limit)
-          .sort({ createdAt: -1 })
-          .exec(),
-        this.storeModel.countDocuments(filter).exec(),
+        this.prisma.vendorStore.findMany({
+          where: {
+            vendorId: BigInt(vendorId),
+            ...(isActive !== undefined && { isActive }),
+          },
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.vendorStore.count({
+          where: {
+            vendorId: BigInt(vendorId),
+            ...(isActive !== undefined && { isActive }),
+          },
+        }),
       ]);
 
       this.customLogger.logBusinessEvent(
@@ -172,9 +178,11 @@ export class VendorStoreService {
   ): Promise<StoreResponseDto> {
     const startTime = Date.now();
     try {
-      const store = await this.storeModel.findOne({
-        _id: storeId,
-        vendorId,
+      const store = await this.prisma.vendorStore.findFirst({
+        where: {
+          id: BigInt(storeId),
+          vendorId: BigInt(vendorId),
+        },
       });
 
       if (!store) {
@@ -220,9 +228,11 @@ export class VendorStoreService {
       const { name, address, phone, active_hours, is_active } = updateStoreDto;
 
       // Check if store exists and belongs to vendor
-      const existingStore = await this.storeModel.findOne({
-        _id: storeId,
-        vendorId,
+      const existingStore = await this.prisma.vendorStore.findFirst({
+        where: {
+          id: BigInt(storeId),
+          vendorId: BigInt(vendorId),
+        },
       });
 
       if (!existingStore) {
@@ -236,10 +246,12 @@ export class VendorStoreService {
 
       // Check if new name conflicts with existing stores
       if (name && name !== existingStore.name) {
-        const nameConflict = await this.storeModel.findOne({
-          vendorId,
-          name,
-          _id: { $ne: storeId },
+        const nameConflict = await this.prisma.vendorStore.findFirst({
+          where: {
+            vendorId: BigInt(vendorId),
+            name,
+            id: { not: BigInt(storeId) },
+          },
         });
 
         if (nameConflict) {
@@ -262,9 +274,10 @@ export class VendorStoreService {
       if (active_hours !== undefined) updateData.activeHours = active_hours;
       if (is_active !== undefined) updateData.isActive = is_active;
 
-      const updatedStore = await this.storeModel
-        .findByIdAndUpdate(storeId, updateData, { new: true })
-        .exec();
+      const updatedStore = await this.prisma.vendorStore.update({
+        where: { id: BigInt(storeId) },
+        data: updateData,
+      });
 
       this.customLogger.logBusinessEvent(
         'store_updated',
@@ -297,9 +310,11 @@ export class VendorStoreService {
     const startTime = Date.now();
     try {
       // Check if store exists and belongs to vendor
-      const existingStore = await this.storeModel.findOne({
-        _id: storeId,
-        vendorId,
+      const existingStore = await this.prisma.vendorStore.findFirst({
+        where: {
+          id: BigInt(storeId),
+          vendorId: BigInt(vendorId),
+        },
       });
 
       if (!existingStore) {
@@ -311,10 +326,11 @@ export class VendorStoreService {
         throw new NotFoundException('Store not found');
       }
 
-      // Soft delete by setting is_active to false
-      await this.storeModel
-        .findByIdAndUpdate(storeId, { isActive: false })
-        .exec();
+      // Soft delete by setting isActive to false
+      await this.prisma.vendorStore.update({
+        where: { id: BigInt(storeId) },
+        data: { isActive: false },
+      });
 
       this.customLogger.logBusinessEvent(
         'store_deleted',
@@ -338,10 +354,10 @@ export class VendorStoreService {
     }
   }
 
-  private mapToResponseDto(store: VendorStoreDocument): StoreResponseDto {
+  private mapToResponseDto(store: any): StoreResponseDto {
     return {
-      id: store._id.toString(),
-      vendor_id: store.vendorId,
+      id: store.id.toString(),
+      vendor_id: store.vendorId.toString(),
       name: store.name,
       address: store.address || '',
       phone: store.phone,

@@ -86,7 +86,7 @@ describe('Vendor Authentication (Integration)', () => {
         'phone',
         '+91-test-9876543210',
       );
-      expect(response.body.expiresIn).toBe(3600);
+      expect(response.body.expiresIn).toBe(36000);
     });
 
     it('should fail authentication with invalid phone number', async () => {

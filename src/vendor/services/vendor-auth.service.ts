@@ -16,6 +16,7 @@ import {
   VendorSendOtpDto,
   VendorVerifyOtpDto,
   VendorOtpResponseDto,
+  VendorLoginDto,
 } from '../dto/vendor.dto';
 
 @Injectable()
@@ -216,6 +217,117 @@ export class VendorAuthService {
         error,
       );
       throw new UnauthorizedException('OTP verification failed');
+    }
+  }
+
+  async login(loginDto: VendorLoginDto): Promise<VendorAuthResponseDto> {
+    const startTime = Date.now();
+    try {
+      const { phone, password } = loginDto;
+
+      // Log login attempt
+      this.customLogger.logSecurityEvent(
+        'vendor_login_attempt',
+        { phone },
+        undefined,
+        undefined,
+      );
+
+      // Find vendor by phone
+      const vendor = await this.prismaService.vendor.findUnique({
+        where: { phone },
+      });
+
+      if (!vendor) {
+        this.customLogger.logSecurityEvent(
+          'vendor_login_failure',
+          { phone, reason: 'vendor_not_found' },
+          undefined,
+          undefined,
+        );
+        throw new UnauthorizedException('Invalid phone or password');
+      }
+
+      // Check if vendor is active
+      if (!vendor.isActive) {
+        this.customLogger.logSecurityEvent(
+          'vendor_login_failure',
+          { phone, reason: 'account_inactive' },
+          undefined,
+          undefined,
+        );
+        throw new ForbiddenException('Account is inactive');
+      }
+
+      // Check if vendor has password hash (for password-based login)
+      if (!vendor.passwordHash) {
+        this.customLogger.logSecurityEvent(
+          'vendor_login_failure',
+          { phone, reason: 'no_password_set' },
+          undefined,
+          undefined,
+        );
+        throw new UnauthorizedException('Invalid phone or password');
+      }
+
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(password, vendor.passwordHash);
+      if (!isPasswordValid) {
+        this.customLogger.logSecurityEvent(
+          'vendor_login_failure',
+          { phone, reason: 'invalid_password' },
+          undefined,
+          undefined,
+        );
+        throw new UnauthorizedException('Invalid phone or password');
+      }
+
+      // Update last active timestamp
+      await this.prismaService.vendor.update({
+        where: { id: vendor.id },
+        data: { lastActiveAt: new Date() },
+      });
+
+      // Generate JWT token
+      const payload = {
+        sub: vendor.id.toString(),
+        phone: vendor.phone,
+        role: 'vendor',
+        businessName: vendor.name,
+      };
+
+      const token = this.jwtService.sign(payload);
+      const expiresIn = 36000; // 10 hours
+
+      this.customLogger.logBusinessEvent(
+        'vendor_authenticated_via_password',
+        { vendorId: vendor.id.toString(), phone },
+        vendor.id.toString(),
+      );
+
+      return {
+        token,
+        vendor: this.mapToProfileDto(vendor),
+        expiresIn,
+      };
+    } catch (error) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      this.customLogger.logSecurityEvent(
+        'vendor_login_error',
+        { phone: loginDto.phone, error: error.message },
+        undefined,
+        undefined,
+      );
+      this.logger.error(
+        `Vendor login failed for ${loginDto.phone}:`,
+        error,
+      );
+      throw new UnauthorizedException('Login failed');
     }
   }
 

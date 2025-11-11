@@ -77,30 +77,10 @@ export class RetryInterceptor implements NestInterceptor {
   }
 
   private isTransientError(error: any): boolean {
-    // Check for MongoDB connection errors, network timeouts, etc.
+    // Check for transient connection errors, network timeouts, etc.
     if (!error) return false;
 
     const errorMessage = error.message || '';
-    const errorCode = error.code || error.codeName;
-
-    // MongoDB transient errors
-    const transientCodes = [
-      6, // HostUnreachable
-      7, // HostNotFound
-      89, // NetworkTimeout
-      91, // ShutdownInProgress
-      100, // ClientMarkedAsClosed
-      10107, // NotMaster
-      11600, // InterruptedAtShutdown
-      11602, // InterruptedDueToReplStateChange
-      13435, // NotMasterNoSlaveOk
-      13436, // NotMasterOrSecondary
-    ];
-
-    // Check error codes
-    if (transientCodes.includes(errorCode)) {
-      return true;
-    }
 
     // Check error messages for transient patterns
     const transientPatterns = [

@@ -4,14 +4,8 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { PrismaService } from '../../common/database/prisma.service';
 import { v4 as uuidv4 } from 'uuid';
-import {
-  LedgerEntry,
-  LedgerEntryDocument,
-} from '../../common/schemas/ledger-entry.schema';
-import { Payout, PayoutDocument } from '../../common/schemas/payout.schema';
 import {
   LedgerEntryType,
   LedgerEntryStatus,
@@ -42,10 +36,7 @@ export class LedgerService {
   private readonly logger = new Logger(LedgerService.name);
 
   constructor(
-    @InjectModel(LedgerEntry.name)
-    private ledgerEntryModel: Model<LedgerEntryDocument>,
-    @InjectModel(Payout.name)
-    private payoutModel: Model<PayoutDocument>,
+    private prisma: PrismaService,
     private customLogger: CustomLoggerService,
   ) {}
 
@@ -62,21 +53,26 @@ export class LedgerService {
       // For now, we'll use a simple balance calculation
       const balanceAfter = createDto.amount; // TODO: Implement proper balance calculation
 
-      const ledgerEntry = new this.ledgerEntryModel({
-        ...createDto,
-        vendorId: new Types.ObjectId(createDto.vendorId),
-        orderId: new Types.ObjectId(createDto.orderId),
-        userId: new Types.ObjectId(createDto.userId),
-        balanceAfter,
-        status: LedgerEntryStatus.PENDING,
+      const ledgerEntry = await this.prisma.ledgerEntry.create({
+        data: {
+          vendorId: BigInt(createDto.vendorId),
+          orderId: createDto.orderId ? BigInt(createDto.orderId) : null,
+          orderCreatedAt: createDto.orderId ? new Date() : null, // TODO: Get actual order createdAt
+          userId: createDto.userId ? BigInt(createDto.userId) : null,
+          type: createDto.type,
+          amount: createDto.amount,
+          balanceAfter: balanceAfter,
+          status: LedgerEntryStatus.PENDING,
+          description: createDto.description,
+          referenceId: createDto.referenceId,
+          metadata: createDto.metadata || {},
+        },
       });
-
-      const savedEntry = await ledgerEntry.save();
 
       this.customLogger.logBusinessEvent(
         'ledger_entry_created',
         {
-          ledgerEntryId: savedEntry._id,
+          ledgerEntryId: ledgerEntry.id.toString(),
           vendorId: createDto.vendorId,
           amount: createDto.amount,
           type: createDto.type,
@@ -84,7 +80,7 @@ export class LedgerService {
         createDto.userId,
       );
 
-      return this.mapToResponseDto(savedEntry);
+      return this.mapToResponseDto(ledgerEntry);
     } catch (error) {
       this.logger.error(`Failed to create ledger entry: ${error.message}`);
       throw new BadRequestException('Failed to create ledger entry');
@@ -107,21 +103,21 @@ export class LedgerService {
     totalPages: number;
   }> {
     try {
-      const filter: any = { vendorId: new Types.ObjectId(vendorId) };
+      const where: any = { vendorId: BigInt(vendorId) };
 
-      if (type) filter.type = type;
-      if (status) filter.status = status;
+      if (type) where.type = type;
+      if (status) where.status = status;
 
       const skip = (page - 1) * limit;
 
       const [entries, total] = await Promise.all([
-        this.ledgerEntryModel
-          .find(filter)
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .exec(),
-        this.ledgerEntryModel.countDocuments(filter),
+        this.prisma.ledgerEntry.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        this.prisma.ledgerEntry.count({ where }),
       ]);
 
       return {
@@ -150,52 +146,25 @@ export class LedgerService {
         analyticsDto.endDate,
       );
 
-      const pipeline = [
-        {
-          $match: {
-            vendorId: new Types.ObjectId(vendorId),
-            createdAt: { $gte: startDate, $lte: endDate },
-            status: LedgerEntryStatus.COMPLETED,
-          },
+      const where = {
+        vendorId: BigInt(vendorId),
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
         },
-        {
-          $group: {
-            _id: null,
-            totalSales: {
-              $sum: {
-                $cond: [{ $eq: ['$type', LedgerEntryType.SALE] }, '$amount', 0],
-              },
-            },
-            totalRefunds: {
-              $sum: {
-                $cond: [
-                  { $eq: ['$type', LedgerEntryType.REFUND] },
-                  '$amount',
-                  0,
-                ],
-              },
-            },
-            totalCommission: {
-              $sum: {
-                $cond: [
-                  { $eq: ['$type', LedgerEntryType.COMMISSION] },
-                  '$amount',
-                  0,
-                ],
-              },
-            },
-            totalOrders: {
-              $sum: {
-                $cond: [{ $eq: ['$type', LedgerEntryType.SALE] }, 1, 0],
-              },
-            },
-          },
+        status: LedgerEntryStatus.COMPLETED,
+      };
+
+      // Get all ledger entries for calculations
+      const entries = await this.prisma.ledgerEntry.findMany({
+        where,
+        select: {
+          type: true,
+          amount: true,
         },
-      ];
+      });
 
-      const [analytics] = await this.ledgerEntryModel.aggregate(pipeline);
-
-      if (!analytics) {
+      if (!entries || entries.length === 0) {
         return this.createEmptyAnalytics(
           vendorId,
           analyticsDto.period,
@@ -203,6 +172,32 @@ export class LedgerService {
           endDate,
         );
       }
+
+      // Calculate analytics using JavaScript aggregation
+      const analytics = entries.reduce(
+        (acc, entry) => {
+          const amount = Number(entry.amount);
+          switch (entry.type) {
+            case LedgerEntryType.SALE:
+              acc.totalSales += amount;
+              acc.totalOrders += 1;
+              break;
+            case LedgerEntryType.REFUND:
+              acc.totalRefunds += amount;
+              break;
+            case LedgerEntryType.COMMISSION:
+              acc.totalCommission += amount;
+              break;
+          }
+          return acc;
+        },
+        {
+          totalSales: 0,
+          totalRefunds: 0,
+          totalCommission: 0,
+          totalOrders: 0,
+        },
+      );
 
       const totalRevenue = analytics.totalSales - analytics.totalRefunds;
       const netEarnings = totalRevenue - analytics.totalCommission;
@@ -236,98 +231,71 @@ export class LedgerService {
    */
   async getLedgerSummary(vendorId: string): Promise<LedgerSummaryResponseDto> {
     try {
-      // Combine ledger and payout queries for better performance
-      const [ledgerSummary, payoutSummary, lastPayout] = await Promise.all([
-        // Single aggregation for ledger entries
-        this.ledgerEntryModel.aggregate([
-          {
-            $match: {
-              vendorId: new Types.ObjectId(vendorId),
-              status: LedgerEntryStatus.COMPLETED,
-            },
-          },
-          {
-            $group: {
-              _id: null,
-              totalEarnings: {
-                $sum: {
-                  $cond: [
-                    {
-                      $in: [
-                        '$type',
-                        [LedgerEntryType.SALE, LedgerEntryType.ADJUSTMENT],
-                      ],
-                    },
-                    '$amount',
-                    0,
-                  ],
-                },
-              },
-              totalCommission: {
-                $sum: {
-                  $cond: [
-                    { $eq: ['$type', LedgerEntryType.COMMISSION] },
-                    '$amount',
-                    0,
-                  ],
-                },
-              },
-            },
-          },
-        ]),
-        // Single aggregation for payout summary
-        this.payoutModel.aggregate([
-          {
-            $match: {
-              vendorId: new Types.ObjectId(vendorId),
-            },
-          },
-          {
-            $group: {
-              _id: null,
-              pendingPayouts: {
-                $sum: {
-                  $cond: [
-                    {
-                      $in: [
-                        '$status',
-                        [PayoutStatus.PENDING, PayoutStatus.PROCESSING],
-                      ],
-                    },
-                    '$amount',
-                    0,
-                  ],
-                },
-              },
-              completedPayouts: {
-                $sum: {
-                  $cond: [
-                    { $eq: ['$status', PayoutStatus.COMPLETED] },
-                    '$amount',
-                    0,
-                  ],
-                },
-              },
-            },
-          },
-        ]),
-        // Get last payout
-        this.payoutModel
-          .findOne(
-            {
-              vendorId: new Types.ObjectId(vendorId),
-              status: PayoutStatus.COMPLETED,
-            },
-            {},
-            { sort: { completedAt: -1 } },
-          )
-          .exec(),
-      ]);
+      // Get ledger entries for earnings and commission calculations
+      const ledgerEntries = await this.prisma.ledgerEntry.findMany({
+        where: {
+          vendorId: BigInt(vendorId),
+          status: LedgerEntryStatus.COMPLETED,
+        },
+        select: {
+          type: true,
+          amount: true,
+        },
+      });
 
-      const totalEarnings = ledgerSummary[0]?.totalEarnings || 0;
-      const totalCommission = ledgerSummary[0]?.totalCommission || 0;
-      const pendingPayoutAmount = payoutSummary[0]?.pendingPayouts || 0;
-      const completedPayoutAmount = payoutSummary[0]?.completedPayouts || 0;
+      // Calculate ledger summary
+      const ledgerSummary = ledgerEntries.reduce(
+        (acc, entry) => {
+          const amount = Number(entry.amount);
+          if ([LedgerEntryType.SALE, LedgerEntryType.ADJUSTMENT].includes(entry.type as LedgerEntryType)) {
+            acc.totalEarnings += amount;
+          } else if (entry.type === LedgerEntryType.COMMISSION) {
+            acc.totalCommission += amount;
+          }
+          return acc;
+        },
+        {
+          totalEarnings: 0,
+          totalCommission: 0,
+        },
+      );
+
+      // Get payout summary
+      const payoutEntries = await this.prisma.payout.findMany({
+        where: {
+          vendorId: BigInt(vendorId),
+        },
+        select: {
+          status: true,
+          amount: true,
+          completedAt: true,
+        },
+      });
+
+      const payoutSummary = payoutEntries.reduce(
+        (acc, payout) => {
+          const amount = Number(payout.amount);
+          if ([PayoutStatus.PENDING, PayoutStatus.PROCESSING].includes(payout.status as PayoutStatus)) {
+            acc.pendingPayouts += amount;
+          } else if (payout.status === PayoutStatus.COMPLETED) {
+            acc.completedPayouts += amount;
+            if (payout.completedAt && (!acc.lastPayoutDate || payout.completedAt > acc.lastPayoutDate)) {
+              acc.lastPayoutDate = payout.completedAt;
+            }
+          }
+          return acc;
+        },
+        {
+          pendingPayouts: 0,
+          completedPayouts: 0,
+          lastPayoutDate: null as Date | null,
+        },
+      );
+
+      const totalEarnings = ledgerSummary.totalEarnings;
+      const totalCommission = ledgerSummary.totalCommission;
+      const pendingPayoutAmount = payoutSummary.pendingPayouts;
+      const completedPayoutAmount = payoutSummary.completedPayouts;
       const netBalance =
         totalEarnings -
         totalCommission -
@@ -341,7 +309,7 @@ export class LedgerService {
         completedPayouts: completedPayoutAmount,
         totalCommission,
         netBalance,
-        lastPayoutDate: lastPayout?.completedAt,
+        lastPayoutDate: payoutSummary.lastPayoutDate,
         nextPayoutDate: this.calculateNextPayoutDate(),
       };
     } catch (error) {
@@ -366,21 +334,26 @@ export class LedgerService {
         throw new BadRequestException('Insufficient balance for payout');
       }
 
-      const payout = new this.payoutModel({
-        vendorId: new Types.ObjectId(vendorId),
-        amount: createDto.amount,
-        method: createDto.method,
-        bankDetails: createDto.bankDetails,
-        upiDetails: createDto.upiDetails,
-        status: PayoutStatus.PENDING,
+      const payout = await this.prisma.payout.create({
+        data: {
+          vendorId: BigInt(vendorId),
+          amount: createDto.amount,
+          method: createDto.method,
+          payoutDetails: createDto.bankDetails || createDto.upiDetails ? {
+            bankAccountNumber: createDto.bankDetails?.accountNumber,
+            ifscCode: createDto.bankDetails?.ifscCode,
+            accountHolderName: createDto.bankDetails?.accountHolderName || createDto.upiDetails?.name,
+            bankName: createDto.bankDetails?.bankName,
+            upiId: createDto.upiDetails?.upiId,
+          } : {},
+          status: PayoutStatus.PENDING,
+        },
       });
-
-      const savedPayout = await payout.save();
 
       this.customLogger.logBusinessEvent(
         'payout_requested',
         {
-          payoutId: savedPayout._id,
+          payoutId: payout.id.toString(),
           vendorId,
           amount: createDto.amount,
           method: createDto.method,
@@ -388,7 +361,7 @@ export class LedgerService {
         vendorId,
       );
 
-      return this.mapPayoutToResponseDto(savedPayout);
+      return this.mapPayoutToResponseDto(payout);
     } catch (error) {
       this.logger.error(`Failed to create payout: ${error.message}`);
       if (error instanceof BadRequestException) {
@@ -413,19 +386,19 @@ export class LedgerService {
     totalPages: number;
   }> {
     try {
-      const filter: any = { vendorId: new Types.ObjectId(vendorId) };
-      if (status) filter.status = status;
+      const where: any = { vendorId: BigInt(vendorId) };
+      if (status) where.status = status;
 
       const skip = (page - 1) * limit;
 
       const [payouts, total] = await Promise.all([
-        this.payoutModel
-          .find(filter)
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .exec(),
-        this.payoutModel.countDocuments(filter),
+        this.prisma.payout.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        this.prisma.payout.count({ where }),
       ]);
 
       return {
@@ -441,13 +414,13 @@ export class LedgerService {
   }
 
   // Helper methods
-  private mapToResponseDto(entry: LedgerEntryDocument): LedgerEntryResponseDto {
+  private mapToResponseDto(entry: any): LedgerEntryResponseDto {
     return {
-      id: entry._id.toString(),
+      id: entry.id.toString(),
       vendorId: entry.vendorId.toString(),
-      orderId: entry.orderId.toString(),
+      orderId: entry.orderId?.toString() || '',
       userId: entry.userId?.toString() || '',
-      amount: entry.amount,
+      amount: Number(entry.amount),
       type: entry.type as LedgerEntryType,
       status: entry.status as LedgerEntryStatus,
       description: entry.description,
@@ -458,25 +431,26 @@ export class LedgerService {
     };
   }
 
-  private mapPayoutToResponseDto(payout: PayoutDocument): PayoutResponseDto {
+  private mapPayoutToResponseDto(payout: any): PayoutResponseDto {
+    const payoutDetails = payout.payoutDetails as any;
     return {
-      id: payout._id.toString(),
+      id: payout.id.toString(),
       vendorId: payout.vendorId.toString(),
-      amount: payout.amount,
+      amount: Number(payout.amount),
       status: payout.status as PayoutStatus,
       method: payout.method as PayoutMethod,
-      bankDetails: payout.payoutDetails
+      bankDetails: payoutDetails?.bankAccountNumber
         ? {
-            accountNumber: payout.payoutDetails.bankAccountNumber || '',
-            ifscCode: payout.payoutDetails.ifscCode || '',
-            accountHolderName: payout.payoutDetails.accountHolderName || '',
-            bankName: payout.payoutDetails.bankName || '',
+            accountNumber: payoutDetails.bankAccountNumber,
+            ifscCode: payoutDetails.ifscCode || '',
+            accountHolderName: payoutDetails.accountHolderName || '',
+            bankName: payoutDetails.bankName || '',
           }
         : undefined,
-      upiDetails: payout.payoutDetails?.upiId
+      upiDetails: payoutDetails?.upiId
         ? {
-            upiId: payout.payoutDetails.upiId,
-            name: payout.payoutDetails.accountHolderName || '',
+            upiId: payoutDetails.upiId,
+            name: payoutDetails.accountHolderName || '',
           }
         : undefined,
       transactionId: payout.transactionId,

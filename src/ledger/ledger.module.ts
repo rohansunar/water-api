@@ -1,15 +1,9 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import {
   LedgerController,
   AdminLedgerController,
 } from './controllers/ledger.controller';
 import { LedgerService } from './services/ledger.service';
-import {
-  LedgerEntry,
-  LedgerEntrySchema,
-} from '../common/schemas/ledger-entry.schema';
-import { Payout, PayoutSchema } from '../common/schemas/payout.schema';
 import { LoggerModule } from '../common/logger/logger.module';
 
 /**
@@ -19,10 +13,6 @@ import { LoggerModule } from '../common/logger/logger.module';
  */
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: LedgerEntry.name, schema: LedgerEntrySchema },
-      { name: Payout.name, schema: PayoutSchema },
-    ]),
     LoggerModule,
   ],
   controllers: [LedgerController, AdminLedgerController],

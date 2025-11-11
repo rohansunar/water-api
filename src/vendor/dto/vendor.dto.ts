@@ -329,6 +329,26 @@ export class VendorOtpResponseDto {
   expiresIn?: number;
 }
 
+export class VendorLoginDto {
+  @ApiProperty({
+    description: 'Vendor phone number',
+    example: '+91-9876543210',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @IsPhoneNumber('IN')
+  phone: string;
+
+  @ApiProperty({
+    description: 'Vendor password',
+    example: 'password123',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(8)
+  password: string;
+}
+
 export class VendorAuthResponseDto {
   @ApiProperty({
     description: 'JWT access token',

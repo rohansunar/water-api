@@ -132,9 +132,9 @@ export class OrderService {
 
       // === STEP 3: Pricing Calculation ===
       // Calculate all cost components of the order
-      const itemTotal = product.price * createOrderDto.quantity;
+      const itemTotal = Number(product.price) * createOrderDto.quantity;
       const depositAmount = product.hasDeposit
-        ? product.depositAmount * createOrderDto.quantity
+        ? Number(product.depositAmount) * createOrderDto.quantity
         : 0;
       const deliveryFee = this.calculateDeliveryFee(
         product.vendorId.toString(),
@@ -184,7 +184,7 @@ export class OrderService {
       // === STEP 7: Inventory Management ===
       // Reserve inventory by reducing stock quantity
       await this.productService.updateStock(
-        product.id,
+        product.id.toString(),
         -createOrderDto.quantity, // Negative value reduces stock
       );
 

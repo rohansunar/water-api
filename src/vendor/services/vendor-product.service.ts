@@ -5,16 +5,9 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Product, ProductDocument } from '../../common/schemas/product.schema';
-import {
-  VendorStore,
-  VendorStoreDocument,
-} from '../../common/schemas/vendor-store.schema';
+import { PrismaService } from '../../common/database/prisma.service';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 import { VendorService } from './vendor.service';
-import { Prisma } from '@prisma/client';
 import {
   CreateVendorProductDto,
   UpdateVendorProductDto,
@@ -32,10 +25,7 @@ export class VendorProductService {
   private readonly logger = new Logger(VendorProductService.name);
 
   constructor(
-    @InjectModel(Product.name)
-    private productModel: Model<ProductDocument>,
-    @InjectModel(VendorStore.name)
-    private storeModel: Model<VendorStoreDocument>,
+    private readonly prisma: PrismaService,
     private readonly customLogger: CustomLoggerService,
     private readonly vendorService: VendorService,
   ) {}
@@ -64,7 +54,7 @@ export class VendorProductService {
       );
 
       // Check if vendor exists and is active
-      const vendor = await this.vendorService.findById(vendorId);
+      const vendor = await this.prisma.vendor.findFirst({where:{id: BigInt(vendorId)}});
       if (!vendor) {
         this.customLogger.logBusinessEvent(
           'product_creation_failure',
@@ -74,10 +64,21 @@ export class VendorProductService {
         throw new NotFoundException('Vendor not found');
       }
 
+      if (!vendor.isActive) {
+        this.customLogger.logBusinessEvent(
+          'product_creation_failure',
+          { vendorId, reason: 'vendor_not_active' },
+          vendorId,
+        );
+        throw new BadRequestException('Vendor is not active');
+      }
+
       // Check if product name already exists for this vendor
-      const existingProduct = await this.productModel.findOne({
-        vendorId,
-        name: title,
+      const existingProduct = await this.prisma.product.findFirst({
+        where: {
+          vendorId: BigInt(vendorId),
+          name: title,
+        },
       });
 
       if (existingProduct) {
@@ -92,29 +93,34 @@ export class VendorProductService {
       }
 
       // Create product
-      const product = await this.productModel.create({
-        vendorId,
-        name: title,
-        category,
-        price: base_price,
-        description,
-        capacity: unit,
-        stock: 0,
-        isAvailable: true,
-        stockQuantity: 0,
-        isActive: true,
-        minOrderQuantity: 1,
-        maxOrderQuantity: 1000,
-        areaPincodes: attributes?.areaPincodes || [],
-        images: attributes?.images || [],
-        specifications: attributes?.specifications || {},
-        hasDeposit: attributes?.hasDeposit || false,
-        depositAmount: attributes?.depositAmount || 0,
+      const product = await this.prisma.product.create({
+        data: {
+          vendorId: BigInt(vendorId),
+          name: title,
+          category,
+          price: base_price,
+          description,
+          capacity: attributes?.capacity || unit,
+          unit,
+          stock: 0,
+          stockQuantity: 0,
+          isAvailable: true,
+          minOrderQuantity: 1,
+          maxOrderQuantity: 1000,
+          areaPincodes: attributes?.areaPincodes || [],
+          images: attributes?.images || [],
+          specifications: {
+            ...attributes?.specifications,
+            sku,
+          },
+          hasDeposit: attributes?.hasDeposit || false,
+          depositAmount: attributes?.depositAmount || 0,
+        },
       });
 
       this.customLogger.logBusinessEvent(
         'product_created',
-        { vendorId, productId: product._id.toString(), productTitle: title },
+        { vendorId, productId: product.id.toString(), productTitle: title },
         vendorId,
       );
 
@@ -167,13 +173,23 @@ export class VendorProductService {
 
       // Get products with pagination
       const [products, total] = await Promise.all([
-        this.productModel
-          .find(filter)
-          .skip(skip)
-          .limit(limit)
-          .sort({ createdAt: -1 })
-          .exec(),
-        this.productModel.countDocuments(filter).exec(),
+        this.prisma.product.findMany({
+          where: {
+            vendorId: BigInt(vendorId),
+            ...(isActive !== undefined && { isActive }),
+            ...(category && { category }),
+          },
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.product.count({
+          where: {
+            vendorId: BigInt(vendorId),
+            ...(isActive !== undefined && { isActive }),
+            ...(category && { category }),
+          },
+        }),
       ]);
 
       this.customLogger.logBusinessEvent(
@@ -210,9 +226,11 @@ export class VendorProductService {
   ): Promise<VendorProductResponseDto> {
     const startTime = Date.now();
     try {
-      const product = await this.productModel.findOne({
-        _id: productId,
-        vendorId,
+      const product = await this.prisma.product.findFirst({
+        where: {
+          id: BigInt(productId),
+          vendorId: BigInt(vendorId),
+        },
       });
 
       if (!product) {
@@ -267,9 +285,11 @@ export class VendorProductService {
       } = updateProductDto;
 
       // Check if product exists and belongs to vendor
-      const existingProduct = await this.productModel.findOne({
-        _id: productId,
-        vendorId,
+      const existingProduct = await this.prisma.product.findFirst({
+        where: {
+          id: BigInt(productId),
+          vendorId: BigInt(vendorId),
+        },
       });
 
       if (!existingProduct) {
@@ -283,10 +303,12 @@ export class VendorProductService {
 
       // Check if new name conflicts with existing products
       if (title && title !== existingProduct.name) {
-        const nameConflict = await this.productModel.findOne({
-          vendorId,
-          name: title,
-          _id: { $ne: productId },
+        const nameConflict = await this.prisma.product.findFirst({
+          where: {
+            vendorId: BigInt(vendorId),
+            name: title,
+            id: { not: BigInt(productId) },
+          },
         });
 
         if (nameConflict) {
@@ -312,9 +334,10 @@ export class VendorProductService {
         updateData.images = [attributes.imageUrl];
       if (is_active !== undefined) updateData.isActive = is_active;
 
-      const updatedProduct = await this.productModel
-        .findByIdAndUpdate(productId, updateData, { new: true })
-        .exec();
+      const updatedProduct = await this.prisma.product.update({
+        where: { id: BigInt(productId) },
+        data: updateData,
+      });
 
       this.customLogger.logBusinessEvent(
         'product_updated',
@@ -347,9 +370,11 @@ export class VendorProductService {
     const startTime = Date.now();
     try {
       // Check if product exists and belongs to vendor
-      const existingProduct = await this.productModel.findOne({
-        _id: productId,
-        vendorId,
+      const existingProduct = await this.prisma.product.findFirst({
+        where: {
+          id: BigInt(productId),
+          vendorId: BigInt(vendorId),
+        },
       });
 
       if (!existingProduct) {
@@ -361,10 +386,11 @@ export class VendorProductService {
         throw new NotFoundException('Product not found');
       }
 
-      // Soft delete by setting is_active to false
-      await this.productModel
-        .findByIdAndUpdate(productId, { isActive: false })
-        .exec();
+      // Soft delete by setting isActive to false
+      await this.prisma.product.update({
+        where: { id: BigInt(productId) },
+        data: { isActive: false },
+      });
 
       this.customLogger.logBusinessEvent(
         'product_deleted',
@@ -399,41 +425,41 @@ export class VendorProductService {
         createProductVariantDto;
 
       // Check if product exists and belongs to vendor
-      const product = await this.productModel.findOne({
-        _id: productId,
-        vendorId,
+      const product = await this.prisma.product.findFirst({
+        where: {
+          id: BigInt(productId),
+          vendorId: BigInt(vendorId),
+        },
       });
 
       if (!product) {
         throw new NotFoundException('Product not found');
       }
 
-      // Check if variant SKU already exists
-      const existingVariant = await this.productModel.findOne({
-        _id: productId,
-        'specifications.sku': variant_sku,
-      });
-
-      if (existingVariant) {
+      // Check if variant SKU already exists in specifications
+      if (product.specifications && (product.specifications as any).sku === variant_sku) {
         throw new ConflictException('Product variant already exists');
       }
 
       // Update product with variant information
-      const variantData: any = {
-        specifications: {
-          ...product.specifications,
-          sku: variant_sku,
-          ...attributes,
-        },
+      const updatedSpecifications = {
+        ...(product.specifications as any || {}),
+        sku: variant_sku,
+        ...attributes,
+      };
+
+      const updateData: any = {
+        specifications: updatedSpecifications,
       };
 
       if (price_override !== undefined) {
-        variantData.price = price_override;
+        updateData.price = price_override;
       }
 
-      const updatedProduct = await this.productModel
-        .findByIdAndUpdate(productId, variantData, { new: true })
-        .exec();
+      const updatedProduct = await this.prisma.product.update({
+        where: { id: BigInt(productId) },
+        data: updateData,
+      });
 
       this.customLogger.logBusinessEvent(
         'product_variant_created',
@@ -467,9 +493,11 @@ export class VendorProductService {
       const { attributes, price_override, is_active } = updateProductVariantDto;
 
       // Check if product exists and belongs to vendor
-      const existingProduct = await this.productModel.findOne({
-        _id: variantId,
-        vendorId,
+      const existingProduct = await this.prisma.product.findFirst({
+        where: {
+          id: BigInt(variantId),
+          vendorId: BigInt(vendorId),
+        },
       });
 
       if (!existingProduct) {
@@ -481,15 +509,16 @@ export class VendorProductService {
       if (price_override !== undefined) updateData.price = price_override;
       if (attributes) {
         updateData.specifications = {
-          ...existingProduct.specifications,
+          ...(existingProduct.specifications as any || {}),
           ...attributes,
         };
       }
       if (is_active !== undefined) updateData.isActive = is_active;
 
-      const updatedProduct = await this.productModel
-        .findByIdAndUpdate(variantId, updateData, { new: true })
-        .exec();
+      const updatedProduct = await this.prisma.product.update({
+        where: { id: BigInt(variantId) },
+        data: updateData,
+      });
 
       this.customLogger.logBusinessEvent(
         'product_variant_updated',
@@ -517,9 +546,11 @@ export class VendorProductService {
     const startTime = Date.now();
     try {
       // Check if product exists and belongs to vendor
-      const existingProduct = await this.productModel.findOne({
-        _id: variantId,
-        vendorId,
+      const existingProduct = await this.prisma.product.findFirst({
+        where: {
+          id: BigInt(variantId),
+          vendorId: BigInt(vendorId),
+        },
       });
 
       if (!existingProduct) {
@@ -527,13 +558,18 @@ export class VendorProductService {
       }
 
       // Reset variant-specific data
-      await this.productModel
-        .findByIdAndUpdate(variantId, {
-          $unset: { 'specifications.sku': 1 },
-          price: undefined,
+      const currentSpecs = existingProduct.specifications as any || {};
+      const updatedSpecs = { ...currentSpecs };
+      delete updatedSpecs.sku;
+
+      await this.prisma.product.update({
+        where: { id: BigInt(variantId) },
+        data: {
+          specifications: updatedSpecs,
+          price: existingProduct.price, // Keep original price
           isActive: false,
-        })
-        .exec();
+        },
+      });
 
       this.customLogger.logBusinessEvent(
         'product_variant_deleted',
@@ -562,9 +598,11 @@ export class VendorProductService {
         createProductMappingDto;
 
       // Check if store exists and belongs to vendor
-      const store = await this.storeModel.findOne({
-        _id: store_id,
-        vendorId,
+      const store = await this.prisma.vendorStore.findFirst({
+        where: {
+          id: BigInt(store_id),
+          vendorId: BigInt(vendorId),
+        },
       });
 
       if (!store) {
@@ -572,9 +610,11 @@ export class VendorProductService {
       }
 
       // Check if product exists and belongs to vendor
-      const product = await this.productModel.findOne({
-        _id: product_variant_id,
-        vendorId,
+      const product = await this.prisma.product.findFirst({
+        where: {
+          id: BigInt(product_variant_id),
+          vendorId: BigInt(vendorId),
+        },
       });
 
       if (!product) {
@@ -582,9 +622,11 @@ export class VendorProductService {
       }
 
       // Check if mapping already exists
-      const existingMapping = await this.productModel.findOne({
-        _id: product_variant_id,
-        'storeMappings.storeId': store_id,
+      const existingMapping = await this.prisma.productStoreMapping.findFirst({
+        where: {
+          productId: BigInt(product_variant_id),
+          storeId: BigInt(store_id),
+        },
       });
 
       if (existingMapping) {
@@ -593,23 +635,18 @@ export class VendorProductService {
         );
       }
 
-      // Create product mapping by updating product with store mapping
-      const mappingData = {
-        storeId: store_id,
-        price: price || product.price,
-        stockQuantity: stock || 0,
-        reservedStock: 0,
-        isAvailable: true,
-        areaPincodes: area_pincodes || [],
-      };
-
-      const updatedProduct = await this.productModel
-        .findByIdAndUpdate(
-          product_variant_id,
-          { $push: { storeMappings: mappingData } },
-          { new: true },
-        )
-        .exec();
+      // Create product mapping using ProductStoreMapping table
+      const mapping = await this.prisma.productStoreMapping.create({
+        data: {
+          productId: BigInt(product_variant_id),
+          storeId: BigInt(store_id),
+          price: price || product.price,
+          stockQuantity: stock || 0,
+          reservedStock: 0,
+          isAvailable: true,
+          areaPincodes: area_pincodes || [],
+        },
+      });
 
       this.customLogger.logBusinessEvent(
         'product_mapping_created',
@@ -617,7 +654,7 @@ export class VendorProductService {
         vendorId,
       );
 
-      return this.mapMappingToResponseDto(updatedProduct, store_id);
+      return this.mapMappingToResponseDto(product, store_id);
     } catch (error) {
       if (
         error instanceof NotFoundException ||
@@ -643,13 +680,20 @@ export class VendorProductService {
       const { price, stock, area_pincodes, is_active } =
         updateProductMappingDto;
 
-      // Check if product exists and belongs to vendor
-      const existingProduct = await this.productModel.findOne({
-        _id: mappingId,
-        vendorId,
+      // Check if mapping exists and belongs to vendor (through product relationship)
+      const existingMapping = await this.prisma.productStoreMapping.findFirst({
+        where: {
+          id: BigInt(mappingId),
+          product: {
+            vendorId: BigInt(vendorId),
+          },
+        },
+        include: {
+          product: true,
+        },
       });
 
-      if (!existingProduct) {
+      if (!existingMapping) {
         throw new NotFoundException('Product mapping not found');
       }
 
@@ -660,9 +704,10 @@ export class VendorProductService {
       if (area_pincodes !== undefined) updateData.areaPincodes = area_pincodes;
       if (is_active !== undefined) updateData.isAvailable = is_active;
 
-      const updatedProduct = await this.productModel
-        .findByIdAndUpdate(mappingId, updateData, { new: true })
-        .exec();
+      const updatedMapping = await this.prisma.productStoreMapping.update({
+        where: { id: BigInt(mappingId) },
+        data: updateData,
+      });
 
       this.customLogger.logBusinessEvent(
         'product_mapping_updated',
@@ -670,7 +715,7 @@ export class VendorProductService {
         vendorId,
       );
 
-      return this.mapMappingToResponseDto(updatedProduct, mappingId);
+      return this.mapMappingToResponseDto(existingMapping.product, mappingId);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -697,33 +742,40 @@ export class VendorProductService {
     try {
       const skip = (page - 1) * limit;
 
-      // Get products with store mappings
-      const [products, total] = await Promise.all([
-        this.productModel
-          .find({ vendorId })
-          .skip(skip)
-          .limit(limit)
-          .sort({ createdAt: -1 })
-          .exec(),
-        this.productModel.countDocuments({ vendorId }).exec(),
+      // Get product mappings with related data
+      const [mappingsData, total] = await Promise.all([
+        this.prisma.productStoreMapping.findMany({
+          where: {
+            product: {
+              vendorId: BigInt(vendorId),
+            },
+          },
+          include: {
+            product: true,
+            store: true,
+          },
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.productStoreMapping.count({
+          where: {
+            product: {
+              vendorId: BigInt(vendorId),
+            },
+          },
+        }),
       ]);
 
       this.customLogger.logBusinessEvent(
         'product_mappings_retrieved',
-        { vendorId, count: products.length, page, limit },
+        { vendorId, count: mappingsData.length, page, limit },
         vendorId,
       );
 
-      const mappings: VendorProductMappingResponseDto[] = [];
-      products.forEach((product) => {
-        if (product.storeMappings && product.storeMappings.length > 0) {
-          product.storeMappings.forEach((mapping) => {
-            mappings.push(
-              this.mapMappingToResponseDto(product, mapping.storeId),
-            );
-          });
-        }
-      });
+      const mappings: VendorProductMappingResponseDto[] = mappingsData.map((mapping) =>
+        this.mapMappingToResponseDto(mapping.product, mapping.storeId.toString()),
+      );
 
       return {
         mappings,
@@ -741,11 +793,11 @@ export class VendorProductService {
   }
 
   private mapProductToResponseDto(
-    product: ProductDocument,
+    product: any,
   ): VendorProductResponseDto {
     return {
-      id: product._id.toString(),
-      vendor_id: product.vendorId,
+      id: product.id.toString(),
+      vendor_id: product.vendorId.toString(),
       title: product.name,
       sku:
         product.specifications?.sku ||
@@ -767,14 +819,14 @@ export class VendorProductService {
   }
 
   private mapVariantToResponseDto(
-    product: ProductDocument,
+    product: any,
     productId: string,
   ): VendorProductVariantResponseDto {
     return {
-      id: product._id.toString(),
+      id: product.id.toString(),
       product_id: productId,
       variant_sku:
-        product.specifications?.sku || `VARIANT-${product._id.toString()}`,
+        product.specifications?.sku || `VARIANT-${product.id.toString()}`,
       attributes: product.specifications || {},
       price_override: product.price,
       is_active: product.isActive,
@@ -784,15 +836,15 @@ export class VendorProductService {
   }
 
   private mapMappingToResponseDto(
-    product: ProductDocument,
+    product: any,
     storeId: string,
   ): VendorProductMappingResponseDto {
     const mapping = product.storeMappings?.find((m) => m.storeId === storeId);
     return {
-      id: `${product._id.toString()}-${storeId}`,
-      product_id: product._id.toString(),
+      id: `${product.id.toString()}-${storeId}`,
+      product_id: product.id.toString(),
       store_id: storeId,
-      product_variant_id: product._id.toString(),
+      product_variant_id: product.id.toString(),
       price: mapping?.price || product.price,
       stock: mapping?.stockQuantity || 0,
       reserved_stock: mapping?.reservedStock || 0,
