@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { ConflictException } from '../../common/exceptions/business.exception';
 import { v4 as uuidv4 } from 'uuid';
 import {
   Order,
@@ -118,7 +119,16 @@ export class OrderService {
 
       // Check inventory availability - prevent overselling
       if (product.stockQuantity < createOrderDto.quantity) {
-        throw new BadRequestException('Insufficient stock available');
+        throw new ConflictException(
+          `Insufficient stock for product ${product.name}. Available: ${product.stockQuantity}, Requested: ${createOrderDto.quantity}`,
+          {
+            productId: createOrderDto.product_id,
+            productName: product.name,
+            available: product.stockQuantity,
+            required: createOrderDto.quantity,
+            metadata: { vendorId: product.vendorId.toString() },
+          },
+        );
       }
 
       // === STEP 2: User Validation ===

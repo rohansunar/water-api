@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { ConflictException } from '../../common/exceptions/business.exception';
 import { PrismaService } from '../../common/database/prisma.service';
 import { RefundStatus } from '../interfaces/refund.interface';
 import {
@@ -53,7 +54,16 @@ export class RefundService {
       });
 
       if (existingRefund) {
-        throw new BadRequestException('Refund already exists for this order');
+        throw new ConflictException(
+          `Refund already exists for order ${orderId}. Existing refund ID: ${existingRefund.id}`,
+          {
+            orderId,
+            metadata: {
+              existingRefundId: existingRefund.id.toString(),
+              orderCreatedAt: order.createdAt.toISOString(),
+            },
+          },
+        );
       }
 
       // Validate refund amount

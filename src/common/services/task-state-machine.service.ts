@@ -5,6 +5,7 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
+import { ConflictException as CustomConflictException } from '../exceptions/business.exception';
 import { PrismaService } from '../database/prisma.service';
 import * as crypto from 'crypto';
 
@@ -102,8 +103,14 @@ export class TaskStateMachineService {
         this.lockTimeout,
       );
       if (!lockAcquired) {
-        throw new ConflictException(
+        throw new CustomConflictException(
           'Task is currently being processed by another operation',
+          {
+            metadata: {
+              taskId: request.taskId,
+              operation: 'assign_task',
+            },
+          },
         );
       }
 
@@ -140,8 +147,14 @@ export class TaskStateMachineService {
         this.lockTimeout,
       );
       if (!lockAcquired) {
-        throw new ConflictException(
+        throw new CustomConflictException(
           'Task is currently being processed by another operation',
+          {
+            metadata: {
+              taskId: update.taskId,
+              operation: 'update_task_state',
+            },
+          },
         );
       }
 
@@ -325,7 +338,16 @@ export class TaskStateMachineService {
     }
 
     if (task.riderId) {
-      throw new ConflictException('Task is already assigned to a rider');
+      throw new CustomConflictException(
+        `Task ${request.taskId} is already assigned to rider ${task.riderId}`,
+        {
+          metadata: {
+            taskId: request.taskId,
+            existingRiderId: task.riderId,
+            operation: 'assign_task',
+          },
+        },
+      );
     }
 
     if (task.status !== TaskStatus.ASSIGNED) {

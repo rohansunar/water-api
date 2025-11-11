@@ -478,3 +478,17 @@ export class CircuitBreakerException extends BusinessException {
     );
   }
 }
+
+export class ConflictException extends BusinessException {
+  constructor(message: string, context: ErrorContext = {}) {
+    super(
+      message,
+      HttpStatus.CONFLICT,
+      'CONFLICT_ERROR',
+      ErrorCategory.BUSINESS_LOGIC,
+      ErrorSeverity.MEDIUM,
+      context,
+      false,
+    );
+  }
+}

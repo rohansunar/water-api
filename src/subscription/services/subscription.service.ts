@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { ConflictException } from '../../common/exceptions/business.exception';
 import { v4 as uuidv4 } from 'uuid';
 import {
   Subscription,
@@ -248,7 +249,16 @@ export class SubscriptionService {
     }
 
     if (subscription.status === SubscriptionStatus.CANCELLED) {
-      throw new BadRequestException('Subscription is already cancelled');
+      throw new ConflictException(
+        `Subscription ${subscriptionId} is already cancelled`,
+        {
+          metadata: {
+            subscriptionId,
+            userId,
+            currentStatus: subscription.status,
+          },
+        },
+      );
     }
 
     subscription.status = SubscriptionStatus.CANCELLED;
@@ -278,7 +288,17 @@ export class SubscriptionService {
     }
 
     if (subscription.status !== SubscriptionStatus.ACTIVE) {
-      throw new BadRequestException('Only active subscriptions can be paused');
+      throw new ConflictException(
+        `Subscription ${subscriptionId} cannot be paused. Current status: ${subscription.status}`,
+        {
+          metadata: {
+            subscriptionId,
+            userId,
+            currentStatus: subscription.status,
+            attemptedAction: 'pause',
+          },
+        },
+      );
     }
 
     subscription.status = SubscriptionStatus.PAUSED;
@@ -306,7 +326,17 @@ export class SubscriptionService {
     }
 
     if (subscription.status !== SubscriptionStatus.PAUSED) {
-      throw new BadRequestException('Only paused subscriptions can be resumed');
+      throw new ConflictException(
+        `Subscription ${subscriptionId} cannot be resumed. Current status: ${subscription.status}`,
+        {
+          metadata: {
+            subscriptionId,
+            userId,
+            currentStatus: subscription.status,
+            attemptedAction: 'resume',
+          },
+        },
+      );
     }
 
     subscription.status = SubscriptionStatus.ACTIVE;

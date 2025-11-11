@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { ConflictException } from '../../common/exceptions/business.exception';
 import { ProductResponseDto, CreateProductDto } from '../dto/product.dto';
 import { Product } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
@@ -145,7 +146,15 @@ export class ProductService {
 
       const newStock = product.stock + quantityChange;
       if (newStock < 0) {
-        throw new BadRequestException('Insufficient stock');
+        throw new ConflictException(
+          `Cannot reduce stock below zero for product ${id}. Current stock: ${product.stock}, Requested reduction: ${quantityChange}`,
+          {
+            productId: id,
+            available: product.stock,
+            required: Math.abs(quantityChange),
+            metadata: { vendorId: product.vendorId.toString() },
+          },
+        );
       }
 
       const updatedProduct = await this.prisma.product.update({

@@ -192,32 +192,23 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     }
 
-    // Create structured error response
+    // Determine final message - use exception message directly for BusinessExceptions
+    let finalMessage: string | string[];
+    if (exception instanceof BusinessException) {
+      finalMessage = message;
+    } else {
+      finalMessage = this.formatErrorMessage(message, status);
+    }
+
+    // Create error response with only the required fields
     const errorResponse = {
-      statusCode: status,
-      timestamp: new Date().toISOString(),
-      path: request.url,
-      method: request.method,
-      error: {
-        code: errorCode,
-        message: this.formatErrorMessage(message, status),
-        category,
-        severity,
-        retryable,
-        context,
-      },
+      code: errorCode,
+      message: finalMessage,
+      category,
+      retryable,
+      context,
+      userId: request.user?.id ? String(request.user.id) : undefined,
     };
-
-    // Add request ID if available (for tracing)
-    const requestId = request.headers['x-request-id'] as string;
-    if (requestId) {
-      errorResponse.error['requestId'] = requestId;
-    }
-
-    // Add user ID if available
-    if (request.user?.id) {
-      errorResponse.error['userId'] = request.user.id;
-    }
 
     // Use NestJS response methods for compatibility with both Express and Fastify
     reply.status(status).send(errorResponse);

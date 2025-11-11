@@ -88,7 +88,7 @@ export class VendorProductService {
           vendorId,
         );
         throw new ConflictException(
-          'Product with this name already exists for this vendor',
+          `Product with name '${title}' already exists for vendor ${vendorId}`,
         );
       }
 
@@ -318,7 +318,7 @@ export class VendorProductService {
             vendorId,
           );
           throw new ConflictException(
-            'Product with this name already exists for this vendor',
+            `Product with name '${title}' already exists for vendor ${vendorId}`,
           );
         }
       }
@@ -438,7 +438,9 @@ export class VendorProductService {
 
       // Check if variant SKU already exists in specifications
       if (product.specifications && (product.specifications as any).sku === variant_sku) {
-        throw new ConflictException('Product variant already exists');
+        throw new ConflictException(
+          `Product variant with SKU '${variant_sku}' already exists for product ${productId}`,
+        );
       }
 
       // Update product with variant information
@@ -631,7 +633,7 @@ export class VendorProductService {
 
       if (existingMapping) {
         throw new ConflictException(
-          'Product mapping already exists for this store',
+          `Product mapping already exists for product ${product_variant_id} in store ${store_id}`,
         );
       }
 

@@ -65,7 +65,7 @@ export class VendorStoreService {
           vendorId,
         );
         throw new ConflictException(
-          'Store with this name already exists for this vendor',
+          `Store with name '${name}' already exists for vendor ${vendorId}`,
         );
       }
 
@@ -261,7 +261,7 @@ export class VendorStoreService {
             vendorId,
           );
           throw new ConflictException(
-            'Store with this name already exists for this vendor',
+            `Store with name '${name}' already exists for vendor ${vendorId}`,
           );
         }
       }

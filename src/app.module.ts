@@ -22,7 +22,7 @@ import { EventBusModule } from './common/events/event-bus.module';
 import { CustomLoggerService } from './common/logger/logger.service';
 import { DatabaseInitService } from './common/database/database-init.service';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+// import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { RetryInterceptor } from './common/interceptors/retry.interceptor';
 import { CustomThrottlerGuard } from './common/guards/rate-limit.guard';
@@ -80,12 +80,12 @@ import { PrismaModule } from './common/database/prisma.module';
     //   provide: APP_GUARD,
     //   useClass: JwtAuthGuard,
     // },
-    {
-      provide: APP_FILTER,
-      useFactory: (customLogger: CustomLoggerService) =>
-        new HttpExceptionFilter(customLogger),
-      inject: [CustomLoggerService],
-    },
+    // {
+    //   provide: APP_FILTER,
+    //   useFactory: (customLogger: CustomLoggerService) =>
+    //     new HttpExceptionFilter(customLogger),
+    //   inject: [CustomLoggerService],
+    // },
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,
