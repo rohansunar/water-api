@@ -168,10 +168,9 @@ export class VendorProductController {
     },
   })
   async getProducts(
-    @CurrentUser('sub') vendorId: string,
+    @CurrentUser('sub') vendor:any,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
-    @Query('isActive') isActive?: string,
     @Query('category') category?: string,
   ): Promise<{
     products: VendorProductResponseDto[];
@@ -179,6 +178,8 @@ export class VendorProductController {
     page: number;
     limit: number;
   }> {
+    const {id, isActive } = vendor;
+    const vendorId = id;
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
     const isActiveBool =
@@ -234,12 +235,12 @@ export class VendorProductController {
   })
   async getProductById(
     @Param('id') productId: string,
-    @CurrentUser('sub') vendorId: string,
+    @CurrentUser('sub') vendor: any,
   ): Promise<VendorProductResponseDto> {
     this.logger.log(
-      `Product retrieval attempt for vendor: ${vendorId}, product ID: ${productId}`,
+      `Product retrieval attempt for vendor: ${vendor.id}, product ID: ${productId}`,
     );
-    return this.vendorProductService.getProductById(vendorId, productId);
+    return this.vendorProductService.getProductById(vendor.id, productId);
   }
 
   @Put(':id')
@@ -296,27 +297,33 @@ export class VendorProductController {
   async updateProduct(
     @Param('id') productId: string,
     @Body() updateProductDto: UpdateVendorProductDto,
-    @CurrentUser('sub') vendorId: string,
+    @CurrentUser('sub') vendor: any,
   ): Promise<VendorProductResponseDto> {
     this.logger.log(
-      `Product update attempt for vendor: ${vendorId}, product ID: ${productId}`,
+      `Product update attempt for vendor: ${vendor.id}, product ID: ${productId}`,
     );
     return this.vendorProductService.updateProduct(
-      vendorId,
+      vendor.id,
       productId,
       updateProductDto,
     );
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Delete product (soft delete)',
     description: 'Soft delete a specific product for the authenticated vendor',
   })
   @ApiResponse({
-    status: 204,
+    status: 200,
     description: 'Product deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Product deleted successfully' },
+      },
+    },
   })
   @ApiResponse({
     status: 404,
@@ -344,12 +351,13 @@ export class VendorProductController {
   })
   async deleteProduct(
     @Param('id') productId: string,
-    @CurrentUser('sub') vendorId: string,
-  ): Promise<void> {
+    @CurrentUser('sub') vendor: any,
+  ): Promise<{ message: string }> {
     this.logger.log(
-      `Product deletion attempt for vendor: ${vendorId}, product ID: ${productId}`,
+      `Product deletion attempt for vendor: ${vendor.id}, product ID: ${productId}`,
     );
-    await this.vendorProductService.deleteProduct(vendorId, productId);
+    await this.vendorProductService.deleteProduct(vendor.id, productId);
+    return { message: 'Product deleted successfully' };
   }
 
   @Post(':id/variants')

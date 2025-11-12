@@ -42,9 +42,6 @@ export class VendorJwtStrategy extends PassportStrategy(
     this.customLogger.log(
       `[DEBUG] VendorJwtStrategy.validate invoked for vendor ID: ${payload.sub}, phone: ${payload.phone}`,
     );
-    this.customLogger.debug(
-      `VendorJwtStrategy.validate called with payload: ${JSON.stringify(payload)}`,
-    );
     try {
       const vendor = await this.vendorAuthService.validateVendor(payload.sub);
       this.customLogger.debug(

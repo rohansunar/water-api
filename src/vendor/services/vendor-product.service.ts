@@ -170,6 +170,8 @@ export class VendorProductService {
       if (category) {
         filter.category = category;
       }
+      
+      console.log("filter",filter)
 
       // Get products with pagination
       const [products, total] = await Promise.all([
@@ -366,7 +368,7 @@ export class VendorProductService {
     }
   }
 
-  async deleteProduct(vendorId: string, productId: string): Promise<void> {
+  async deleteProduct(vendorId: string, productId: string): Promise<any> {
     const startTime = Date.now();
     try {
       // Check if product exists and belongs to vendor
@@ -397,6 +399,9 @@ export class VendorProductService {
         { vendorId, productId, productTitle: existingProduct.name },
         vendorId,
       );
+      return {
+       message :"Deleted"
+      }
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
