@@ -1,15 +1,26 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger, NotFoundException } from '@nestjs/common';
 import { VendorService } from '../../vendor/services/vendor.service';
 import { LedgerService } from '../../ledger/services/ledger.service';
 import { LedgerSummaryResponseDto } from '../../ledger/dto/ledger.dto';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 import { ProductModerationService } from '../../product/services/product-moderation.service';
-import { User, UserRole } from '../../common/interfaces/user.interface';
+import { UserRole } from '../../common/interfaces/user.interface';
+import { PrismaService } from '../../common/database/prisma.service';
+import { AdminAuthService } from './admin-auth.service';
 import {
   AdminPaginationQueryDto,
   AdminPaginatedResponseDto,
   AdminUserListResponseDto,
   AdminTransactionListQueryDto,
+  CreateAdminDto,
+  UpdateAdminDto,
+  AdminResponseDto,
+  CreateVendorDto,
+  UpdateVendorDto,
+  VendorResponseDto,
+  CreateRiderDto,
+  UpdateRiderDto,
+  RiderResponseDto,
 } from '../dto/admin.dto';
 import {
   ComplaintResponseDto,
@@ -19,6 +30,10 @@ import {
   ProductResponseDto,
   ProductSearchDto,
 } from '../../product/dto/product.dto';
+import {
+  CreateCustomerDto,
+  UpdateCustomerDto,
+} from '../../common/dto/customer.dto';
 import { PaginationUtil } from '../../common/utils/pagination.util';
 import {
   AdminOrderQueryDto,
@@ -48,17 +63,6 @@ export interface AdminDashboardStats {
   flaggedProducts: number;
 }
 
-export interface UserManagementDto {
-  id: string;
-  phone: string;
-  name?: string;
-  role: UserRole;
-  isActive: boolean;
-  monthlyPaymentMode: boolean;
-  walletBalance: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 export interface VendorApprovalDto {
   id: string;
@@ -82,6 +86,8 @@ export class AdminService {
     private readonly ledgerService: LedgerService,
     private readonly customLogger: CustomLoggerService,
     private readonly productModerationService: ProductModerationService,
+    private readonly prisma: PrismaService,
+    private readonly adminAuthService: AdminAuthService,
   ) {}
 
   async getDashboardStats(): Promise<AdminDashboardStats> {
@@ -137,43 +143,6 @@ export class AdminService {
     };
   }
 
-  async getAllUsers(
-    query: AdminPaginationQueryDto,
-  ): Promise<AdminPaginatedResponseDto<AdminUserListResponseDto>> {
-    try {
-      const { page, limit, skip } = PaginationUtil.normalizePagination(
-        query.page,
-        query.limit,
-      );
-
-      const users = this.getSimulatedUsers();
-      const filteredUsers = this.filterUsers(
-        users,
-        query.role,
-        query.status,
-        query.search,
-      );
-
-      // Apply pagination
-      const paginatedUsers = filteredUsers.slice(skip, skip + limit);
-
-      const total = filteredUsers.length;
-      const response = PaginationUtil.createPaginatedResponse(
-        paginatedUsers,
-        total,
-        page,
-        limit,
-      );
-
-      this.logger.log(
-        `Retrieved ${paginatedUsers.length} users (page ${page}/${response.meta.totalPages}, total: ${total}) with filters: ${JSON.stringify(query)}`,
-      );
-      return response;
-    } catch (error) {
-      this.logger.error('Failed to retrieve users:', error);
-      throw new BadRequestException('Failed to retrieve users');
-    }
-  }
 
   async getAllCustomers(
     query: AdminPaginationQueryDto,
@@ -184,28 +153,78 @@ export class AdminService {
         query.limit,
       );
 
-      const users = this.getSimulatedUsers();
-      const customers = users.filter((user) => user.role === UserRole.CUSTOMER);
-      const filteredCustomers = this.filterUsers(
-        customers,
-        query.role,
-        query.status,
-        query.search,
-      );
+      // Build where clause for filtering
+      const where: any = {
+        role: "CUSTOMER",
+        isDeleted: false,
+      };
 
-      // Apply pagination
-      const paginatedCustomers = filteredCustomers.slice(skip, skip + limit);
+      if (query.status) {
+        where.isActive = query.status === 'active';
+      }
 
-      const total = filteredCustomers.length;
+      if (query.search) {
+        where.OR = [
+          { name: { contains: query.search, mode: 'insensitive' } },
+          { phone: { contains: query.search } },
+          { email: { contains: query.search, mode: 'insensitive' } },
+        ];
+      }
+
+      // Get total count
+      const total = await this.prisma.customer.count({
+        where: {
+          role: "CUSTOMER",
+          isDeleted: false,
+        },
+      });
+
+      // Get paginated customers
+      const customers = await this.prisma.customer.findMany({
+        where,
+        select: {
+          id: true,
+          uuid: true,
+          phone: true,
+          email: true,
+          name: true,
+          role: true,
+          isActive: true,
+          monthlyPaymentMode: true,
+          walletBalance: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      });
+
+      // Transform to response format
+      const customerResponses: AdminUserListResponseDto[] = customers.map(customer => ({
+        id: customer.uuid,
+        phone: customer.phone,
+        name: customer.name || undefined,
+        role: customer.role === 'CUSTOMER' ? UserRole.CUSTOMER :
+              customer.role === 'VENDOR' ? UserRole.VENDOR :
+              customer.role === 'DELIVERY_RIDER' ? UserRole.DELIVERY_RIDER :
+              UserRole.ADMIN,
+        isActive: customer.isActive,
+        monthlyPaymentMode: customer.monthlyPaymentMode,
+        walletBalance: Number(customer.walletBalance),
+        createdAt: customer.createdAt,
+        updatedAt: customer.updatedAt,
+      }));
+
       const response = PaginationUtil.createPaginatedResponse(
-        paginatedCustomers,
+        customerResponses,
         total,
         page,
         limit,
       );
 
       this.logger.log(
-        `Retrieved ${paginatedCustomers.length} customers (page ${page}/${response.meta.totalPages}, total: ${total}) with filters: ${JSON.stringify(query)}`,
+        `Retrieved ${customerResponses.length} customers (page ${page}/${response.meta.totalPages}, total: ${total}) with filters: ${JSON.stringify(query)}`,
       );
       return response;
     } catch (error) {
@@ -223,28 +242,65 @@ export class AdminService {
         query.limit,
       );
 
-      const users = this.getSimulatedUsers();
-      const vendors = users.filter((user) => user.role === UserRole.VENDOR);
-      const filteredVendors = this.filterUsers(
-        vendors,
-        query.role,
-        query.status,
-        query.search,
-      );
+      // Build where clause for filtering
+      const where: any = {
+        isDeleted: false,
+      };
 
-      // Apply pagination
-      const paginatedVendors = filteredVendors.slice(skip, skip + limit);
+      if (query.status) {
+        where.isActive = query.status === 'active';
+      }
 
-      const total = filteredVendors.length;
+      if (query.search) {
+        where.OR = [
+          { name: { contains: query.search, mode: 'insensitive' } },
+          { phone: { contains: query.search } },
+          { email: { contains: query.search, mode: 'insensitive' } },
+        ];
+      }
+
+      // Get total count
+      const total = await this.prisma.vendor.count({ where });
+
+      // Get paginated vendors
+      const vendors = await this.prisma.vendor.findMany({
+        where,
+        select: {
+          id: true,
+          phone: true,
+          email: true,
+          name: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      });
+
+      // Transform to response format
+      const vendorResponses: AdminUserListResponseDto[] = vendors.map(vendor => ({
+        id: vendor.id.toString(),
+        phone: vendor.phone || undefined,
+        name: vendor.name,
+        role: UserRole.VENDOR,
+        isActive: vendor.isActive,
+        monthlyPaymentMode: false, // Vendors don't have monthly payment mode
+        walletBalance: 0, // Vendors don't have wallet balance in this context
+        createdAt: vendor.createdAt,
+        updatedAt: vendor.updatedAt,
+      }));
+
       const response = PaginationUtil.createPaginatedResponse(
-        paginatedVendors,
+        vendorResponses,
         total,
         page,
         limit,
       );
 
       this.logger.log(
-        `Retrieved ${paginatedVendors.length} vendors (page ${page}/${response.meta.totalPages}, total: ${total}) with filters: ${JSON.stringify(query)}`,
+        `Retrieved ${vendorResponses.length} vendors (page ${page}/${response.meta.totalPages}, total: ${total}) with filters: ${JSON.stringify(query)}`,
       );
       return response;
     } catch (error) {
@@ -262,30 +318,68 @@ export class AdminService {
         query.limit,
       );
 
-      const users = this.getSimulatedUsers();
-      const riders = users.filter(
-        (user) => user.role === UserRole.DELIVERY_RIDER,
-      );
-      const filteredRiders = this.filterUsers(
-        riders,
-        query.role,
-        query.status,
-        query.search,
-      );
+      // Build where clause for filtering
+      const where: any = {
+        isDeleted: false,
+      };
 
-      // Apply pagination
-      const paginatedRiders = filteredRiders.slice(skip, skip + limit);
+      if (query.status) {
+        where.isActive = query.status === 'active';
+      }
 
-      const total = filteredRiders.length;
+      if (query.search) {
+        where.OR = [
+          { name: { contains: query.search, mode: 'insensitive' } },
+          { phone: { contains: query.search } },
+          { email: { contains: query.search, mode: 'insensitive' } },
+        ];
+      }
+
+      // Get total count
+      const total = await this.prisma.rider.count({ where });
+
+      // Get paginated riders
+      const riders = await this.prisma.rider.findMany({
+        where,
+        select: {
+          id: true,
+          uuid: true,
+          phone: true,
+          email: true,
+          name: true,
+          status: true,
+          rating: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      });
+
+      // Transform to response format
+      const riderResponses: AdminUserListResponseDto[] = riders.map(rider => ({
+        id: rider.uuid,
+        phone: rider.phone || undefined,
+        name: rider.name,
+        role: UserRole.DELIVERY_RIDER,
+        isActive: rider.isActive,
+        monthlyPaymentMode: false, // Riders don't have monthly payment mode
+        walletBalance: 0, // Riders don't have wallet balance in this context
+        createdAt: rider.createdAt,
+        updatedAt: rider.updatedAt,
+      }));
+
       const response = PaginationUtil.createPaginatedResponse(
-        paginatedRiders,
+        riderResponses,
         total,
         page,
         limit,
       );
 
       this.logger.log(
-        `Retrieved ${paginatedRiders.length} riders (page ${page}/${response.meta.totalPages}, total: ${total}) with filters: ${JSON.stringify(query)}`,
+        `Retrieved ${riderResponses.length} riders (page ${page}/${response.meta.totalPages}, total: ${total}) with filters: ${JSON.stringify(query)}`,
       );
       return response;
     } catch (error) {
@@ -294,111 +388,10 @@ export class AdminService {
     }
   }
 
-  private getSimulatedUsers(): UserManagementDto[] {
-    return [
-      {
-        id: '1',
-        phone: '9999999999',
-        name: 'Test Customer',
-        role: UserRole.CUSTOMER,
-        isActive: true,
-        monthlyPaymentMode: false,
-        walletBalance: 500,
-        createdAt: new Date('2024-01-15'),
-        updatedAt: new Date('2024-01-15'),
-      },
-      {
-        id: '2',
-        phone: '8888888888',
-        name: 'Test Vendor',
-        role: UserRole.VENDOR,
-        isActive: true,
-        monthlyPaymentMode: false,
-        walletBalance: 1000,
-        createdAt: new Date('2024-01-10'),
-        updatedAt: new Date('2024-01-10'),
-      },
-      {
-        id: '3',
-        phone: '7777777777',
-        name: 'Test Rider',
-        role: UserRole.DELIVERY_RIDER,
-        isActive: true,
-        monthlyPaymentMode: false,
-        walletBalance: 200,
-        createdAt: new Date('2024-01-20'),
-        updatedAt: new Date('2024-01-20'),
-      },
-    ];
-  }
 
-  private filterUsers(
-    users: UserManagementDto[],
-    role?: UserRole,
-    status?: 'active' | 'inactive',
-    search?: string,
-  ): UserManagementDto[] {
-    let filteredUsers = users;
 
-    if (role) {
-      filteredUsers = filteredUsers.filter((user) => user.role === role);
-    }
 
-    if (status) {
-      filteredUsers = filteredUsers.filter((user) =>
-        status === 'active' ? user.isActive : !user.isActive,
-      );
-    }
 
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filteredUsers = filteredUsers.filter(
-        (user) =>
-          user.name?.toLowerCase().includes(searchLower) ||
-          user.phone.includes(searchLower),
-      );
-    }
-
-    return filteredUsers;
-  }
-
-  async updateUserStatus(
-    userId: string,
-    isActive: boolean,
-  ): Promise<{ message: string }> {
-    try {
-      await this.performUserUpdate(userId, isActive);
-      this.logUserStatusUpdate(userId, isActive);
-
-      return {
-        message: `User ${isActive ? 'activated' : 'deactivated'} successfully`,
-      };
-    } catch (error) {
-      this.logger.error(`Failed to update user ${userId} status:`, error);
-      throw new BadRequestException('Failed to update user status');
-    }
-  }
-
-  private async performUserUpdate(
-    userId: string,
-    isActive: boolean,
-  ): Promise<void> {
-    // TODO: Implement user update logic without UserService
-    this.logger.log(
-      `User ${userId} status update to ${isActive ? 'active' : 'inactive'} - implementation needed`,
-    );
-  }
-
-  private logUserStatusUpdate(userId: string, isActive: boolean): void {
-    this.logger.log(
-      `Updated user ${userId} status to ${isActive ? 'active' : 'inactive'}`,
-    );
-    this.customLogger.logBusinessEvent('user_status_updated', {
-      userId,
-      isActive,
-      updatedBy: 'admin',
-    });
-  }
 
   async getPendingVendorApprovals(): Promise<VendorApprovalDto[]> {
     try {
@@ -1335,5 +1328,791 @@ export class AdminService {
   private filterReports(reports: any[], query: AdminPaginationQueryDto): any[] {
     // Simple filtering logic - in real implementation would be more complex
     return reports;
+  }
+
+  // Admin CRUD Methods
+  async getAdminById(id: string): Promise<AdminResponseDto> {
+    try {
+      const admin = await this.prisma.admin.findUnique({
+        where: { id: BigInt(id), isDeleted: false },
+      });
+
+      if (!admin) {
+        throw new NotFoundException('Admin not found');
+      }
+
+      return {
+        id: admin.id.toString(),
+        uuid: admin.uuid,
+        email: admin.email || '',
+        phone: admin.phone || undefined,
+        name: admin.name,
+        roleLevel: admin.roleLevel,
+        permissions: admin.permissions as Record<string, any> || {},
+        isActive: admin.isActive,
+        createdAt: admin.createdAt,
+        updatedAt: admin.updatedAt,
+        lastActiveAt: admin.lastActiveAt || undefined,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to retrieve admin ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async createAdmin(createDto: CreateAdminDto, createdBy: string): Promise<AdminResponseDto> {
+    try {
+      // Check for existing email
+      const existingEmail = await this.prisma.admin.findUnique({
+        where: { email: createDto.email },
+      });
+      if (existingEmail) {
+        throw new BadRequestException('Email already exists');
+      }
+
+      // Check for existing phone if provided
+      if (createDto.phone) {
+        const existingPhone = await this.prisma.admin.findUnique({
+          where: { phone: createDto.phone },
+        });
+        if (existingPhone) {
+          throw new BadRequestException('Phone number already exists');
+        }
+      }
+
+      const hashedPassword = await this.adminAuthService.hashPassword(createDto.password);
+
+      const admin = await this.prisma.admin.create({
+        data: {
+          email: createDto.email,
+          phone: createDto.phone,
+          name: createDto.name,
+          roleLevel: createDto.roleLevel,
+          permissions: createDto.permissions,
+          passwordHash: hashedPassword,
+          isActive: true,
+        },
+      });
+
+      this.logger.log(`Created admin ${admin.id} by ${createdBy}`);
+
+      return {
+        id: admin.id.toString(),
+        uuid: admin.uuid,
+        email: admin.email || '',
+        phone: admin.phone || undefined,
+        name: admin.name,
+        roleLevel: admin.roleLevel,
+        permissions: admin.permissions as Record<string, any> || {},
+        isActive: admin.isActive,
+        createdAt: admin.createdAt,
+        updatedAt: admin.updatedAt,
+        lastActiveAt: admin.lastActiveAt || undefined,
+      };
+    } catch (error) {
+      this.logger.error('Failed to create admin:', error);
+      throw error;
+    }
+  }
+
+  async updateAdmin(id: string, updateDto: UpdateAdminDto, updatedBy: string): Promise<AdminResponseDto> {
+    try {
+      const existingAdmin = await this.prisma.admin.findUnique({
+        where: { id: BigInt(id), isDeleted: false },
+      });
+
+      if (!existingAdmin) {
+        throw new NotFoundException('Admin not found');
+      }
+
+      // Check for email uniqueness if updating email
+      if (updateDto.email && updateDto.email !== existingAdmin.email) {
+        const existingEmail = await this.prisma.admin.findUnique({
+          where: { email: updateDto.email },
+        });
+        if (existingEmail) {
+          throw new BadRequestException('Email already exists');
+        }
+      }
+
+      // Check for phone uniqueness if updating phone
+      if (updateDto.phone && updateDto.phone !== existingAdmin.phone) {
+        const existingPhone = await this.prisma.admin.findUnique({
+          where: { phone: updateDto.phone },
+        });
+        if (existingPhone) {
+          throw new BadRequestException('Phone number already exists');
+        }
+      }
+
+      const admin = await this.prisma.admin.update({
+        where: { id: BigInt(id) },
+        data: {
+          email: updateDto.email,
+          phone: updateDto.phone,
+          name: updateDto.name,
+          roleLevel: updateDto.roleLevel,
+          permissions: updateDto.permissions,
+          isActive: updateDto.isActive,
+        },
+      });
+
+      this.logger.log(`Updated admin ${id} by ${updatedBy}`);
+
+      return {
+        id: admin.id.toString(),
+        uuid: admin.uuid,
+        email: admin.email || '',
+        phone: admin.phone || undefined,
+        name: admin.name,
+        roleLevel: admin.roleLevel,
+        permissions: admin.permissions as Record<string, any> || {},
+        isActive: admin.isActive,
+        createdAt: admin.createdAt,
+        updatedAt: admin.updatedAt,
+        lastActiveAt: admin.lastActiveAt || undefined,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to update admin ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteAdmin(id: string, deletedBy: string): Promise<{ message: string }> {
+    try {
+      const existingAdmin = await this.prisma.admin.findUnique({
+        where: { id: BigInt(id), isDeleted: false },
+      });
+
+      if (!existingAdmin) {
+        throw new NotFoundException('Admin not found');
+      }
+
+      await this.prisma.admin.update({
+        where: { id: BigInt(id) },
+        data: { isDeleted: true },
+      });
+
+      this.logger.log(`Soft deleted admin ${id} by ${deletedBy}`);
+
+      return { message: 'Admin deleted successfully' };
+    } catch (error) {
+      this.logger.error(`Failed to delete admin ${id}:`, error);
+      throw error;
+    }
+  }
+
+  // Customer CRUD Methods
+  async getCustomerById(id: string): Promise<AdminUserListResponseDto> {
+    try {
+      const customer = await this.prisma.customer.findUnique({
+        where: {
+          uuid: id,
+          isDeleted: false,
+        },
+        select: {
+          id: true,
+          uuid: true,
+          phone: true,
+          email: true,
+          name: true,
+          role: true,
+          isActive: true,
+          monthlyPaymentMode: true,
+          walletBalance: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      if (!customer) {
+        throw new NotFoundException('Customer not found');
+      }
+
+      return {
+        id: customer.uuid,
+        phone: customer.phone,
+        name: customer.name || undefined,
+        role: customer.role === 'CUSTOMER' ? UserRole.CUSTOMER :
+              customer.role === 'VENDOR' ? UserRole.VENDOR :
+              customer.role === 'DELIVERY_RIDER' ? UserRole.DELIVERY_RIDER :
+              UserRole.ADMIN,
+        isActive: customer.isActive,
+        monthlyPaymentMode: customer.monthlyPaymentMode,
+        walletBalance: Number(customer.walletBalance),
+        createdAt: customer.createdAt,
+        updatedAt: customer.updatedAt,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to retrieve customer ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async createCustomer(
+    createDto: CreateCustomerDto,
+    createdBy: string,
+  ): Promise<AdminUserListResponseDto> {
+    try {
+      // Check for existing phone
+      const existingPhone = await this.prisma.customer.findUnique({
+        where: { phone: createDto.phone },
+      });
+      if (existingPhone) {
+        throw new BadRequestException('Phone number already exists');
+      }
+
+      // Check for existing email if provided
+      if (createDto.email) {
+        const existingEmail = await this.prisma.customer.findUnique({
+          where: { email: createDto.email },
+        });
+        if (existingEmail) {
+          throw new BadRequestException('Email already exists');
+        }
+      }
+
+      const customer = await this.prisma.customer.create({
+        data: {
+          phone: createDto.phone,
+          email: createDto.email,
+          name: createDto.name,
+          role: 'CUSTOMER',
+          walletBalance: createDto.walletBalance || 0,
+          isActive: createDto.isActive !== undefined ? createDto.isActive : true,
+          monthlyPaymentMode: createDto.monthlyPaymentMode || false,
+        },
+        select: {
+          id: true,
+          uuid: true,
+          phone: true,
+          email: true,
+          name: true,
+          role: true,
+          isActive: true,
+          monthlyPaymentMode: true,
+          walletBalance: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      this.logger.log(`Created customer ${customer.uuid} by admin ${createdBy}`);
+
+      return {
+        id: customer.uuid,
+        phone: customer.phone,
+        name: customer.name || undefined,
+        role: UserRole.CUSTOMER,
+        isActive: customer.isActive,
+        monthlyPaymentMode: customer.monthlyPaymentMode,
+        walletBalance: Number(customer.walletBalance),
+        createdAt: customer.createdAt,
+        updatedAt: customer.updatedAt,
+      };
+    } catch (error) {
+      this.logger.error('Failed to create customer:', error);
+      throw error;
+    }
+  }
+
+  async updateCustomer(
+    id: string,
+    updateDto: UpdateCustomerDto,
+    updatedBy: string,
+  ): Promise<AdminUserListResponseDto> {
+    try {
+      const existingCustomer = await this.prisma.customer.findUnique({
+        where: {
+          uuid: id,
+          isDeleted: false,
+        },
+      });
+
+      if (!existingCustomer) {
+        throw new NotFoundException('Customer not found');
+      }
+
+      // Check for email uniqueness if updating email
+      if (updateDto.email && updateDto.email !== existingCustomer.email) {
+        const existingEmail = await this.prisma.customer.findUnique({
+          where: { email: updateDto.email },
+        });
+        if (existingEmail) {
+          throw new BadRequestException('Email already exists');
+        }
+      }
+
+      const customer = await this.prisma.customer.update({
+        where: { uuid: id },
+        data: {
+          email: updateDto.email,
+          name: updateDto.name,
+          isActive: updateDto.isActive,
+          monthlyPaymentMode: updateDto.monthlyPaymentMode,
+        },
+        select: {
+          id: true,
+          uuid: true,
+          phone: true,
+          email: true,
+          name: true,
+          role: true,
+          isActive: true,
+          monthlyPaymentMode: true,
+          walletBalance: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      this.logger.log(`Updated customer ${id} by admin ${updatedBy}`);
+
+      return {
+        id: customer.uuid,
+        phone: customer.phone,
+        name: customer.name || undefined,
+        role: UserRole.CUSTOMER,
+        isActive: customer.isActive,
+        monthlyPaymentMode: customer.monthlyPaymentMode,
+        walletBalance: Number(customer.walletBalance),
+        createdAt: customer.createdAt,
+        updatedAt: customer.updatedAt,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to update customer ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteCustomer(id: string, deletedBy: string): Promise<{ message: string }> {
+    try {
+      const existingCustomer = await this.prisma.customer.findUnique({
+        where: {
+          uuid: id,
+          isDeleted: false,
+        },
+      });
+
+      if (!existingCustomer) {
+        throw new NotFoundException('Customer not found');
+      }
+
+      await this.prisma.customer.update({
+        where: { uuid: id },
+        data: { isDeleted: true },
+      });
+
+      this.logger.log(`Soft deleted customer ${id} by admin ${deletedBy}`);
+
+      return { message: 'Customer deleted successfully' };
+    } catch (error) {
+      this.logger.error(`Failed to delete customer ${id}:`, error);
+      throw error;
+    }
+  }
+
+  // Vendor CRUD Methods
+  async getVendorById(id: string): Promise<VendorResponseDto> {
+    try {
+      const vendor = await this.prisma.vendor.findUnique({
+        where: {
+          id: BigInt(id),
+          isDeleted: false,
+        },
+      });
+
+      if (!vendor) {
+        throw new NotFoundException('Vendor not found');
+      }
+
+      return {
+        id: vendor.id.toString(),
+        phone: vendor.phone || undefined,
+        email: vendor.email || undefined,
+        name: vendor.name,
+        kycStatus: vendor.kycStatus,
+        gstin: vendor.gstin || undefined,
+        bankAccountId: vendor.bankAccountId ? Number(vendor.bankAccountId) : undefined,
+        rating: vendor.rating ? Number(vendor.rating) : undefined,
+        isVerified: vendor.isVerified,
+        isActive: vendor.isActive,
+        metadata: vendor.metadata as Record<string, any> || undefined,
+        createdAt: vendor.createdAt,
+        updatedAt: vendor.updatedAt,
+        lastActiveAt: vendor.lastActiveAt || undefined,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to retrieve vendor ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async createVendor(
+    createDto: CreateVendorDto,
+    createdBy: string,
+  ): Promise<VendorResponseDto> {
+    try {
+      // Check for existing phone if provided
+      if (createDto.phone) {
+        const existingPhone = await this.prisma.vendor.findUnique({
+          where: { phone: createDto.phone },
+        });
+        if (existingPhone) {
+          throw new BadRequestException('Phone number already exists');
+        }
+      }
+
+      // Check for existing email if provided
+      if (createDto.email) {
+        const existingEmail = await this.prisma.vendor.findUnique({
+          where: { email: createDto.email },
+        });
+        if (existingEmail) {
+          throw new BadRequestException('Email already exists');
+        }
+      }
+
+      const vendor = await this.prisma.vendor.create({
+        data: {
+          phone: createDto.phone,
+          email: createDto.email,
+          name: createDto.name,
+          gstin: createDto.gstin,
+          bankAccountId: createDto.bankAccountId ? BigInt(createDto.bankAccountId) : undefined,
+          metadata: createDto.metadata,
+          isActive: createDto.isActive !== undefined ? createDto.isActive : true,
+        },
+      });
+
+      this.logger.log(`Created vendor ${vendor.id} by admin ${createdBy}`);
+
+      return {
+        id: vendor.id.toString(),
+        phone: vendor.phone || undefined,
+        email: vendor.email || undefined,
+        name: vendor.name,
+        kycStatus: vendor.kycStatus,
+        gstin: vendor.gstin || undefined,
+        bankAccountId: vendor.bankAccountId ? Number(vendor.bankAccountId) : undefined,
+        rating: vendor.rating ? Number(vendor.rating) : undefined,
+        isVerified: vendor.isVerified,
+        isActive: vendor.isActive,
+        metadata: vendor.metadata as Record<string, any> || undefined,
+        createdAt: vendor.createdAt,
+        updatedAt: vendor.updatedAt,
+        lastActiveAt: vendor.lastActiveAt || undefined,
+      };
+    } catch (error) {
+      this.logger.error('Failed to create vendor:', error);
+      throw error;
+    }
+  }
+
+  async updateVendor(
+    id: string,
+    updateDto: UpdateVendorDto,
+    updatedBy: string,
+  ): Promise<VendorResponseDto> {
+    try {
+      const existingVendor = await this.prisma.vendor.findUnique({
+        where: {
+          id: BigInt(id),
+          isDeleted: false,
+        },
+      });
+
+      if (!existingVendor) {
+        throw new NotFoundException('Vendor not found');
+      }
+
+      // Check for phone uniqueness if updating phone
+      if (updateDto.phone && updateDto.phone !== existingVendor.phone) {
+        const existingPhone = await this.prisma.vendor.findUnique({
+          where: { phone: updateDto.phone },
+        });
+        if (existingPhone) {
+          throw new BadRequestException('Phone number already exists');
+        }
+      }
+
+      // Check for email uniqueness if updating email
+      if (updateDto.email && updateDto.email !== existingVendor.email) {
+        const existingEmail = await this.prisma.vendor.findUnique({
+          where: { email: updateDto.email },
+        });
+        if (existingEmail) {
+          throw new BadRequestException('Email already exists');
+        }
+      }
+
+      const vendor = await this.prisma.vendor.update({
+        where: { id: BigInt(id) },
+        data: {
+          phone: updateDto.phone,
+          email: updateDto.email,
+          name: updateDto.name,
+          gstin: updateDto.gstin,
+          bankAccountId: updateDto.bankAccountId ? BigInt(updateDto.bankAccountId) : undefined,
+          kycStatus: updateDto.kycStatus,
+          isVerified: updateDto.isVerified,
+          isActive: updateDto.isActive,
+          metadata: updateDto.metadata,
+        },
+      });
+
+      this.logger.log(`Updated vendor ${id} by admin ${updatedBy}`);
+
+      return {
+        id: vendor.id.toString(),
+        phone: vendor.phone || undefined,
+        email: vendor.email || undefined,
+        name: vendor.name,
+        kycStatus: vendor.kycStatus,
+        gstin: vendor.gstin || undefined,
+        bankAccountId: vendor.bankAccountId ? Number(vendor.bankAccountId) : undefined,
+        rating: vendor.rating ? Number(vendor.rating) : undefined,
+        isVerified: vendor.isVerified,
+        isActive: vendor.isActive,
+        metadata: vendor.metadata as Record<string, any> || undefined,
+        createdAt: vendor.createdAt,
+        updatedAt: vendor.updatedAt,
+        lastActiveAt: vendor.lastActiveAt || undefined,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to update vendor ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteVendor(id: string, deletedBy: string): Promise<{ message: string }> {
+    try {
+      const existingVendor = await this.prisma.vendor.findUnique({
+        where: {
+          id: BigInt(id),
+          isDeleted: false,
+        },
+      });
+
+      if (!existingVendor) {
+        throw new NotFoundException('Vendor not found');
+      }
+
+      await this.prisma.vendor.update({
+        where: { id: BigInt(id) },
+        data: { isDeleted: true },
+      });
+
+      this.logger.log(`Soft deleted vendor ${id} by admin ${deletedBy}`);
+
+      return { message: 'Vendor deleted successfully' };
+    } catch (error) {
+      this.logger.error(`Failed to delete vendor ${id}:`, error);
+      throw error;
+    }
+  }
+
+  // Rider CRUD Methods
+  async getRiderById(id: string): Promise<RiderResponseDto> {
+    try {
+      const rider = await this.prisma.rider.findUnique({
+        where: {
+          uuid: id,
+          isDeleted: false,
+        },
+      });
+
+      if (!rider) {
+        throw new NotFoundException('Rider not found');
+      }
+
+      return {
+        id: rider.id.toString(),
+        uuid: rider.uuid,
+        phone: rider.phone || undefined,
+        email: rider.email || undefined,
+        name: rider.name,
+        licenseNo: rider.licenseNo || undefined,
+        vehicleType: rider.vehicleType || undefined,
+        shift: rider.shift as Record<string, any> || undefined,
+        status: rider.status,
+        rating: rider.rating ? Number(rider.rating) : undefined,
+        isActive: rider.isActive,
+        metadata: rider.metadata as Record<string, any> || undefined,
+        createdAt: rider.createdAt,
+        updatedAt: rider.updatedAt,
+        lastActiveAt: rider.lastActiveAt || undefined,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to retrieve rider ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async createRider(
+    createDto: CreateRiderDto,
+    createdBy: string,
+  ): Promise<RiderResponseDto> {
+    try {
+      // Check for existing phone if provided
+      if (createDto.phone) {
+        const existingPhone = await this.prisma.rider.findUnique({
+          where: { phone: createDto.phone },
+        });
+        if (existingPhone) {
+          throw new BadRequestException('Phone number already exists');
+        }
+      }
+
+      // Check for existing email if provided
+      if (createDto.email) {
+        const existingEmail = await this.prisma.rider.findUnique({
+          where: { email: createDto.email },
+        });
+        if (existingEmail) {
+          throw new BadRequestException('Email already exists');
+        }
+      }
+
+      const rider = await this.prisma.rider.create({
+        data: {
+          phone: createDto.phone,
+          email: createDto.email,
+          name: createDto.name,
+          licenseNo: createDto.licenseNo,
+          vehicleType: createDto.vehicleType,
+          shift: createDto.shift,
+          metadata: createDto.metadata,
+          isActive: createDto.isActive !== undefined ? createDto.isActive : true,
+        },
+      });
+
+      this.logger.log(`Created rider ${rider.uuid} by admin ${createdBy}`);
+
+      return {
+        id: rider.id.toString(),
+        uuid: rider.uuid,
+        phone: rider.phone || undefined,
+        email: rider.email || undefined,
+        name: rider.name,
+        licenseNo: rider.licenseNo || undefined,
+        vehicleType: rider.vehicleType || undefined,
+        shift: rider.shift as Record<string, any> || undefined,
+        status: rider.status,
+        rating: rider.rating ? Number(rider.rating) : undefined,
+        isActive: rider.isActive,
+        metadata: rider.metadata as Record<string, any> || undefined,
+        createdAt: rider.createdAt,
+        updatedAt: rider.updatedAt,
+        lastActiveAt: rider.lastActiveAt || undefined,
+      };
+    } catch (error) {
+      this.logger.error('Failed to create rider:', error);
+      throw error;
+    }
+  }
+
+  async updateRider(
+    id: string,
+    updateDto: UpdateRiderDto,
+    updatedBy: string,
+  ): Promise<RiderResponseDto> {
+    try {
+      const existingRider = await this.prisma.rider.findUnique({
+        where: {
+          uuid: id,
+          isDeleted: false,
+        },
+      });
+
+      if (!existingRider) {
+        throw new NotFoundException('Rider not found');
+      }
+
+      // Check for phone uniqueness if updating phone
+      if (updateDto.phone && updateDto.phone !== existingRider.phone) {
+        const existingPhone = await this.prisma.rider.findUnique({
+          where: { phone: updateDto.phone },
+        });
+        if (existingPhone) {
+          throw new BadRequestException('Phone number already exists');
+        }
+      }
+
+      // Check for email uniqueness if updating email
+      if (updateDto.email && updateDto.email !== existingRider.email) {
+        const existingEmail = await this.prisma.rider.findUnique({
+          where: { email: updateDto.email },
+        });
+        if (existingEmail) {
+          throw new BadRequestException('Email already exists');
+        }
+      }
+
+      const rider = await this.prisma.rider.update({
+        where: { uuid: id },
+        data: {
+          phone: updateDto.phone,
+          email: updateDto.email,
+          name: updateDto.name,
+          licenseNo: updateDto.licenseNo,
+          vehicleType: updateDto.vehicleType,
+          shift: updateDto.shift,
+          status: updateDto.status,
+          isActive: updateDto.isActive,
+          metadata: updateDto.metadata,
+        },
+      });
+
+      this.logger.log(`Updated rider ${id} by admin ${updatedBy}`);
+
+      return {
+        id: rider.id.toString(),
+        uuid: rider.uuid,
+        phone: rider.phone || undefined,
+        email: rider.email || undefined,
+        name: rider.name,
+        licenseNo: rider.licenseNo || undefined,
+        vehicleType: rider.vehicleType || undefined,
+        shift: rider.shift as Record<string, any> || undefined,
+        status: rider.status,
+        rating: rider.rating ? Number(rider.rating) : undefined,
+        isActive: rider.isActive,
+        metadata: rider.metadata as Record<string, any> || undefined,
+        createdAt: rider.createdAt,
+        updatedAt: rider.updatedAt,
+        lastActiveAt: rider.lastActiveAt || undefined,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to update rider ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteRider(id: string, deletedBy: string): Promise<{ message: string }> {
+    try {
+      const existingRider = await this.prisma.rider.findUnique({
+        where: {
+          uuid: id,
+          isDeleted: false,
+        },
+      });
+
+      if (!existingRider) {
+        throw new NotFoundException('Rider not found');
+      }
+
+      await this.prisma.rider.update({
+        where: { uuid: id },
+        data: { isDeleted: true },
+      });
+
+      this.logger.log(`Soft deleted rider ${id} by admin ${deletedBy}`);
+
+      return { message: 'Rider deleted successfully' };
+    } catch (error) {
+      this.logger.error(`Failed to delete rider ${id}:`, error);
+      throw error;
+    }
   }
 }

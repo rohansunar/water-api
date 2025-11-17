@@ -366,8 +366,6 @@ This is a major release that introduces comprehensive database schema enhancemen
   - `GET /api/monthly-ledger/pending-dues` - Get pending dues
   - `PUT /api/user/monthly-payment-mode` - Update user's monthly payment preference
   - `GET /api/admin/dashboard` - Admin dashboard statistics
-  - `GET /api/admin/users` - User management with filtering
-  - `PUT /api/admin/users/:userId/status` - Update user status
   - `GET /api/admin/vendors/pending-approvals` - Get pending vendor approvals
   - `PUT /api/admin/vendors/:vendorId/approve` - Approve vendor
   - `PUT /api/admin/vendors/:vendorId/reject` - Reject vendor

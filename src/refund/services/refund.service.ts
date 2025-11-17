@@ -28,14 +28,13 @@ export class RefundService {
   ) {}
 
   async createRefund(
-    orderId: string,
     createRefundDto: CreateRefundDto,
     createdBy: bigint,
   ): Promise<RefundResponseDto> {
     try {
       // Find the order
       const order = await this.prismaService.order.findUnique({
-        where: { orderUuid: orderId },
+        where: { orderUuid: createRefundDto.orderId },
       });
 
       if (!order) {
@@ -55,9 +54,9 @@ export class RefundService {
 
       if (existingRefund) {
         throw new ConflictException(
-          `Refund already exists for order ${orderId}. Existing refund ID: ${existingRefund.id}`,
+          `Refund already exists for order ${createRefundDto.orderId}. Existing refund ID: ${existingRefund.id}`,
           {
-            orderId,
+            orderId: createRefundDto.orderId,
             metadata: {
               existingRefundId: existingRefund.id.toString(),
               orderCreatedAt: order.createdAt.toISOString(),
@@ -85,11 +84,11 @@ export class RefundService {
         },
       });
 
-      this.logger.log(`Created refund ${refund.id} for order ${orderId}`);
+      this.logger.log(`Created refund ${refund.id} for order ${createRefundDto.orderId}`);
 
       return this.mapToResponseDto(refund);
     } catch (error) {
-      this.logger.error(`Failed to create refund for order ${orderId}:`, error);
+      this.logger.error(`Failed to create refund for order ${createRefundDto.orderId}:`, error);
       throw error;
     }
   }

@@ -7,48 +7,34 @@ import { VendorService } from '../../../src/vendor/services/vendor.service';
 import { BusinessException, ConflictException as CustomConflictException } from '../../../src/common/exceptions/business.exception';
 
 // Mock PrismaService methods
-jest.mock('../../../src/common/database/prisma.service');
+jest.mock('../../../src/common/database/prisma.service', () => ({
+  PrismaService: jest.fn().mockImplementation(() => ({
+    vendor: { findFirst: jest.fn() },
+    product: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      count: jest.fn(),
+      findMany: jest.fn(),
+    },
+    productStoreMapping: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      count: jest.fn(),
+      findMany: jest.fn(),
+    },
+    vendorStore: { findFirst: jest.fn() },
+  })),
+}));
 
 describe('VendorProductService - Conflict Scenarios', () => {
   let service: VendorProductService;
-  let prismaService: jest.Mocked<PrismaService>;
+  let prismaService: any;
   let customLogger: jest.Mocked<CustomLoggerService>;
   let vendorService: jest.Mocked<VendorService>;
 
   beforeEach(async () => {
-    // Create mock functions for Prisma methods
-    const mockVendorFindFirst = jest.fn();
-    const mockProductFindFirst = jest.fn();
-    const mockProductCreate = jest.fn();
-    const mockProductUpdate = jest.fn();
-    const mockProductCount = jest.fn();
-    const mockProductFindMany = jest.fn();
-    const mockProductStoreMappingFindFirst = jest.fn();
-    const mockProductStoreMappingCreate = jest.fn();
-    const mockProductStoreMappingUpdate = jest.fn();
-    const mockProductStoreMappingCount = jest.fn();
-    const mockProductStoreMappingFindMany = jest.fn();
-    const mockVendorStoreFindFirst = jest.fn();
-
-    // Mock the PrismaService
-    (PrismaService as jest.MockedClass<typeof PrismaService>).mockImplementation(() => ({
-      vendor: { findFirst: mockVendorFindFirst } as any,
-      product: {
-        findFirst: mockProductFindFirst,
-        create: mockProductCreate,
-        update: mockProductUpdate,
-        count: mockProductCount,
-        findMany: mockProductFindMany,
-      } as any,
-      productStoreMapping: {
-        findFirst: mockProductStoreMappingFindFirst,
-        create: mockProductStoreMappingCreate,
-        update: mockProductStoreMappingUpdate,
-        count: mockProductStoreMappingCount,
-        findMany: mockProductStoreMappingFindMany,
-      } as any,
-      vendorStore: { findFirst: mockVendorStoreFindFirst } as any,
-    } as any));
 
     const mockCustomLogger = {
       logBusinessEvent: jest.fn(),

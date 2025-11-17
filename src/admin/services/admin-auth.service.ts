@@ -106,7 +106,7 @@ export class AdminAuthService {
       };
 
       const token = this.jwtService.sign(payload);
-      const expiresIn = 3600; // 1 hour
+      const expiresIn = 36000; // 1 hour
 
       // Update last active timestamp
       const updateStartTime = Date.now();

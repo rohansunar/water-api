@@ -3,6 +3,7 @@ import {
   Get,
   Put,
   Post,
+  Delete,
   Body,
   Param,
   Query,
@@ -17,7 +18,6 @@ import { AuditService } from '../services/audit.service';
 import {
   AdminService,
   AdminDashboardStats,
-  UserManagementDto,
   VendorApprovalDto,
 } from '../services/admin.service';
 import {
@@ -25,6 +25,15 @@ import {
   AdminUserListResponseDto,
   AdminPaginatedResponseDto,
   AdminTransactionListQueryDto,
+  CreateAdminDto,
+  UpdateAdminDto,
+  AdminResponseDto,
+  CreateVendorDto,
+  UpdateVendorDto,
+  VendorResponseDto,
+  CreateRiderDto,
+  UpdateRiderDto,
+  RiderResponseDto,
 } from '../dto/admin.dto';
 import {
   LedgerSummaryResponseDto,
@@ -41,7 +50,6 @@ import {
   ProductModerationListQueryDto,
 } from '../../product/dto/product-moderation.dto';
 import { RefundService } from '../../refund/services/refund.service';
-import { OrderService } from '../../order/services/order.service';
 import {
   CreateRefundDto,
   ApproveRefundDto,
@@ -63,6 +71,10 @@ import {
   AdminOrderQueryDto,
   AdminOrderResponseDto,
 } from '../dto/order-management.dto';
+import {
+  CreateCustomerDto,
+  UpdateCustomerDto,
+} from '../../common/dto/customer.dto';
 
 @Controller('admin')
 @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
@@ -75,7 +87,6 @@ export class AdminController {
     private readonly auditService: AuditService,
     private readonly productModerationService: ProductModerationService,
     private readonly refundService: RefundService,
-    private readonly orderService: OrderService,
   ) {}
 
   @Get('profile')
@@ -91,6 +102,84 @@ export class AdminController {
     };
   }
 
+  // Admin CRUD Endpoints
+  @Get('admins/:id')
+  async getAdminById(
+    @Param('id') id: string,
+    @AdminCurrentUser() user: any,
+  ): Promise<AdminResponseDto> {
+    this.logger.log(`Admin ${user.id} retrieving admin ${id}`);
+    return this.adminService.getAdminById(id);
+  }
+
+  @Post('admins')
+  @AdminRoles('super_admin')
+  async createAdmin(
+    @Body() createDto: CreateAdminDto,
+    @AdminCurrentUser() user: any,
+  ): Promise<AdminResponseDto> {
+    this.logger.log(`Admin ${user.id} creating new admin`);
+
+    const admin = await this.adminService.createAdmin(createDto, user.id);
+
+    await this.auditService.logAction({
+      adminId: BigInt(user.id),
+      action: 'admin_created',
+      resourceType: 'admin',
+      resourceId: admin.id,
+      newValues: { email: admin.email, name: admin.name, roleLevel: admin.roleLevel },
+      metadata: { createdBy: user.id },
+    });
+
+    return admin;
+  }
+
+  @Put('admins/:id')
+  @AdminRoles('super_admin')
+  async updateAdmin(
+    @Param('id') id: string,
+    @Body() updateDto: UpdateAdminDto,
+    @AdminCurrentUser() user: any,
+  ): Promise<AdminResponseDto> {
+    this.logger.log(`Admin ${user.id} updating admin ${id}`);
+
+    const oldAdmin = await this.adminService.getAdminById(id);
+    const updatedAdmin = await this.adminService.updateAdmin(id, updateDto, user.id);
+
+    await this.auditService.logAction({
+      adminId: BigInt(user.id),
+      action: 'admin_updated',
+      resourceType: 'admin',
+      resourceId: id,
+      oldValues: oldAdmin,
+      newValues: updatedAdmin,
+      metadata: { updatedBy: user.id },
+    });
+
+    return updatedAdmin;
+  }
+
+  @Delete('admins/:id')
+  @AdminRoles('super_admin')
+  async deleteAdmin(
+    @Param('id') id: string,
+    @AdminCurrentUser() user: any,
+  ): Promise<{ message: string }> {
+    this.logger.log(`Admin ${user.id} deleting admin ${id}`);
+
+    const result = await this.adminService.deleteAdmin(id, user.id);
+
+    await this.auditService.logAction({
+      adminId: BigInt(user.id),
+      action: 'admin_deleted',
+      resourceType: 'admin',
+      resourceId: id,
+      metadata: { deletedBy: user.id },
+    });
+
+    return result;
+  }
+
   @Get('dashboard')
   async getDashboardStats(
     @AdminCurrentUser() user: any,
@@ -99,16 +188,6 @@ export class AdminController {
     return this.adminService.getDashboardStats();
   }
 
-  @Get('users')
-  async getAllUsers(
-    @AdminCurrentUser() user: any,
-    @Query() query: AdminPaginationQueryDto,
-  ): Promise<AdminPaginatedResponseDto<AdminUserListResponseDto>> {
-    this.logger.log(
-      `Admin ${user.id} retrieving users with filters: ${JSON.stringify(query)}`,
-    );
-    return this.adminService.getAllUsers(query);
-  }
 
   @Get('customers')
   async getAllCustomers(
@@ -119,6 +198,88 @@ export class AdminController {
       `Admin ${user.id} retrieving customers with filters: ${JSON.stringify(query)}`,
     );
     return this.adminService.getAllCustomers(query);
+  }
+
+  @Get('customers/:id')
+  async getCustomerById(
+    @Param('id') id: string,
+    @AdminCurrentUser() user: any,
+  ): Promise<AdminUserListResponseDto> {
+    this.logger.log(`Admin ${user.id} retrieving customer ${id}`);
+    return this.adminService.getCustomerById(id);
+  }
+
+  @Post('customers')
+  @AdminRoles('super_admin', 'support_admin')
+  async createCustomer(
+    @Body() createDto: CreateCustomerDto,
+    @AdminCurrentUser() user: any,
+  ): Promise<AdminUserListResponseDto> {
+    this.logger.log(`Admin ${user.id} creating new customer`);
+
+    const customer = await this.adminService.createCustomer(createDto, user.id);
+
+    await this.auditService.logAction({
+      adminId: BigInt(user.id),
+      action: 'customer_created',
+      resourceType: 'customer',
+      resourceId: customer.id,
+      newValues: {
+        phone: customer.phone,
+        name: customer.name,
+        email: customer.phone,
+        isActive: customer.isActive,
+      },
+      metadata: { createdBy: user.id },
+    });
+
+    return customer;
+  }
+
+  @Put('customers/:id')
+  @AdminRoles('super_admin', 'support_admin')
+  async updateCustomer(
+    @Param('id') id: string,
+    @Body() updateDto: UpdateCustomerDto,
+    @AdminCurrentUser() user: any,
+  ): Promise<AdminUserListResponseDto> {
+    this.logger.log(`Admin ${user.id} updating customer ${id}`);
+
+    const oldCustomer = await this.adminService.getCustomerById(id);
+    const updatedCustomer = await this.adminService.updateCustomer(id, updateDto, user.id);
+
+    await this.auditService.logAction({
+      adminId: BigInt(user.id),
+      action: 'customer_updated',
+      resourceType: 'customer',
+      resourceId: id,
+      oldValues: oldCustomer,
+      newValues: updatedCustomer,
+      metadata: { updatedBy: user.id },
+    });
+
+    return updatedCustomer;
+  }
+
+  @Delete('customers/:id')
+  @AdminRoles('super_admin')
+  async deleteCustomer(
+    @Param('id') id: string,
+    @AdminCurrentUser() user: any,
+  ): Promise<{ message: string }> {
+    this.logger.log(`Admin ${user.id} deleting customer ${id}`);
+
+    const result = await this.adminService.deleteCustomer(id, user.id);
+
+    await this.auditService.logAction({
+      adminId: BigInt(user.id),
+      action: 'customer_deleted',
+      resourceType: 'customer',
+      resourceId: id,
+      metadata: { deletedBy: user.id },
+    });
+
+    return result;
   }
 
   @Get('vendors')
@@ -132,6 +293,89 @@ export class AdminController {
     return this.adminService.getAllVendors(query);
   }
 
+  @Get('vendors/:id')
+  async getVendorById(
+    @Param('id') id: string,
+    @AdminCurrentUser() user: any,
+  ): Promise<VendorResponseDto> {
+    this.logger.log(`Admin ${user.id} retrieving vendor ${id}`);
+    return this.adminService.getVendorById(id);
+  }
+
+  @Post('vendors')
+  @AdminRoles('super_admin', 'support_admin')
+  async createVendor(
+    @Body() createDto: CreateVendorDto,
+    @AdminCurrentUser() user: any,
+  ): Promise<VendorResponseDto> {
+    this.logger.log(`Admin ${user.id} creating new vendor`);
+
+    const vendor = await this.adminService.createVendor(createDto, user.id);
+
+    await this.auditService.logAction({
+      adminId: BigInt(user.id),
+      action: 'vendor_created',
+      resourceType: 'vendor',
+      resourceId: vendor.id,
+      newValues: {
+        name: vendor.name,
+        phone: vendor.phone,
+        email: vendor.email,
+        gstin: vendor.gstin,
+        isActive: vendor.isActive,
+      },
+      metadata: { createdBy: user.id },
+    });
+
+    return vendor;
+  }
+
+  @Put('vendors/:id')
+  @AdminRoles('super_admin', 'support_admin')
+  async updateVendor(
+    @Param('id') id: string,
+    @Body() updateDto: UpdateVendorDto,
+    @AdminCurrentUser() user: any,
+  ): Promise<VendorResponseDto> {
+    this.logger.log(`Admin ${user.id} updating vendor ${id}`);
+
+    const oldVendor = await this.adminService.getVendorById(id);
+    const updatedVendor = await this.adminService.updateVendor(id, updateDto, user.id);
+
+    await this.auditService.logAction({
+      adminId: BigInt(user.id),
+      action: 'vendor_updated',
+      resourceType: 'vendor',
+      resourceId: id,
+      oldValues: oldVendor,
+      newValues: updatedVendor,
+      metadata: { updatedBy: user.id },
+    });
+
+    return updatedVendor;
+  }
+
+  @Delete('vendors/:id')
+  @AdminRoles('super_admin')
+  async deleteVendor(
+    @Param('id') id: string,
+    @AdminCurrentUser() user: any,
+  ): Promise<{ message: string }> {
+    this.logger.log(`Admin ${user.id} deleting vendor ${id}`);
+
+    const result = await this.adminService.deleteVendor(id, user.id);
+
+    await this.auditService.logAction({
+      adminId: BigInt(user.id),
+      action: 'vendor_deleted',
+      resourceType: 'vendor',
+      resourceId: id,
+      metadata: { deletedBy: user.id },
+    });
+
+    return result;
+  }
+
   @Get('riders')
   async getAllRiders(
     @AdminCurrentUser() user: any,
@@ -143,40 +387,90 @@ export class AdminController {
     return this.adminService.getAllRiders(query);
   }
 
-  @Put('users/:userId/status')
-  async updateUserStatus(
-    @Param('userId') userId: string,
-    @Body() updateDto: { isActive: boolean },
+  @Get('riders/:id')
+  async getRiderById(
+    @Param('id') id: string,
+    @AdminCurrentUser() user: any,
+  ): Promise<RiderResponseDto> {
+    this.logger.log(`Admin ${user.id} retrieving rider ${id}`);
+    return this.adminService.getRiderById(id);
+  }
+
+  @Post('riders')
+  @AdminRoles('super_admin', 'support_admin')
+  async createRider(
+    @Body() createDto: CreateRiderDto,
+    @AdminCurrentUser() user: any,
+  ): Promise<RiderResponseDto> {
+    this.logger.log(`Admin ${user.id} creating new rider`);
+
+    const rider = await this.adminService.createRider(createDto, user.id);
+
+    await this.auditService.logAction({
+      adminId: BigInt(user.id),
+      action: 'rider_created',
+      resourceType: 'rider',
+      resourceId: rider.uuid,
+      newValues: {
+        name: rider.name,
+        phone: rider.phone,
+        email: rider.email,
+        licenseNo: rider.licenseNo,
+        vehicleType: rider.vehicleType,
+        isActive: rider.isActive,
+      },
+      metadata: { createdBy: user.id },
+    });
+
+    return rider;
+  }
+
+  @Put('riders/:id')
+  @AdminRoles('super_admin', 'support_admin')
+  async updateRider(
+    @Param('id') id: string,
+    @Body() updateDto: UpdateRiderDto,
+    @AdminCurrentUser() user: any,
+  ): Promise<RiderResponseDto> {
+    this.logger.log(`Admin ${user.id} updating rider ${id}`);
+
+    const oldRider = await this.adminService.getRiderById(id);
+    const updatedRider = await this.adminService.updateRider(id, updateDto, user.id);
+
+    await this.auditService.logAction({
+      adminId: BigInt(user.id),
+      action: 'rider_updated',
+      resourceType: 'rider',
+      resourceId: id,
+      oldValues: oldRider,
+      newValues: updatedRider,
+      metadata: { updatedBy: user.id },
+    });
+
+    return updatedRider;
+  }
+
+  @Delete('riders/:id')
+  @AdminRoles('super_admin')
+  async deleteRider(
+    @Param('id') id: string,
     @AdminCurrentUser() user: any,
   ): Promise<{ message: string }> {
-    this.logger.log(
-      `Admin ${user.id} updating user ${userId} status to ${updateDto.isActive}`,
-    );
+    this.logger.log(`Admin ${user.id} deleting rider ${id}`);
 
-    const result = await this.adminService.updateUserStatus(
-      userId,
-      updateDto.isActive,
-    );
+    const result = await this.adminService.deleteRider(id, user.id);
 
-    await this.auditUserStatusUpdate(user.id, userId, updateDto.isActive);
+    await this.auditService.logAction({
+      adminId: BigInt(user.id),
+      action: 'rider_deleted',
+      resourceType: 'rider',
+      resourceId: id,
+      metadata: { deletedBy: user.id },
+    });
 
     return result;
   }
 
-  private async auditUserStatusUpdate(
-    adminId: string,
-    userId: string,
-    isActive: boolean,
-  ): Promise<void> {
-    await this.auditService.logAction({
-      adminId: BigInt(adminId),
-      action: 'user_status_updated',
-      resourceType: 'user',
-      resourceId: userId,
-      newValues: { isActive },
-      metadata: { reason: 'Admin action' },
-    });
-  }
 
   @Get('vendors/pending-approvals')
   async getPendingVendorApprovals(
@@ -394,7 +688,7 @@ export class AdminController {
     this.logger.log(
       `Admin ${user.id} creating refund for order ${dto.orderId}`,
     );
-    return this.refundService.createRefund(dto.orderId, dto, BigInt(user.id));
+    return this.refundService.createRefund(dto, BigInt(user.id));
   }
 
   @Get('refunds')

@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsEnum,
   IsNumber,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
@@ -384,3 +385,678 @@ export class AdminProductListQueryDto extends PaginationQueryDto {
 }
 
 export class AdminPaginatedResponseDto<T> extends PaginatedResponseDto<T> {}
+
+export class CreateAdminDto {
+  @ApiProperty({
+    description: 'Admin email address',
+    example: 'admin@platform.com',
+  })
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @ApiProperty({
+    description: 'Admin phone number',
+    example: '9999999999',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiProperty({
+    description: 'Admin name',
+    example: 'John Doe',
+  })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({
+    description: 'Admin role level',
+    example: 'support',
+    enum: ['super_admin', 'finance_admin', 'support_admin'],
+    default: 'support',
+  })
+  @IsString()
+  @IsNotEmpty()
+  roleLevel: string;
+
+  @ApiProperty({
+    description: 'Admin permissions',
+    example: { canManageUsers: true, canViewReports: true },
+    required: false,
+  })
+  @IsOptional()
+  permissions?: Record<string, any>;
+
+  @ApiProperty({
+    description: 'Admin password',
+    example: 'securePassword123',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(6)
+  password: string;
+}
+
+export class UpdateAdminDto {
+  @ApiProperty({
+    description: 'Admin email address',
+    example: 'admin@platform.com',
+    required: false,
+  })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @ApiProperty({
+    description: 'Admin phone number',
+    example: '9999999999',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiProperty({
+    description: 'Admin name',
+    example: 'John Doe',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiProperty({
+    description: 'Admin role level',
+    example: 'support',
+    enum: ['super_admin', 'finance_admin', 'support_admin'],
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  roleLevel?: string;
+
+  @ApiProperty({
+    description: 'Admin permissions',
+    example: { canManageUsers: true, canViewReports: true },
+    required: false,
+  })
+  @IsOptional()
+  permissions?: Record<string, any>;
+
+  @ApiProperty({
+    description: 'Account active status',
+    example: true,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class AdminResponseDto {
+  @ApiProperty({
+    description: 'Admin unique identifier',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'Admin UUID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  uuid: string;
+
+  @ApiProperty({
+    description: 'Admin email',
+    example: 'admin@platform.com',
+  })
+  email: string;
+
+  @ApiProperty({
+    description: 'Admin phone number',
+    example: '9999999999',
+    required: false,
+  })
+  phone?: string;
+
+  @ApiProperty({
+    description: 'Admin name',
+    example: 'John Doe',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'Admin role level',
+    example: 'super_admin',
+    enum: ['super_admin', 'finance_admin', 'support_admin'],
+  })
+  roleLevel: string;
+
+  @ApiProperty({
+    description: 'Admin permissions',
+    example: { canManageUsers: true, canViewReports: true },
+  })
+  permissions?: Record<string, any>;
+
+  @ApiProperty({
+    description: 'Account active status',
+    example: true,
+  })
+  isActive: boolean;
+
+  @ApiProperty({
+    description: 'Account creation timestamp',
+    example: '2024-01-15T10:30:00Z',
+  })
+  createdAt: Date;
+
+  @ApiProperty({
+    description: 'Last account update timestamp',
+    example: '2024-01-15T10:30:00Z',
+  })
+  updatedAt: Date;
+
+  @ApiProperty({
+    description: 'Last active timestamp',
+    example: '2024-01-15T10:30:00Z',
+    required: false,
+  })
+  lastActiveAt?: Date;
+}
+
+export class CreateVendorDto {
+  @ApiProperty({
+    description: 'Vendor name',
+    example: 'Fresh Water Solutions',
+  })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({
+    description: 'Vendor phone number',
+    example: '9999999999',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiProperty({
+    description: 'Vendor email address',
+    example: 'vendor@freshwater.com',
+    required: false,
+  })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @ApiProperty({
+    description: 'GST Identification Number',
+    example: '22AAAAA0000A1Z5',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  gstin?: string;
+
+  @ApiProperty({
+    description: 'Bank account ID',
+    example: 12345,
+    required: false,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  bankAccountId?: number;
+
+  @ApiProperty({
+    description: 'Additional metadata',
+    example: { businessType: 'retail', establishedYear: 2020 },
+    required: false,
+  })
+  @IsOptional()
+  metadata?: Record<string, any>;
+
+  @ApiProperty({
+    description: 'Account active status',
+    example: true,
+    required: false,
+    default: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class UpdateVendorDto {
+  @ApiProperty({
+    description: 'Vendor name',
+    example: 'Fresh Water Solutions',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiProperty({
+    description: 'Vendor phone number',
+    example: '9999999999',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiProperty({
+    description: 'Vendor email address',
+    example: 'vendor@freshwater.com',
+    required: false,
+  })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @ApiProperty({
+    description: 'GST Identification Number',
+    example: '22AAAAA0000A1Z5',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  gstin?: string;
+
+  @ApiProperty({
+    description: 'Bank account ID',
+    example: 12345,
+    required: false,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  bankAccountId?: number;
+
+  @ApiProperty({
+    description: 'KYC status',
+    example: 'approved',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  kycStatus?: string;
+
+  @ApiProperty({
+    description: 'Verification status',
+    example: true,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isVerified?: boolean;
+
+  @ApiProperty({
+    description: 'Account active status',
+    example: true,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @ApiProperty({
+    description: 'Additional metadata',
+    example: { businessType: 'retail', establishedYear: 2020 },
+    required: false,
+  })
+  @IsOptional()
+  metadata?: Record<string, any>;
+}
+
+export class VendorResponseDto {
+  @ApiProperty({
+    description: 'Vendor unique identifier',
+    example: '123',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'Vendor phone number',
+    example: '9999999999',
+    required: false,
+  })
+  phone?: string;
+
+  @ApiProperty({
+    description: 'Vendor email',
+    example: 'vendor@freshwater.com',
+    required: false,
+  })
+  email?: string;
+
+  @ApiProperty({
+    description: 'Vendor name',
+    example: 'Fresh Water Solutions',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'KYC status',
+    example: 'pending',
+  })
+  kycStatus: string;
+
+  @ApiProperty({
+    description: 'GST Identification Number',
+    example: '22AAAAA0000A1Z5',
+    required: false,
+  })
+  gstin?: string;
+
+  @ApiProperty({
+    description: 'Bank account ID',
+    example: 12345,
+    required: false,
+  })
+  bankAccountId?: number;
+
+  @ApiProperty({
+    description: 'Vendor rating',
+    example: 4.5,
+    required: false,
+  })
+  rating?: number;
+
+  @ApiProperty({
+    description: 'Verification status',
+    example: false,
+  })
+  isVerified: boolean;
+
+  @ApiProperty({
+    description: 'Account active status',
+    example: true,
+  })
+  isActive: boolean;
+
+  @ApiProperty({
+    description: 'Additional metadata',
+    example: { businessType: 'retail', establishedYear: 2020 },
+    required: false,
+  })
+  metadata?: Record<string, any>;
+
+  @ApiProperty({
+    description: 'Account creation timestamp',
+    example: '2024-01-15T10:30:00Z',
+  })
+  createdAt: Date;
+
+  @ApiProperty({
+    description: 'Last account update timestamp',
+    example: '2024-01-15T10:30:00Z',
+  })
+  updatedAt: Date;
+
+  @ApiProperty({
+    description: 'Last active timestamp',
+    example: '2024-01-15T10:30:00Z',
+    required: false,
+  })
+  lastActiveAt?: Date;
+}
+
+export class CreateRiderDto {
+  @ApiProperty({
+    description: 'Rider name',
+    example: 'John Smith',
+  })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({
+    description: 'Rider phone number',
+    example: '9999999999',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiProperty({
+    description: 'Rider email address',
+    example: 'rider@delivery.com',
+    required: false,
+  })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @ApiProperty({
+    description: 'License number',
+    example: 'DL123456789',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  licenseNo?: string;
+
+  @ApiProperty({
+    description: 'Vehicle type',
+    example: 'motorcycle',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  vehicleType?: string;
+
+  @ApiProperty({
+    description: 'Shift schedule',
+    example: { startTime: '09:00', endTime: '18:00', days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] },
+    required: false,
+  })
+  @IsOptional()
+  shift?: Record<string, any>;
+
+  @ApiProperty({
+    description: 'Additional metadata',
+    example: { experience: '2 years', preferredAreas: ['downtown', 'uptown'] },
+    required: false,
+  })
+  @IsOptional()
+  metadata?: Record<string, any>;
+
+  @ApiProperty({
+    description: 'Account active status',
+    example: true,
+    required: false,
+    default: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class UpdateRiderDto {
+  @ApiProperty({
+    description: 'Rider name',
+    example: 'John Smith',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiProperty({
+    description: 'Rider phone number',
+    example: '9999999999',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiProperty({
+    description: 'Rider email address',
+    example: 'rider@delivery.com',
+    required: false,
+  })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @ApiProperty({
+    description: 'License number',
+    example: 'DL123456789',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  licenseNo?: string;
+
+  @ApiProperty({
+    description: 'Vehicle type',
+    example: 'motorcycle',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  vehicleType?: string;
+
+  @ApiProperty({
+    description: 'Shift schedule',
+    example: { startTime: '09:00', endTime: '18:00', days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] },
+    required: false,
+  })
+  @IsOptional()
+  shift?: Record<string, any>;
+
+  @ApiProperty({
+    description: 'Rider status',
+    example: 'active',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @ApiProperty({
+    description: 'Account active status',
+    example: true,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @ApiProperty({
+    description: 'Additional metadata',
+    example: { experience: '2 years', preferredAreas: ['downtown', 'uptown'] },
+    required: false,
+  })
+  @IsOptional()
+  metadata?: Record<string, any>;
+}
+
+export class RiderResponseDto {
+  @ApiProperty({
+    description: 'Rider unique identifier',
+    example: '123',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'Rider UUID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  uuid: string;
+
+  @ApiProperty({
+    description: 'Rider phone number',
+    example: '9999999999',
+    required: false,
+  })
+  phone?: string;
+
+  @ApiProperty({
+    description: 'Rider email',
+    example: 'rider@delivery.com',
+    required: false,
+  })
+  email?: string;
+
+  @ApiProperty({
+    description: 'Rider name',
+    example: 'John Smith',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'License number',
+    example: 'DL123456789',
+    required: false,
+  })
+  licenseNo?: string;
+
+  @ApiProperty({
+    description: 'Vehicle type',
+    example: 'motorcycle',
+    required: false,
+  })
+  vehicleType?: string;
+
+  @ApiProperty({
+    description: 'Shift schedule',
+    example: { startTime: '09:00', endTime: '18:00', days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] },
+    required: false,
+  })
+  shift?: Record<string, any>;
+
+  @ApiProperty({
+    description: 'Rider status',
+    example: 'active',
+  })
+  status: string;
+
+  @ApiProperty({
+    description: 'Rider rating',
+    example: 4.5,
+    required: false,
+  })
+  rating?: number;
+
+  @ApiProperty({
+    description: 'Account active status',
+    example: true,
+  })
+  isActive: boolean;
+
+  @ApiProperty({
+    description: 'Additional metadata',
+    example: { experience: '2 years', preferredAreas: ['downtown', 'uptown'] },
+    required: false,
+  })
+  metadata?: Record<string, any>;
+
+  @ApiProperty({
+    description: 'Account creation timestamp',
+    example: '2024-01-15T10:30:00Z',
+  })
+  createdAt: Date;
+
+  @ApiProperty({
+    description: 'Last account update timestamp',
+    example: '2024-01-15T10:30:00Z',
+  })
+  updatedAt: Date;
+
+  @ApiProperty({
+    description: 'Last active timestamp',
+    example: '2024-01-15T10:30:00Z',
+    required: false,
+  })
+  lastActiveAt?: Date;
+}

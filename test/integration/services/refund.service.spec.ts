@@ -7,12 +7,22 @@ import { RefundStatus } from '../../../src/refund/interfaces/refund.interface';
 import { ConflictException as CustomConflictException } from '../../../src/common/exceptions/business.exception';
 
 // Mock services
-jest.mock('../../../src/common/database/prisma.service');
+jest.mock('../../../src/common/database/prisma.service', () => ({
+  PrismaService: jest.fn().mockImplementation(() => ({
+    order: { findUnique: jest.fn(), update: jest.fn() },
+    refund: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+  })),
+}));
 jest.mock('../../../src/ledger/services/ledger.service');
 
 describe('RefundService - Conflict Scenarios', () => {
   let service: RefundService;
-  let prismaService: jest.Mocked<PrismaService>;
+  let prismaService: any;
   let ledgerService: jest.Mocked<LedgerService>;
 
   beforeEach(async () => {
@@ -33,6 +43,7 @@ describe('RefundService - Conflict Scenarios', () => {
     it('should throw ConflictException when refund already exists for order', async () => {
       const orderId = 'order123';
       const createRefundDto = {
+        orderId,
         amount: 100,
         reason: 'Product damaged',
         notes: 'Customer reported damaged product',
@@ -57,7 +68,7 @@ describe('RefundService - Conflict Scenarios', () => {
       };
       prismaService.refund.findFirst.mockResolvedValue(existingRefund as any);
 
-      await expect(service.createRefund(orderId, createRefundDto, createdBy))
+      await expect(service.createRefund(createRefundDto, createdBy))
         .rejects.toThrow(CustomConflictException);
 
       expect(prismaService.refund.create).not.toHaveBeenCalled();
@@ -66,6 +77,7 @@ describe('RefundService - Conflict Scenarios', () => {
     it('should allow creating refund when no existing refund for order', async () => {
       const orderId = 'order123';
       const createRefundDto = {
+        orderId,
         amount: 100,
         reason: 'Product damaged',
         notes: 'Customer reported damaged product',
@@ -98,7 +110,7 @@ describe('RefundService - Conflict Scenarios', () => {
       };
       prismaService.refund.create.mockResolvedValue(createdRefund as any);
 
-      const result = await service.createRefund(orderId, createRefundDto, createdBy);
+      const result = await service.createRefund(createRefundDto, createdBy);
 
       expect(result.id).toBe(BigInt(999));
       expect(result.amount).toBe(100);
@@ -118,6 +130,7 @@ describe('RefundService - Conflict Scenarios', () => {
     it('should throw BadRequestException when refund amount exceeds order total', async () => {
       const orderId = 'order123';
       const createRefundDto = {
+        orderId,
         amount: 300, // Exceeds order total of 200
         reason: 'Product damaged',
         notes: 'Customer reported damaged product',
@@ -136,7 +149,7 @@ describe('RefundService - Conflict Scenarios', () => {
       // Mock no existing refund
       prismaService.refund.findFirst.mockResolvedValue(null);
 
-      await expect(service.createRefund(orderId, createRefundDto, createdBy))
+      await expect(service.createRefund(createRefundDto, createdBy))
         .rejects.toThrow(BadRequestException);
 
       expect(prismaService.refund.create).not.toHaveBeenCalled();
@@ -417,6 +430,7 @@ describe('RefundService - Conflict Scenarios', () => {
     it('should throw NotFoundException for non-existent order in createRefund', async () => {
       const orderId = 'non-existent-order';
       const createRefundDto = {
+        orderId,
         amount: 100,
         reason: 'Product damaged',
       };
@@ -425,7 +439,7 @@ describe('RefundService - Conflict Scenarios', () => {
       // Mock order not found
       prismaService.order.findUnique.mockResolvedValue(null);
 
-      await expect(service.createRefund(orderId, createRefundDto, createdBy))
+      await expect(service.createRefund(createRefundDto, createdBy))
         .rejects.toThrow(NotFoundException);
     });
 
@@ -442,6 +456,7 @@ describe('RefundService - Conflict Scenarios', () => {
     it('should throw ConflictException with proper context for duplicate refunds', async () => {
       const orderId = 'order123';
       const createRefundDto = {
+        orderId,
         amount: 100,
         reason: 'Product damaged',
       };
@@ -466,7 +481,7 @@ describe('RefundService - Conflict Scenarios', () => {
       prismaService.refund.findFirst.mockResolvedValue(existingRefund as any);
 
       try {
-        await service.createRefund(orderId, createRefundDto, createdBy);
+        await service.createRefund(createRefundDto, createdBy);
         fail('Expected ConflictException to be thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(CustomConflictException);
@@ -526,6 +541,7 @@ describe('RefundService - Conflict Scenarios', () => {
     it('should handle undefined optional fields gracefully', async () => {
       const orderId = 'order123';
       const createRefundDto = {
+        orderId,
         amount: 100,
         reason: 'Product damaged',
         notes: undefined, // No notes provided
@@ -558,7 +574,7 @@ describe('RefundService - Conflict Scenarios', () => {
       };
       prismaService.refund.create.mockResolvedValue(createdRefund as any);
 
-      const result = await service.createRefund(orderId, createRefundDto, createdBy);
+      const result = await service.createRefund(createRefundDto, createdBy);
 
       expect(result.notes).toBeNull();
       expect(result.amount).toBe(100);
