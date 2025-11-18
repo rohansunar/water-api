@@ -43,16 +43,9 @@ export class OtpService {
     const { phone, purpose } = request;
 
     // Check if in test mode (environment variable)
-    const isTestMode = this.configService.get('NODE_ENV') === 'test' ||
-                      this.configService.get('OTP_TEST_MODE') === 'true';
+    const isTestMode = this.configService.get('NODE_ENV') === 'development';
 
-    let otp: string;
-    if (isTestMode) {
-      // Use fixed OTP for testing
-      otp = '123456';
-    } else {
-      // Generate and store OTP
-      otp = this.generateSecureOtp();
+    let otp = isTestMode ? '123456' : this.generateSecureOtp();
 
       const hashedOtp = this.hashOtp(otp);
       const expiresAt = this.calculateExpiryTime();
@@ -89,7 +82,6 @@ export class OtpService {
             isUsed: false,
           },
         });
-      }
     }
 
     // Log OTP generation (in production, send via SMS)

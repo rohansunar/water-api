@@ -170,27 +170,25 @@ export class VendorProductService {
       if (category) {
         filter.category = category;
       }
+
+      const query = {
+            vendorId: BigInt(vendorId),
+            ...(isActive !== undefined && { isActive }),
+            ...(category && { category }),
+          }
       
       console.log("filter",filter)
 
       // Get products with pagination
       const [products, total] = await Promise.all([
         this.prisma.product.findMany({
-          where: {
-            vendorId: BigInt(vendorId),
-            ...(isActive !== undefined && { isActive }),
-            ...(category && { category }),
-          },
+          where: query,
           skip,
           take: limit,
           orderBy: { createdAt: 'desc' },
         }),
         this.prisma.product.count({
-          where: {
-            vendorId: BigInt(vendorId),
-            ...(isActive !== undefined && { isActive }),
-            ...(category && { category }),
-          },
+          where: query,
         }),
       ]);
 

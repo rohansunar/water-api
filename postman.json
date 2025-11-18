@@ -1,11 +1,7 @@
 {
   "info": {
     "name": "Water Delivery API Collection",
-    "description": "Complete API collection for the Water Delivery Platform including Phase 1 core features, Phase 1.5 enhanced features, Phase 2 security enhancements, and Phase 3 infrastructure endpoints.\n\n**Phase 1 Features:**\n- Authentication & Authorization\n- Admin Management\n- Product Moderation\n- Order Management\n- Refund Management\n- Dispute Management\n- Escalation Management\n- Vendor Products\n- Store Management\n- Product Discovery\n- Customer Management
-- Commission Management (admin commission rules and calculations)
-- Subscription Management (customer recurring delivery subscriptions)
-- Wallet Management (customer wallet operations and balance management)
-- Enhanced Store Management (comprehensive vendor store operations)\n\n**Phase 2 Security Enhancements:**\n- Rider Authentication (OTP-based login, JWT tokens)\n- Task Management (accept, pickup, deliver, fail)\n- Shift Management (shift end, cash reconciliation)\n- Notifications & Support (notification history, support tickets)\n- Security Features (rate limiting, session management)\n\n**Phase 3 Infrastructure:**\n- Background Worker Status (worker monitoring, queue metrics)\n- Cache Management (cache statistics, invalidation)\n- Offline Support (connectivity monitoring, sync status)\n- System Monitoring (health checks, performance metrics)\n\n**Security Features:**\n- JWT-based authentication for all protected endpoints\n- Rate limiting on authentication endpoints\n- Session management with automatic expiration\n- Role-based access control (Admin, Vendor, Customer, Rider)\n- Input validation and sanitization\n- Error response standardization\n\n**Environment Variables:**\n- baseUrl: Base URL for the API server\n- adminToken: JWT token for admin operations\n- vendorToken: JWT token for vendor operations\n- customerToken: JWT token for customer operations\n- riderToken: JWT token for rider operations",
+    "description": "Complete API collection for the Water Delivery Platform including Phase 1 core features, Phase 1.5 enhanced features, Phase 2 security enhancements, and Phase 3 infrastructure endpoints.\n\n**Phase 1 Features:**\n- Authentication & Authorization\n- Admin Management\n- Product Moderation\n- Order Management\n- Refund Management\n- Dispute Management\n- Escalation Management\n- Vendor Products\n- Store Management\n- Product Discovery\n- Customer Management - Commission Management (admin commission rules and calculations) - Subscription Management (customer recurring delivery subscriptions) - Wallet Management (customer wallet operations and balance management) - Enhanced Store Management (comprehensive vendor store operations)\n\n**Phase 2 Security Enhancements:**\n- Rider Authentication (OTP-based login, JWT tokens)\n- Task Management (accept, pickup, deliver, fail)\n- Shift Management (shift end, cash reconciliation)\n- Notifications & Support (notification history, support tickets)\n- Security Features (rate limiting, session management)\n\n**Phase 3 Infrastructure:**\n- Background Worker Status (worker monitoring, queue metrics)\n- Cache Management (cache statistics, invalidation)\n- Offline Support (connectivity monitoring, sync status)\n- System Monitoring (health checks, performance metrics)\n\n**Security Features:**\n- JWT-based authentication for all protected endpoints\n- Rate limiting on authentication endpoints\n- Session management with automatic expiration\n- Role-based access control (Admin, Vendor, Customer, Rider)\n- Input validation and sanitization\n- Error response standardization\n\n**Environment Variables:**\n- baseUrl: Base URL for the API server\n- adminToken: JWT token for admin operations\n- vendorToken: JWT token for vendor operations\n- customerToken: JWT token for customer operations\n- riderToken: JWT token for rider operations",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -2401,6 +2397,320 @@
                     "pm.test(\"Status code is 200\", function () {",
                     "    pm.response.to.have.status(200);",
                     "});"
+                  ],
+                  "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                      {
+                        "key": "token",
+                        "value": "{{riderToken}}",
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "documentation": {
+                    "overview": "Water Delivery Platform API - Complete Documentation",
+                    "phases": {
+                      "phase1": {
+                        "name": "Core Features",
+                        "description": "Basic authentication, product management, order processing, and customer services",
+                        "endpoints": [
+                          "Authentication & Authorization",
+                          "Admin Management",
+                          "Product Moderation",
+                          "Order Management",
+                          "Refund Management",
+                          "Dispute Management",
+                          "Escalation Management",
+                          "Vendor Products",
+                          "Store Management",
+                          "Product Discovery",
+                          "Customer Management",
+                          "Commission Management",
+                          "Subscription Management",
+                          "Wallet Management",
+                          "Enhanced Store Management"
+                        ]
+                      },
+                      "phase2": {
+                        "name": "Security Enhancements",
+                        "description": "Rider authentication, task management, shift operations, and support systems",
+                        "endpoints": [
+                          "Rider Authentication",
+                          "Task Management",
+                          "Rider Operations",
+                          "Earnings & Performance",
+                          "Shift Management",
+                          "Notifications & Support"
+                        ]
+                      },
+                      "phase3": {
+                        "name": "Infrastructure",
+                        "description": "Background services, monitoring, caching, and system resilience",
+                        "endpoints": [
+                          "System Monitoring",
+                          "Background Services",
+                          "Cache Management"
+                        ]
+                      }
+                    },
+                    "authentication": {
+                      "jwt": {
+                        "description": "JWT-based authentication for all protected endpoints",
+                        "tokenFormat": "Bearer <token>",
+                        "expiration": "24 hours for regular tokens, 7 days for refresh tokens",
+                        "roles": ["admin", "vendor", "customer", "rider"]
+                      },
+                      "otp": {
+                        "description": "OTP-based authentication for riders",
+                        "method": "SMS-based verification",
+                        "validity": "5 minutes",
+                        "length": "6 digits"
+                      },
+                      "rateLimiting": {
+                        "loginAttempts": "5 attempts per 15 minutes",
+                        "otpRequests": "3 requests per minute per phone number"
+                      }
+                    },
+                    "requestResponseSchemas": {
+                      "errorResponse": {
+                        "400": {
+                          "description": "Bad Request - Invalid input data",
+                          "schema": {
+                            "type": "object",
+                            "properties": {
+                              "statusCode": { "type": "number", "example": 400 },
+                              "message": { "type": "string", "example": "Validation failed" },
+                              "error": { "type": "string", "example": "Bad Request" },
+                              "details": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "field": { "type": "string" },
+                                    "message": { "type": "string" }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "401": {
+                          "description": "Unauthorized - Invalid or missing authentication",
+                          "schema": {
+                            "type": "object",
+                            "properties": {
+                              "statusCode": { "type": "number", "example": 401 },
+                              "message": { "type": "string", "example": "Unauthorized" },
+                              "error": { "type": "string", "example": "Unauthorized" }
+                            }
+                          }
+                        },
+                        "403": {
+                          "description": "Forbidden - Insufficient permissions",
+                          "schema": {
+                            "type": "object",
+                            "properties": {
+                              "statusCode": { "type": "number", "example": 403 },
+                              "message": { "type": "string", "example": "Insufficient permissions" },
+                              "error": { "type": "string", "example": "Forbidden" }
+                            }
+                          }
+                        },
+                        "404": {
+                          "description": "Not Found - Resource not found",
+                          "schema": {
+                            "type": "object",
+                            "properties": {
+                              "statusCode": { "type": "number", "example": 404 },
+                              "message": { "type": "string", "example": "Resource not found" },
+                              "error": { "type": "string", "example": "Not Found" }
+                            }
+                          }
+                        },
+                        "500": {
+                          "description": "Internal Server Error",
+                          "schema": {
+                            "type": "object",
+                            "properties": {
+                              "statusCode": { "type": "number", "example": 500 },
+                              "message": { "type": "string", "example": "Internal server error" },
+                              "error": { "type": "string", "example": "Internal Server Error" }
+                            }
+                          }
+                        }
+                      },
+                      "pagination": {
+                        "description": "Standard pagination response format",
+                        "schema": {
+                          "type": "object",
+                          "properties": {
+                            "data": { "type": "array", "description": "Array of items" },
+                            "total": { "type": "number", "description": "Total number of items" },
+                            "page": { "type": "number", "description": "Current page number" },
+                            "limit": { "type": "number", "description": "Items per page" },
+                            "totalPages": { "type": "number", "description": "Total number of pages" }
+                          }
+                        }
+                      }
+                    },
+                    "environmentVariables": {
+                      "baseUrl": {
+                        "description": "Base URL for the API server",
+                        "example": "http://localhost:4242",
+                        "required": true
+                      },
+                      "adminToken": {
+                        "description": "JWT token for admin operations",
+                        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "required": true
+                      },
+                      "vendorToken": {
+                        "description": "JWT token for vendor operations",
+                        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "required": true
+                      },
+                      "customerToken": {
+                        "description": "JWT token for customer operations",
+                        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "required": true
+                      },
+                      "riderToken": {
+                        "description": "JWT token for rider operations",
+                        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "required": true
+                      }
+                    },
+                    "securityConsiderations": {
+                      "rateLimiting": {
+                        "description": "Rate limiting is applied to prevent abuse",
+                        "limits": {
+                          "authentication": "5 attempts per 15 minutes",
+                          "otp": "3 requests per minute per phone number",
+                          "general": "100 requests per minute per user"
+                        }
+                      },
+                      "inputValidation": {
+                        "description": "All inputs are validated and sanitized",
+                        "methods": ["SQL injection prevention", "XSS protection", "Input sanitization"]
+                      },
+                      "sessionManagement": {
+                        "description": "Secure session management with automatic expiration",
+                        "tokenExpiration": "24 hours for regular tokens",
+                        "refreshTokenExpiration": "7 days"
+                      },
+                      "dataProtection": {
+                        "description": "Sensitive data protection measures",
+                        "methods": ["Encryption at rest", "TLS encryption in transit", "Secure token storage"]
+                      }
+                    },
+                    "endpointCategories": {
+                      "authentication": {
+                        "description": "User authentication and authorization endpoints",
+                        "security": "Rate limited, JWT-based authentication"
+                      },
+                      "taskManagement": {
+                        "description": "Delivery task assignment and management",
+                        "security": "Rider authentication required"
+                      },
+                      "deliveryOperations": {
+                        "description": "Real-time delivery tracking and updates",
+                        "security": "Rider authentication required"
+                      },
+                      "cashReconciliation": {
+                        "description": "Cash collection and reconciliation processes",
+                        "security": "Rider authentication required"
+                      },
+                      "notifications": {
+                        "description": "Notification delivery and support ticket management",
+                        "security": "User-specific authentication required"
+                      },
+                      "systemMonitoring": {
+                        "description": "System health and performance monitoring",
+                        "security": "Admin authentication required"
+                      },
+                      "backgroundServices": {
+                        "description": "Background worker and queue management",
+                        "security": "Admin authentication required"
+                      }
+                    },
+                    "configuration": {
+                      "redis": {
+                        "description": "Redis configuration for caching and sessions",
+                        "ttl": {
+                          "session": "24 hours",
+                          "cache": "1 hour",
+                          "otp": "5 minutes"
+                        }
+                      },
+                      "database": {
+                        "description": "Database configuration and connection settings",
+                        "connectionPool": "10-50 connections",
+                        "timeout": "30 seconds"
+                      },
+                      "monitoring": {
+                        "description": "System monitoring and alerting configuration",
+                        "healthCheckInterval": "30 seconds",
+                        "metricsCollection": "60 seconds"
+                      }
+                    },
+                    "apiUsageExamples": {
+                      "riderLogin": {
+                        "description": "Complete rider authentication flow",
+                        "steps": [
+                          "Send OTP to phone number",
+                          "Verify OTP to get JWT token",
+                          "Use token for subsequent requests"
+                        ]
+                      },
+                      "orderManagement": {
+                        "description": "Complete order lifecycle",
+                        "steps": [
+                          "Customer creates order",
+                          "System assigns to rider",
+                          "Rider accepts and picks up",
+                          "Rider delivers and collects payment",
+                          "Rider reconciles cash at shift end"
+                        ]
+                      },
+                      "errorHandling": {
+                        "description": "Proper error handling patterns",
+                        "examples": [
+                          "Check response status codes",
+                          "Handle rate limiting with exponential backoff",
+                          "Implement retry logic for transient failures"
+                        ]
+                      }
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// This script runs before every request",
+                          "// You can add common setup logic here",
+                          "console.log('Making request to: ' + pm.request.url.toString());"
+                        ]
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// This script runs after every request",
+                          "// You can add common test logic here",
+                          "console.log('Request completed with status: ' + pm.response.code);",
+                          "",
+                          "// Check for common error responses",
+                          "if (pm.response.code >= 400) {",
+                          "    console.log('Error response:', pm.response.json());",
+                          "}"
+                        ]
+                      }
+                    }
                   ]
                 }
               }
@@ -4324,6 +4634,146 @@
               }
             ]
           }
+        },
+        {
+          "name": "Complaint Management",
+          "description": "Customer complaint management endpoints",
+          "item": [
+            {
+              "name": "Create Complaint",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{customerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"orderId\": \"order123\",\n  \"subject\": \"Wrong product delivered\",\n  \"description\": \"Received mineral water instead of packaged drinking water\",\n  \"category\": \"wrong_product\",\n  \"priority\": \"medium\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/complaints",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["complaints"]
+                },
+                "description": "Create a new complaint for an order",
+                "event": [
+                  {
+                    "listen": "test",
+                    "script": {
+                      "exec": [
+                        "pm.test(\"Status code is 201\", function () {",
+                        "    pm.response.to.have.status(201);",
+                        "});",
+                        "",
+                        "pm.test(\"Response has complaint fields\", function () {",
+                        "    var jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('id');",
+                        "    pm.expect(jsonData).to.have.property('orderId');",
+                        "    pm.expect(jsonData).to.have.property('status');",
+                        "    pm.expect(jsonData).to.have.property('createdAt');",
+                        "});"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "name": "Get User Complaints",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{customerToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/complaints?page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["complaints"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                },
+                "description": "Get all complaints for the authenticated user",
+                "event": [
+                  {
+                    "listen": "test",
+                    "script": {
+                      "exec": [
+                        "pm.test(\"Status code is 200\", function () {",
+                        "    pm.response.to.have.status(200);",
+                        "});",
+                        "",
+                        "pm.test(\"Response is array of complaints\", function () {",
+                        "    var jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.be.an('array');",
+                        "});"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "name": "Get Complaint by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{customerToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/complaints/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["complaints", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "complaint123"
+                    }
+                  ]
+                },
+                "description": "Get a specific complaint by ID",
+                "event": [
+                  {
+                    "listen": "test",
+                    "script": {
+                      "exec": [
+                        "pm.test(\"Status code is 200\", function () {",
+                        "    pm.response.to.have.status(200);",
+                        "});",
+                        "",
+                        "pm.test(\"Response has complaint fields\", function () {",
+                        "    var jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('id');",
+                        "    pm.expect(jsonData).to.have.property('orderId');",
+                        "    pm.expect(jsonData).to.have.property('status');",
+                        "});"
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
         }
       ]
     }

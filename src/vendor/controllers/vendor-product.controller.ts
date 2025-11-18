@@ -183,7 +183,7 @@ export class VendorProductController {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
     const isActiveBool =
-      isActive !== undefined ? isActive === 'true' : undefined;
+      isActive !== undefined ? isActive === true : undefined;
 
     this.logger.log(
       `Products retrieval attempt for vendor: ${vendorId}, page: ${pageNum}, limit: ${limitNum}`,
@@ -399,13 +399,16 @@ export class VendorProductController {
   async createProductVariant(
     @Param('id') productId: string,
     @Body() createProductVariantDto: CreateVendorProductVariantDto,
-    @CurrentUser('sub') vendorId: string,
+    @CurrentUser('sub') vendor: any,
   ): Promise<VendorProductVariantResponseDto> {
+    const { id } = vendor;
+
     this.logger.log(
-      `Product variant creation attempt for vendor: ${vendorId}, product ID: ${productId}`,
+      `Product variant creation attempt for vendor: ${id}, product ID: ${productId}`,
     );
+
     return this.vendorProductService.createProductVariant(
-      vendorId,
+      id,
       productId,
       createProductVariantDto,
     );
