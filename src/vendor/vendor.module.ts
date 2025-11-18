@@ -6,10 +6,14 @@ import { VendorStoreService } from './services/vendor-store.service';
 import { VendorProductController } from './controllers/vendor-product.controller';
 import { VendorProductService } from './services/vendor-product.service';
 import { VendorAuthModule } from './vendor-auth.module';
+import { VendorOrderModule } from './vendor-order.module';
+import { VendorPaymentModule } from './vendor-payment.module';
 
 @Module({
   imports: [
     VendorAuthModule,
+    VendorOrderModule,
+    VendorPaymentModule,
   ],
   controllers: [
     VendorController,
