@@ -7,6 +7,7 @@ export interface OtpRequest {
   phone: string;
   purpose:
     | 'rider_login'
+    | 'customer_login'
     | 'delivery_verification'
     | 'password_reset'
     | 'vendor_login';
@@ -17,6 +18,7 @@ export interface OtpVerification {
   otp: string;
   purpose:
     | 'rider_login'
+    | 'customer_login'
     | 'delivery_verification'
     | 'password_reset'
     | 'vendor_login';
@@ -51,43 +53,43 @@ export class OtpService {
     } else {
       // Generate and store OTP
       otp = this.generateSecureOtp();
-    }
 
-    const hashedOtp = this.hashOtp(otp);
-    const expiresAt = this.calculateExpiryTime();
+      const hashedOtp = this.hashOtp(otp);
+      const expiresAt = this.calculateExpiryTime();
 
-    // Check if a record with this phone and purpose already exists
-    const existingOtp = await this.prisma.otpCode.findFirst({
-      where: {
-        phone,
-        purpose,
-      },
-    });
-
-    if (existingOtp) {
-      // Update existing record
-      await this.prisma.otpCode.update({
-        where: { id: existingOtp.id },
-        data: {
-          code: hashedOtp,
-          expiresAt,
-          attempts: 0,
-          isUsed: false,
-          usedAt: null,
-        },
-      });
-    } else {
-      // Create new record
-      await this.prisma.otpCode.create({
-        data: {
+      // Check if a record with this phone and purpose already exists
+      const existingOtp = await this.prisma.otpCode.findFirst({
+        where: {
           phone,
-          code: hashedOtp,
           purpose,
-          expiresAt,
-          attempts: 0,
-          isUsed: false,
         },
       });
+
+      if (existingOtp) {
+        // Update existing record
+        await this.prisma.otpCode.update({
+          where: { id: existingOtp.id },
+          data: {
+            code: hashedOtp,
+            expiresAt,
+            attempts: 0,
+            isUsed: false,
+            usedAt: null,
+          },
+        });
+      } else {
+        // Create new record
+        await this.prisma.otpCode.create({
+          data: {
+            phone,
+            code: hashedOtp,
+            purpose,
+            expiresAt,
+            attempts: 0,
+            isUsed: false,
+          },
+        });
+      }
     }
 
     // Log OTP generation (in production, send via SMS)
