@@ -247,7 +247,11 @@ export class LedgerService {
       const ledgerSummary = ledgerEntries.reduce(
         (acc, entry) => {
           const amount = Number(entry.amount);
-          if ([LedgerEntryType.SALE, LedgerEntryType.ADJUSTMENT].includes(entry.type as LedgerEntryType)) {
+          if (
+            [LedgerEntryType.SALE, LedgerEntryType.ADJUSTMENT].includes(
+              entry.type as LedgerEntryType,
+            )
+          ) {
             acc.totalEarnings += amount;
           } else if (entry.type === LedgerEntryType.COMMISSION) {
             acc.totalCommission += amount;
@@ -275,11 +279,18 @@ export class LedgerService {
       const payoutSummary = payoutEntries.reduce(
         (acc, payout) => {
           const amount = Number(payout.amount);
-          if ([PayoutStatus.PENDING, PayoutStatus.PROCESSING].includes(payout.status as PayoutStatus)) {
+          if (
+            [PayoutStatus.PENDING, PayoutStatus.PROCESSING].includes(
+              payout.status as PayoutStatus,
+            )
+          ) {
             acc.pendingPayouts += amount;
           } else if (payout.status === PayoutStatus.COMPLETED) {
             acc.completedPayouts += amount;
-            if (payout.completedAt && (!acc.lastPayoutDate || payout.completedAt > acc.lastPayoutDate)) {
+            if (
+              payout.completedAt &&
+              (!acc.lastPayoutDate || payout.completedAt > acc.lastPayoutDate)
+            ) {
               acc.lastPayoutDate = payout.completedAt;
             }
           }
@@ -339,13 +350,18 @@ export class LedgerService {
           vendorId: BigInt(vendorId),
           amount: createDto.amount,
           method: createDto.method,
-          payoutDetails: createDto.bankDetails || createDto.upiDetails ? {
-            bankAccountNumber: createDto.bankDetails?.accountNumber,
-            ifscCode: createDto.bankDetails?.ifscCode,
-            accountHolderName: createDto.bankDetails?.accountHolderName || createDto.upiDetails?.name,
-            bankName: createDto.bankDetails?.bankName,
-            upiId: createDto.upiDetails?.upiId,
-          } : {},
+          payoutDetails:
+            createDto.bankDetails || createDto.upiDetails
+              ? {
+                  bankAccountNumber: createDto.bankDetails?.accountNumber,
+                  ifscCode: createDto.bankDetails?.ifscCode,
+                  accountHolderName:
+                    createDto.bankDetails?.accountHolderName ||
+                    createDto.upiDetails?.name,
+                  bankName: createDto.bankDetails?.bankName,
+                  upiId: createDto.upiDetails?.upiId,
+                }
+              : {},
           status: PayoutStatus.PENDING,
         },
       });
@@ -432,7 +448,7 @@ export class LedgerService {
   }
 
   private mapPayoutToResponseDto(payout: any): PayoutResponseDto {
-    const payoutDetails = payout.payoutDetails as any;
+    const payoutDetails = payout.payoutDetails;
     return {
       id: payout.id.toString(),
       vendorId: payout.vendorId.toString(),

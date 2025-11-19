@@ -47,12 +47,7 @@ export class DatabaseErrorHandlerService {
     initialDelay: 100,
     maxDelay: 5000,
     backoffMultiplier: 2,
-    retryableErrors: [
-      'ECONNRESET',
-      'ETIMEDOUT',
-      'ENOTFOUND',
-      'EPIPE',
-    ],
+    retryableErrors: ['ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EPIPE'],
   };
 
   constructor(private readonly customLogger: CustomLoggerService) {}
@@ -175,7 +170,6 @@ export class DatabaseErrorHandlerService {
       }
     }
 
-
     // Check for network-related error patterns
     const networkErrorPatterns = [
       /network.*error/i,
@@ -220,7 +214,6 @@ export class DatabaseErrorHandlerService {
       retryable,
     );
   }
-
 
   /**
    * Extract field name from duplicate key error

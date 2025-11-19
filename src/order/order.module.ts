@@ -6,11 +6,7 @@ import { LedgerModule } from '../ledger/ledger.module';
 import { CommissionModule } from '../commission/commission.module';
 
 @Module({
-  imports: [
-    ProductModule,
-    LedgerModule,
-    CommissionModule,
-  ],
+  imports: [ProductModule, LedgerModule, CommissionModule],
   controllers: [OrderController],
   providers: [OrderService],
   exports: [OrderService],

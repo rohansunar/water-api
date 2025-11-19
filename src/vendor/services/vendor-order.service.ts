@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { VendorService } from './vendor.service';
 import {
   OrderResponseDto,
@@ -44,7 +40,11 @@ export class VendorOrderService {
     vendor: Vendor,
     updateOrderStatusDto: UpdateOrderStatusDto,
   ): Promise<OrderResponseDto> {
-    return this.vendorService.updateOrderStatus(orderId, vendor, updateOrderStatusDto);
+    return this.vendorService.updateOrderStatus(
+      orderId,
+      vendor,
+      updateOrderStatusDto,
+    );
   }
 
   /**

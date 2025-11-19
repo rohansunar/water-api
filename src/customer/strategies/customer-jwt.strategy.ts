@@ -15,7 +15,10 @@ export interface CustomerJwtPayload {
 }
 
 @Injectable()
-export class CustomerJwtStrategy extends PassportStrategy(Strategy, 'customer-jwt') {
+export class CustomerJwtStrategy extends PassportStrategy(
+  Strategy,
+  'customer-jwt',
+) {
   constructor(
     private readonly configService: ConfigService,
     private readonly customerAuthService: CustomerAuthService,
@@ -35,11 +38,15 @@ export class CustomerJwtStrategy extends PassportStrategy(Strategy, 'customer-jw
     try {
       // Validate that this is a customer token
       if (payload.type !== 'customer') {
-        throw new UnauthorizedException('Invalid token type for customer authentication');
+        throw new UnauthorizedException(
+          'Invalid token type for customer authentication',
+        );
       }
 
       // Validate customer exists and is active
-      const isValid = await this.customerAuthService.validateCustomer(payload.sub);
+      const isValid = await this.customerAuthService.validateCustomer(
+        payload.sub,
+      );
       if (!isValid) {
         throw new UnauthorizedException('Customer not found or inactive');
       }

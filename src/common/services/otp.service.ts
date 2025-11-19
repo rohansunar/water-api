@@ -45,43 +45,43 @@ export class OtpService {
     // Check if in test mode (environment variable)
     const isTestMode = this.configService.get('NODE_ENV') === 'development';
 
-    let otp = isTestMode ? '123456' : this.generateSecureOtp();
+    const otp = isTestMode ? '123456' : this.generateSecureOtp();
 
-      const hashedOtp = this.hashOtp(otp);
-      const expiresAt = this.calculateExpiryTime();
+    const hashedOtp = this.hashOtp(otp);
+    const expiresAt = this.calculateExpiryTime();
 
-      // Check if a record with this phone and purpose already exists
-      const existingOtp = await this.prisma.otpCode.findFirst({
-        where: {
-          phone,
-          purpose,
+    // Check if a record with this phone and purpose already exists
+    const existingOtp = await this.prisma.otpCode.findFirst({
+      where: {
+        phone,
+        purpose,
+      },
+    });
+
+    if (existingOtp) {
+      // Update existing record
+      await this.prisma.otpCode.update({
+        where: { id: existingOtp.id },
+        data: {
+          code: hashedOtp,
+          expiresAt,
+          attempts: 0,
+          isUsed: false,
+          usedAt: null,
         },
       });
-
-      if (existingOtp) {
-        // Update existing record
-        await this.prisma.otpCode.update({
-          where: { id: existingOtp.id },
-          data: {
-            code: hashedOtp,
-            expiresAt,
-            attempts: 0,
-            isUsed: false,
-            usedAt: null,
-          },
-        });
-      } else {
-        // Create new record
-        await this.prisma.otpCode.create({
-          data: {
-            phone,
-            code: hashedOtp,
-            purpose,
-            expiresAt,
-            attempts: 0,
-            isUsed: false,
-          },
-        });
+    } else {
+      // Create new record
+      await this.prisma.otpCode.create({
+        data: {
+          phone,
+          code: hashedOtp,
+          purpose,
+          expiresAt,
+          attempts: 0,
+          isUsed: false,
+        },
+      });
     }
 
     // Log OTP generation (in production, send via SMS)

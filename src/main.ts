@@ -15,7 +15,8 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter(),
     {
-      logger: process.env.NODE_ENV !== 'test' ? new CustomLoggerService() : false,
+      logger:
+        process.env.NODE_ENV !== 'test' ? new CustomLoggerService() : false,
     },
   );
 

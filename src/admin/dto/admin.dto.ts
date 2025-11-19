@@ -855,7 +855,11 @@ export class CreateRiderDto {
 
   @ApiProperty({
     description: 'Shift schedule',
-    example: { startTime: '09:00', endTime: '18:00', days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] },
+    example: {
+      startTime: '09:00',
+      endTime: '18:00',
+      days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+    },
     required: false,
   })
   @IsOptional()
@@ -928,7 +932,11 @@ export class UpdateRiderDto {
 
   @ApiProperty({
     description: 'Shift schedule',
-    example: { startTime: '09:00', endTime: '18:00', days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] },
+    example: {
+      startTime: '09:00',
+      endTime: '18:00',
+      days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday','saturday'],
+    },
     required: false,
   })
   @IsOptional()
@@ -1010,7 +1018,11 @@ export class RiderResponseDto {
 
   @ApiProperty({
     description: 'Shift schedule',
-    example: { startTime: '09:00', endTime: '18:00', days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] },
+    example: {
+      startTime: '09:00',
+      endTime: '18:00',
+      days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+    },
     required: false,
   })
   shift?: Record<string, any>;

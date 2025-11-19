@@ -29,7 +29,7 @@ export class VendorStoreService {
     vendor: Vendor,
     createStoreDto: CreateStoreDto,
   ): Promise<StoreResponseDto> {
-    const {id} = vendor;
+    const { id } = vendor;
     const startTime = Date.now();
     try {
       const { name, address, phone, active_hours } = createStoreDto;
@@ -118,7 +118,7 @@ export class VendorStoreService {
     page: number;
     limit: number;
   }> {
-    const {id} = vendor;
+    const { id } = vendor;
     const startTime = Date.now();
     try {
       const skip = (page - 1) * limit;
@@ -160,10 +160,7 @@ export class VendorStoreService {
         { vendorId: id, error: error.message },
         id,
       );
-      this.logger.error(
-        `Stores retrieval failed for vendor ${id}:`,
-        error,
-      );
+      this.logger.error(`Stores retrieval failed for vendor ${id}:`, error);
       throw new BadRequestException('Failed to retrieve stores');
     }
   }
@@ -172,7 +169,7 @@ export class VendorStoreService {
     vendor: Vendor,
     storeId: string,
   ): Promise<StoreResponseDto> {
-    const {id} = vendor;
+    const { id } = vendor;
     const startTime = Date.now();
     try {
       const store = await this.prisma.vendorStore.findFirst({
@@ -220,7 +217,7 @@ export class VendorStoreService {
     storeId: string,
     updateStoreDto: UpdateStoreDto,
   ): Promise<StoreResponseDto> {
-    const {id} = vendor;
+    const { id } = vendor;
     const startTime = Date.now();
     try {
       const { name, address, phone, active_hours, is_active } = updateStoreDto;
@@ -305,7 +302,7 @@ export class VendorStoreService {
   }
 
   async deleteStore(vendor: Vendor, storeId: string): Promise<void> {
-    const {id} = vendor;
+    const { id } = vendor;
     const startTime = Date.now();
     try {
       // Check if store exists and belongs to vendor

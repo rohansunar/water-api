@@ -30,7 +30,9 @@ export class CustomerAuthService {
   /**
    * Initiate customer login by sending OTP
    */
-  async login(loginDto: CustomerLoginDto): Promise<{ message: string; success: boolean }> {
+  async login(
+    loginDto: CustomerLoginDto,
+  ): Promise<{ message: string; success: boolean }> {
     const { phone } = loginDto;
     this.logger.log(`Customer login attempt for phone: ${phone}`);
 
@@ -69,7 +71,9 @@ export class CustomerAuthService {
   /**
    * Verify OTP and authenticate customer
    */
-  async verifyOtp(verifyOtpDto: CustomerVerifyOtpDto): Promise<CustomerAuthResponseDto> {
+  async verifyOtp(
+    verifyOtpDto: CustomerVerifyOtpDto,
+  ): Promise<CustomerAuthResponseDto> {
     const { phone, otp } = verifyOtpDto;
     this.logger.log(`Customer OTP verification for phone: ${phone}`);
 
@@ -99,7 +103,9 @@ export class CustomerAuthService {
       const token = this.generateToken(customer);
 
       // Get customer profile
-      const customerProfile = await this.customerService.getCustomerProfile(customer._id.toString());
+      const customerProfile = await this.customerService.getCustomerProfile(
+        customer._id.toString(),
+      );
 
       this.customLogger.logSecurityEvent(
         'customer_otp_verification_success',

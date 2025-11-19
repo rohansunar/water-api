@@ -38,7 +38,8 @@ export class CustomerAuthController {
   @Public()
   @ApiOperation({
     summary: 'Initiate customer login with phone number',
-    description: 'Send OTP to the provided phone number for customer authentication',
+    description:
+      'Send OTP to the provided phone number for customer authentication',
   })
   @ApiBody({
     schema: {
@@ -117,7 +118,9 @@ export class CustomerAuthController {
     status: 401,
     description: 'OTP expired or invalid',
   })
-  async verifyOtp(@Body() verifyDto: CustomerVerifyOtpDto): Promise<CustomerAuthResponseDto> {
+  async verifyOtp(
+    @Body() verifyDto: CustomerVerifyOtpDto,
+  ): Promise<CustomerAuthResponseDto> {
     this.logger.log(`Customer OTP verification for phone: ${verifyDto.phone}`);
     return this.customerAuthService.verifyOtp(verifyDto);
   }
@@ -127,7 +130,8 @@ export class CustomerAuthController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Get current customer profile',
-    description: 'Retrieve the profile information of the authenticated customer',
+    description:
+      'Retrieve the profile information of the authenticated customer',
   })
   @ApiResponse({
     status: 200,

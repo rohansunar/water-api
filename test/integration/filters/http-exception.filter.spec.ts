@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { HttpExceptionFilter } from '../../../src/common/filters/http-exception.filter';
-import { BusinessException, ErrorCategory, ErrorSeverity } from '../../../src/common/exceptions/business.exception';
+import {
+  BusinessException,
+  ErrorCategory,
+  ErrorSeverity,
+} from '../../../src/common/exceptions/business.exception';
 import { CustomLoggerService } from '../../../src/common/logger/logger.service';
 
 describe('HttpExceptionFilter', () => {
@@ -162,7 +166,10 @@ describe('HttpExceptionFilter', () => {
     });
 
     it('should handle HttpException with string response', () => {
-      const httpException = new HttpException('Not found', HttpStatus.NOT_FOUND);
+      const httpException = new HttpException(
+        'Not found',
+        HttpStatus.NOT_FOUND,
+      );
 
       filter.catch(httpException, mockHost);
 
@@ -220,7 +227,9 @@ describe('HttpExceptionFilter', () => {
 
       filter.catch(error, mockHost);
 
-      expect(mockReply.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(mockReply.status).toHaveBeenCalledWith(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
       expect(mockReply.send).toHaveBeenCalledWith({
         code: 'INTERNAL_SERVER_ERROR',
         message: 'An internal server error occurred. Please try again later.',
@@ -236,7 +245,9 @@ describe('HttpExceptionFilter', () => {
 
       filter.catch(unknownException, mockHost);
 
-      expect(mockReply.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(mockReply.status).toHaveBeenCalledWith(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
       expect(mockReply.send).toHaveBeenCalledWith({
         code: 'UNKNOWN_ERROR',
         message: 'An internal server error occurred. Please try again later.',
@@ -252,13 +263,25 @@ describe('HttpExceptionFilter', () => {
     it('should categorize HTTP status codes correctly', () => {
       const testCases = [
         { status: HttpStatus.BAD_REQUEST, expectedCode: 'VALIDATION_ERROR' },
-        { status: HttpStatus.UNAUTHORIZED, expectedCode: 'AUTHENTICATION_ERROR' },
+        {
+          status: HttpStatus.UNAUTHORIZED,
+          expectedCode: 'AUTHENTICATION_ERROR',
+        },
         { status: HttpStatus.FORBIDDEN, expectedCode: 'AUTHORIZATION_ERROR' },
         { status: HttpStatus.NOT_FOUND, expectedCode: 'NOT_FOUND_ERROR' },
         { status: HttpStatus.CONFLICT, expectedCode: 'CONFLICT_ERROR' },
-        { status: HttpStatus.UNPROCESSABLE_ENTITY, expectedCode: 'VALIDATION_ERROR' },
-        { status: HttpStatus.TOO_MANY_REQUESTS, expectedCode: 'RATE_LIMIT_ERROR' },
-        { status: HttpStatus.INTERNAL_SERVER_ERROR, expectedCode: 'SERVER_ERROR' },
+        {
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          expectedCode: 'VALIDATION_ERROR',
+        },
+        {
+          status: HttpStatus.TOO_MANY_REQUESTS,
+          expectedCode: 'RATE_LIMIT_ERROR',
+        },
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          expectedCode: 'SERVER_ERROR',
+        },
       ];
 
       testCases.forEach(({ status, expectedCode }) => {
@@ -272,12 +295,30 @@ describe('HttpExceptionFilter', () => {
 
     it('should assign correct error categories based on status', () => {
       const testCases = [
-        { status: HttpStatus.UNAUTHORIZED, expectedCategory: ErrorCategory.AUTHENTICATION },
-        { status: HttpStatus.FORBIDDEN, expectedCategory: ErrorCategory.AUTHENTICATION },
-        { status: HttpStatus.BAD_REQUEST, expectedCategory: ErrorCategory.VALIDATION },
-        { status: HttpStatus.UNPROCESSABLE_ENTITY, expectedCategory: ErrorCategory.VALIDATION },
-        { status: HttpStatus.NOT_FOUND, expectedCategory: ErrorCategory.BUSINESS_LOGIC },
-        { status: HttpStatus.INTERNAL_SERVER_ERROR, expectedCategory: ErrorCategory.SYSTEM },
+        {
+          status: HttpStatus.UNAUTHORIZED,
+          expectedCategory: ErrorCategory.AUTHENTICATION,
+        },
+        {
+          status: HttpStatus.FORBIDDEN,
+          expectedCategory: ErrorCategory.AUTHENTICATION,
+        },
+        {
+          status: HttpStatus.BAD_REQUEST,
+          expectedCategory: ErrorCategory.VALIDATION,
+        },
+        {
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          expectedCategory: ErrorCategory.VALIDATION,
+        },
+        {
+          status: HttpStatus.NOT_FOUND,
+          expectedCategory: ErrorCategory.BUSINESS_LOGIC,
+        },
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          expectedCategory: ErrorCategory.SYSTEM,
+        },
       ];
 
       testCases.forEach(({ status, expectedCategory }) => {
@@ -291,11 +332,23 @@ describe('HttpExceptionFilter', () => {
 
     it('should assign correct error severity based on status', () => {
       const testCases = [
-        { status: HttpStatus.INTERNAL_SERVER_ERROR, expectedSeverity: ErrorSeverity.CRITICAL },
-        { status: HttpStatus.BAD_GATEWAY, expectedSeverity: ErrorSeverity.CRITICAL },
-        { status: HttpStatus.UNAUTHORIZED, expectedSeverity: ErrorSeverity.HIGH },
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          expectedSeverity: ErrorSeverity.CRITICAL,
+        },
+        {
+          status: HttpStatus.BAD_GATEWAY,
+          expectedSeverity: ErrorSeverity.CRITICAL,
+        },
+        {
+          status: HttpStatus.UNAUTHORIZED,
+          expectedSeverity: ErrorSeverity.HIGH,
+        },
         { status: HttpStatus.FORBIDDEN, expectedSeverity: ErrorSeverity.HIGH },
-        { status: HttpStatus.NOT_FOUND, expectedSeverity: ErrorSeverity.MEDIUM },
+        {
+          status: HttpStatus.NOT_FOUND,
+          expectedSeverity: ErrorSeverity.MEDIUM,
+        },
         { status: HttpStatus.CONFLICT, expectedSeverity: ErrorSeverity.MEDIUM },
         { status: HttpStatus.BAD_REQUEST, expectedSeverity: ErrorSeverity.LOW },
       ];
@@ -303,7 +356,8 @@ describe('HttpExceptionFilter', () => {
       testCases.forEach(({ status, expectedSeverity }) => {
         const httpException = new HttpException('Test', status);
         filter.catch(httpException, mockHost);
-        const callArgs = mockReply.send.mock.calls[mockReply.send.mock.calls.length - 1][0];
+        const callArgs =
+          mockReply.send.mock.calls[mockReply.send.mock.calls.length - 1][0];
         expect(callArgs).not.toHaveProperty('severity');
       });
     });
@@ -325,7 +379,8 @@ describe('HttpExceptionFilter', () => {
         {
           status: HttpStatus.FORBIDDEN,
           inputMessage: 'Forbidden',
-          expectedMessage: 'Access denied. You do not have permission to perform this action.',
+          expectedMessage:
+            'Access denied. You do not have permission to perform this action.',
         },
         {
           status: HttpStatus.NOT_FOUND,
@@ -335,12 +390,14 @@ describe('HttpExceptionFilter', () => {
         {
           status: HttpStatus.CONFLICT,
           inputMessage: 'Conflict',
-          expectedMessage: 'The request conflicts with the current state of the resource.',
+          expectedMessage:
+            'The request conflicts with the current state of the resource.',
         },
         {
           status: HttpStatus.UNPROCESSABLE_ENTITY,
           inputMessage: 'Unprocessable',
-          expectedMessage: 'The request was well-formed but contains invalid data.',
+          expectedMessage:
+            'The request was well-formed but contains invalid data.',
         },
         {
           status: HttpStatus.TOO_MANY_REQUESTS,
@@ -359,7 +416,10 @@ describe('HttpExceptionFilter', () => {
     });
 
     it('should preserve specific UNAUTHORIZED messages when not default', () => {
-      const httpException = new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
+      const httpException = new HttpException(
+        'Invalid token',
+        HttpStatus.UNAUTHORIZED,
+      );
       filter.catch(httpException, mockHost);
       expect(mockReply.send).toHaveBeenCalledWith(
         expect.objectContaining({ message: 'Invalid token' }),
@@ -367,7 +427,10 @@ describe('HttpExceptionFilter', () => {
     });
 
     it('should return generic message for server errors', () => {
-      const httpException = new HttpException('Database error', HttpStatus.INTERNAL_SERVER_ERROR);
+      const httpException = new HttpException(
+        'Database error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
       filter.catch(httpException, mockHost);
       expect(mockReply.send).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -436,7 +499,8 @@ describe('HttpExceptionFilter', () => {
       exceptions.forEach((exception) => {
         filter.catch(exception, mockHost);
 
-        const callArgs = mockReply.send.mock.calls[mockReply.send.mock.calls.length - 1][0];
+        const callArgs =
+          mockReply.send.mock.calls[mockReply.send.mock.calls.length - 1][0];
         expect(callArgs).toHaveProperty('code');
         expect(callArgs).toHaveProperty('message');
         expect(callArgs).toHaveProperty('category');

@@ -225,7 +225,6 @@ export class VendorApprovalDto {
   rejectionReason?: string;
 }
 
-
 export class VendorProfileDto {
   @ApiProperty({
     description: 'Vendor unique identifier',

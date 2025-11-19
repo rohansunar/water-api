@@ -42,110 +42,205 @@ import {
   PaginatedResponseDto,
   VendorProductVariantResponseDto,
 } from '../dto/vendor.dto';
+import { PrismaService } from '../../common/database/prisma.service';
 
 @Injectable()
 export class VendorService {
   private readonly logger = new Logger(VendorService.name);
-  private readonly vendors = new Map<string, Vendor>();
-  private readonly userVendorIndex = new Map<string, string>(); // userId -> vendorId
+
+  constructor(private readonly prisma: PrismaService) {}
 
   async findById(id: string): Promise<Vendor | null> {
-    return this.vendors.get(id) || null;
+    try {
+      const vendor = await this.prisma.vendor.findUnique({
+        where: { id: BigInt(id) },
+        include: {
+          stores: true,
+          addresses: true,
+        },
+      });
+
+      if (!vendor) return null;
+
+      return this.mapPrismaVendorToInterface(vendor);
+    } catch (error) {
+      this.logger.error(`Error finding vendor by ID ${id}:`, error);
+      return null;
+    }
   }
 
   async findByUserId(userId: string): Promise<Vendor | null> {
-    const vendorId = this.userVendorIndex.get(userId);
-    if (!vendorId) return null;
-    return this.vendors.get(vendorId) || null;
+    try {
+      // For now, we'll assume userId maps to vendor phone or email
+      // In a real implementation, you'd have a separate user-vendor mapping table
+      const vendor = await this.prisma.vendor.findFirst({
+        where: {
+          OR: [{ phone: userId }, { email: userId }],
+        },
+        include: {
+          stores: true,
+          addresses: true,
+        },
+      });
+
+      if (!vendor) return null;
+
+      return this.mapPrismaVendorToInterface(vendor);
+    } catch (error) {
+      this.logger.error(`Error finding vendor by userId ${userId}:`, error);
+      return null;
+    }
   }
 
   async findByLocation(lat: number, lng: number): Promise<Vendor[]> {
-    const vendors: Vendor[] = [];
-
-    for (const vendor of this.vendors.values()) {
-      if (!vendor.isActive) continue;
-
-      // Check if location is within any delivery zone
-      const isInDeliveryZone = vendor.deliveryZones.some((zone) => {
-        if (!zone.isActive) return false;
-        return this.isPointInDeliveryZone(lat, lng, zone);
+    try {
+      // For now, we'll find vendors who have products with areaPincodes
+      // In a real implementation, you'd determine the pincode from lat/lng
+      // and filter vendors whose products serve that pincode
+      const vendors = await this.prisma.vendor.findMany({
+        where: {
+          isActive: true,
+          products: {
+            some: {
+              areaPincodes: {
+                isEmpty: false, // Has at least one pincode
+              },
+            },
+          },
+        },
+        include: {
+          stores: true,
+          addresses: true,
+          products: {
+            where: {
+              areaPincodes: {
+                isEmpty: false,
+              },
+            },
+          },
+        },
+        orderBy: [{ rating: 'desc' }, { createdAt: 'desc' }],
       });
 
-      if (isInDeliveryZone) {
-        vendors.push(vendor);
-      }
+      return vendors.map((vendor) => this.mapPrismaVendorToInterface(vendor));
+    } catch (error) {
+      this.logger.error(
+        `Error finding vendors by location (${lat}, ${lng}):`,
+        error,
+      );
+      return [];
     }
-
-    // Sort by rating and total orders
-    vendors.sort((a, b) => {
-      if (a.rating !== b.rating) {
-        return b.rating - a.rating;
-      }
-      return b.totalOrders - a.totalOrders;
-    });
-
-    return vendors;
   }
 
   async getAllVendors(): Promise<Vendor[]> {
-    return Array.from(this.vendors.values()).filter(
-      (vendor) => vendor.isActive,
-    );
+    try {
+      const vendors = await this.prisma.vendor.findMany({
+        where: { isActive: true },
+        include: {
+          stores: true,
+          addresses: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return vendors.map((vendor) => this.mapPrismaVendorToInterface(vendor));
+    } catch (error) {
+      this.logger.error('Error finding all vendors:', error);
+      throw error;
+    }
   }
 
   async create(userId: string, businessName: string): Promise<Vendor> {
-    const vendor: Vendor = {
-      id: uuidv4(),
-      userId,
-      businessName,
-      businessAddress: '',
-      approvalStatus: 'pending_approval',
-      bankAccounts: [],
-      deliveryZones: [],
-      isActive: true,
-      rating: 4.0 + Math.random(), // Random rating between 4.0-5.0
-      totalOrders: Math.floor(Math.random() * 1000),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    try {
+      const vendor = await this.prisma.vendor.create({
+        data: {
+          name: businessName,
+          phone: userId, // Assuming userId is phone for now
+          kycStatus: 'pending',
+          isActive: true,
+        },
+        include: {
+          stores: true,
+          addresses: true,
+        },
+      });
 
-    this.vendors.set(vendor.id, vendor);
-    this.userVendorIndex.set(userId, vendor.id);
-
-    this.logger.log(`Created vendor: ${vendor.id} for user: ${userId}`);
-    return vendor;
+      this.logger.log(`Created vendor: ${vendor.id} for user: ${userId}`);
+      return this.mapPrismaVendorToInterface(vendor);
+    } catch (error) {
+      this.logger.error(`Error creating vendor for user ${userId}:`, error);
+      throw error;
+    }
   }
 
   async addDeliveryZone(
     vendorId: string,
     zoneName: string,
-    coordinates: { latitude: number; longitude: number }[],
+    pincodes: string[],
     deliveryFee: number,
   ): Promise<DeliveryZone> {
-    const vendor = this.vendors.get(vendorId);
-    if (!vendor) {
-      throw new NotFoundException('Vendor not found');
+    try {
+      // Find vendor
+      const vendor = await this.prisma.vendor.findUnique({
+        where: { id: BigInt(vendorId) },
+        include: { products: true },
+      });
+
+      if (!vendor) {
+        throw new NotFoundException('Vendor not found');
+      }
+
+      // Update areaPincodes for all products of this vendor
+      await this.prisma.product.updateMany({
+        where: { vendorId: BigInt(vendorId) },
+        data: {
+          areaPincodes: {
+            push: pincodes,
+          },
+        },
+      });
+
+      // Also update ProductStoreMapping if stores exist
+      const stores = await this.prisma.vendorStore.findMany({
+        where: { vendorId: BigInt(vendorId) },
+      });
+
+      for (const store of stores) {
+        await this.prisma.productStoreMapping.updateMany({
+          where: { storeId: store.id },
+          data: {
+            areaPincodes: {
+              push: pincodes,
+            },
+          },
+        });
+      }
+
+      // Create a delivery zone object for interface compatibility
+      const zone: DeliveryZone = {
+        id: uuidv4(),
+        vendorId,
+        name: zoneName,
+        coordinates: [], // Empty since we're using pincodes
+        deliveryFee,
+        minOrderAmount: 50,
+        maxDeliveryTime: 60, // 1 hour
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      this.logger.log(
+        `Added delivery zone ${zone.id} to vendor ${vendorId} with pincodes: ${pincodes.join(', ')}`,
+      );
+      return zone;
+    } catch (error) {
+      this.logger.error(
+        `Error adding delivery zone to vendor ${vendorId}:`,
+        error,
+      );
+      throw error;
     }
-
-    const zone: DeliveryZone = {
-      id: uuidv4(),
-      vendorId,
-      name: zoneName,
-      coordinates,
-      deliveryFee,
-      minOrderAmount: 50,
-      maxDeliveryTime: 60, // 1 hour
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    vendor.deliveryZones.push(zone);
-    vendor.updatedAt = new Date();
-
-    this.vendors.set(vendorId, vendor);
-    this.logger.log(`Added delivery zone ${zone.id} to vendor ${vendorId}`);
-    return zone;
   }
 
   private isPointInDeliveryZone(
@@ -191,95 +286,35 @@ export class VendorService {
     return degrees * (Math.PI / 180);
   }
 
-  // Seed test data
-  async seedTestData(): Promise<void> {
-    const testVendors = [
-      {
-        userId: '48effa26-8a5e-4a8b-92f6-4943b7f4ffd6', // Test vendor user (8888888888)
-        businessName: 'AquaPure Water Solutions',
-        zones: [
-          { name: 'Central Delhi', lat: 28.6139, lng: 77.209 },
-          { name: 'South Delhi', lat: 28.5355, lng: 77.391 },
-        ],
-      },
-      {
-        userId: 'vendor-2',
-        businessName: 'Crystal Clear Waters',
-        zones: [
-          { name: 'Gurgaon Sector 1-20', lat: 28.4595, lng: 77.0266 },
-          { name: 'Gurgaon Sector 21-40', lat: 28.4089, lng: 77.0424 },
-        ],
-      },
-      {
-        userId: 'vendor-3',
-        businessName: 'Fresh Drop Delivery',
-        zones: [
-          { name: 'Noida Sector 1-30', lat: 28.5355, lng: 77.391 },
-          { name: 'Greater Noida', lat: 28.4744, lng: 77.504 },
-        ],
-      },
-    ];
-
-    for (const vendorData of testVendors) {
-      const existingVendor = await this.findByUserId(vendorData.userId);
-      if (!existingVendor) {
-        const vendor = await this.create(
-          vendorData.userId,
-          vendorData.businessName,
-        );
-
-        // Add delivery zones
-        for (const zone of vendorData.zones) {
-          await this.addDeliveryZone(
-            vendor.id,
-            zone.name,
-            [
-              { latitude: zone.lat - 0.01, longitude: zone.lng - 0.01 },
-              { latitude: zone.lat + 0.01, longitude: zone.lng - 0.01 },
-              { latitude: zone.lat + 0.01, longitude: zone.lng + 0.01 },
-              { latitude: zone.lat - 0.01, longitude: zone.lng + 0.01 },
-            ],
-            15,
-          );
-        }
-      }
-    }
-
-    this.logger.log('Vendor test data seeded successfully');
-  }
-
   // Vendor Dashboard Methods
   async getVendorOrders(vendor: Vendor): Promise<OrderResponseDto[]> {
-
-    // In a real implementation, this would fetch orders from OrderService
-    // For now, return mock data
-    const mockOrders: OrderResponseDto[] = [
-      {
-        id: 'order-1',
-        userId: 'customer-1',
-        vendorId: vendor.id,
-        productId: 'product-1',
-        quantity: 2,
-        totalAmount: 150,
-        status: 'confirmed',
-        schedule: 'instant',
-        paymentMethod: 'wallet',
-        paymentStatus: 'completed',
-        deliveryAddress: {
-          street: '123 Customer Street',
-          city: 'Delhi',
-          state: 'Delhi',
-          pincode: '110001',
-          latitude: 28.6139,
-          longitude: 77.209,
-          contactPhone: '9876543210',
+    try {
+      const orders = await this.prisma.order.findMany({
+        where: {
+          vendorId: BigInt(vendor.id),
         },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ];
+        include: {
+          customer: true,
+          address: true,
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
 
-    return mockOrders;
+      return orders.map((order) => this.mapOrderToOrderResponseDto(order));
+    } catch (error) {
+      this.logger.error(
+        `Error fetching vendor orders for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to fetch vendor orders');
+    }
   }
 
   async updateOrderStatus(
@@ -287,37 +322,68 @@ export class VendorService {
     vendor: Vendor,
     updateOrderStatusDto: UpdateOrderStatusDto,
   ): Promise<OrderResponseDto> {
+    try {
+      // First, find the order to ensure it belongs to this vendor
+      const existingOrder = await this.prisma.order.findFirst({
+        where: {
+          orderUuid: orderId,
+          vendorId: BigInt(vendor.id),
+        },
+        include: {
+          customer: true,
+          address: true,
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
 
-    // In a real implementation, this would update the order through OrderService
-    // For now, return mock updated order
-    const updatedOrder: OrderResponseDto = {
-      id: orderId,
-      userId: 'customer-1',
-      vendorId: vendor.id,
-      productId: 'product-1',
-      quantity: 2,
-      totalAmount: 150,
-      status: updateOrderStatusDto.status,
-      schedule: 'instant',
-      paymentMethod: 'wallet',
-      paymentStatus: 'completed',
-      deliveryAddress: {
-        street: '123 Customer Street',
-        city: 'Delhi',
-        state: 'Delhi',
-        pincode: '110001',
-        latitude: 28.6139,
-        longitude: 77.209,
-        contactPhone: '9876543210',
-      },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+      if (!existingOrder) {
+        throw new NotFoundException(
+          'Order not found or does not belong to this vendor',
+        );
+      }
 
-    this.logger.log(
-      `Updated order ${orderId} status to ${updateOrderStatusDto.status}`,
-    );
-    return updatedOrder;
+      // Update the order status
+      const updatedOrder = await this.prisma.order.update({
+        where: {
+          id_createdAt: {
+            id: existingOrder.id,
+            createdAt: existingOrder.createdAt,
+          },
+        },
+        data: {
+          status: updateOrderStatusDto.status,
+          updatedAt: new Date(),
+        },
+        include: {
+          customer: true,
+          address: true,
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      this.logger.log(
+        `Updated order ${orderId} status to ${updateOrderStatusDto.status} for vendor ${vendor.id}`,
+      );
+
+      return this.mapOrderToOrderResponseDto(updatedOrder);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Error updating order status for order ${orderId}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to update order status');
+    }
   }
 
   async getVendorProducts(userId: string): Promise<ProductResponseDto[]> {
@@ -326,47 +392,34 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In a real implementation, this would fetch products from ProductService
-    // For now, return mock data
-    const mockProducts: ProductResponseDto[] = [
-      {
-        id: 'product-1',
-        vendorId: vendor.id,
-        name: '20L Water Jar',
-        description: 'Premium quality 20L water jar',
-        category: 'water_jar',
-        size: '20L',
-        price: 30,
-        depositAmount: 75,
-        hasDeposit: true,
-        stockQuantity: 50,
-        isActive: true,
-        images: ['/images/jar-20l.jpg'],
-        specifications: {
-          capacity: 20,
-          material: 'Plastic',
-          brand: 'Generic',
+    try {
+      const products = await this.prisma.product.findMany({
+        where: {
+          vendorId: BigInt(vendor.id),
+          isActive: true,
         },
-        vendor: {
-          id: vendor.id,
-          businessName: vendor.businessName,
-          rating: vendor.rating,
-          totalOrders: vendor.totalOrders,
-          deliveryZones: vendor.deliveryZones.map((zone) => ({
-            id: zone.id,
-            name: zone.name,
-            deliveryFee: zone.deliveryFee,
-            minOrderAmount: zone.minOrderAmount,
-            maxDeliveryTime: zone.maxDeliveryTime,
-            isActive: zone.isActive,
-          })),
+        include: {
+          storeMappings: {
+            include: {
+              store: true,
+            },
+          },
         },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ];
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
 
-    return mockProducts;
+      return products.map((product) =>
+        this.mapProductToProductResponseDto(product, vendor),
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error fetching products for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to fetch vendor products');
+    }
   }
 
   async createProduct(
@@ -378,46 +431,45 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In a real implementation, this would create product through ProductService
-    // For now, return mock created product
-    const newProduct: ProductResponseDto = {
-      id: uuidv4(),
-      vendorId: vendor.id,
-      name: createProductDto.name,
-      description: createProductDto.description,
-      category: createProductDto.category,
-      size: createProductDto.size,
-      price: createProductDto.price,
-      depositAmount: createProductDto.depositAmount,
-      hasDeposit: createProductDto.hasDeposit,
-      stockQuantity: createProductDto.stockQuantity,
-      isActive: true,
-      images: createProductDto.images || [],
-      specifications: {
-        capacity: this.getSizeCapacity(createProductDto.size),
-        material: 'Plastic',
-        brand: 'Generic',
-      },
-      vendor: {
-        id: vendor.id,
-        businessName: vendor.businessName,
-        rating: vendor.rating,
-        totalOrders: vendor.totalOrders,
-        deliveryZones: vendor.deliveryZones.map((zone) => ({
-          id: zone.id,
-          name: zone.name,
-          deliveryFee: zone.deliveryFee,
-          minOrderAmount: zone.minOrderAmount,
-          maxDeliveryTime: zone.maxDeliveryTime,
-          isActive: zone.isActive,
-        })),
-      },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    try {
+      const product = await this.prisma.product.create({
+        data: {
+          vendorId: BigInt(vendor.id),
+          name: createProductDto.name,
+          description: createProductDto.description,
+          category: createProductDto.category,
+          capacity: createProductDto.size, // Using size as capacity
+          unit: 'liter', // Default unit
+          price: createProductDto.price,
+          depositAmount: createProductDto.depositAmount,
+          hasDeposit: createProductDto.hasDeposit,
+          stockQuantity: createProductDto.stockQuantity,
+          images: createProductDto.images || [],
+          specifications: {
+            capacity: this.getSizeCapacity(createProductDto.size),
+            material: 'Plastic',
+            brand: 'Generic',
+          },
+          isActive: true,
+        },
+        include: {
+          storeMappings: {
+            include: {
+              store: true,
+            },
+          },
+        },
+      });
 
-    this.logger.log(`Created product ${newProduct.id} for vendor ${vendor.id}`);
-    return newProduct;
+      this.logger.log(`Created product ${product.id} for vendor ${vendor.id}`);
+      return this.mapProductToProductResponseDto(product, vendor);
+    } catch (error) {
+      this.logger.error(
+        `Error creating product for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to create product');
+    }
   }
 
   async updateProductStock(
@@ -430,46 +482,39 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In a real implementation, this would update product stock through ProductService
-    // For now, return mock updated product
-    const updatedProduct: ProductResponseDto = {
-      id: productId,
-      vendorId: vendor.id,
-      name: '20L Water Jar',
-      description: 'Premium quality 20L water jar',
-      category: 'water_jar',
-      size: '20L',
-      price: 30,
-      depositAmount: 75,
-      hasDeposit: true,
-      stockQuantity: Math.max(0, quantity), // Ensure non-negative stock
-      isActive: true,
-      images: ['/images/jar-20l.jpg'],
-      specifications: {
-        capacity: 20,
-        material: 'Plastic',
-        brand: 'Generic',
-      },
-      vendor: {
-        id: vendor.id,
-        businessName: vendor.businessName,
-        rating: vendor.rating,
-        totalOrders: vendor.totalOrders,
-        deliveryZones: vendor.deliveryZones.map((zone) => ({
-          id: zone.id,
-          name: zone.name,
-          deliveryFee: zone.deliveryFee,
-          minOrderAmount: zone.minOrderAmount,
-          maxDeliveryTime: zone.maxDeliveryTime,
-          isActive: zone.isActive,
-        })),
-      },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    try {
+      const updatedProduct = await this.prisma.product.update({
+        where: {
+          id: BigInt(productId),
+          vendorId: BigInt(vendor.id), // Ensure product belongs to vendor
+        },
+        data: {
+          stockQuantity: Math.max(0, quantity), // Ensure non-negative stock
+          updatedAt: new Date(),
+        },
+        include: {
+          storeMappings: {
+            include: {
+              store: true,
+            },
+          },
+        },
+      });
 
-    this.logger.log(`Updated stock for product ${productId} to ${quantity}`);
-    return updatedProduct;
+      this.logger.log(`Updated stock for product ${productId} to ${quantity}`);
+      return this.mapProductToProductResponseDto(updatedProduct, vendor);
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException(
+          'Product not found or does not belong to this vendor',
+        );
+      }
+      this.logger.error(
+        `Error updating stock for product ${productId}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to update product stock');
+    }
   }
 
   private getSizeCapacity(size: string): number {
@@ -494,27 +539,40 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, fetch from database
-    // For now, return mock store data
-    return {
-      id: 'store-1',
-      vendor_id: vendor.id,
-      name: `${vendor.businessName} Store`,
-      address: vendor.businessAddress || 'Default Address',
-      phone: '9876543210',
-      active_hours: {
-        monday: { open: '09:00', close: '21:00' },
-        tuesday: { open: '09:00', close: '21:00' },
-        wednesday: { open: '09:00', close: '21:00' },
-        thursday: { open: '09:00', close: '21:00' },
-        friday: { open: '09:00', close: '21:00' },
-        saturday: { open: '09:00', close: '22:00' },
-        sunday: { open: '10:00', close: '20:00' },
-      },
-      is_active: true,
-      created_at: new Date(),
-      updated_at: new Date(),
-    };
+    try {
+      const store = await this.prisma.vendorStore.findFirst({
+        where: { vendorId: BigInt(vendor.id) },
+      });
+
+      if (!store) {
+        throw new NotFoundException('Store not found for this vendor');
+      }
+
+      return {
+        id: store.id.toString(),
+        vendor_id: vendor.id,
+        name: store.name,
+        address: store.address || '',
+        phone: store.phone || undefined,
+        active_hours:
+          (store.activeHours as Record<
+            string,
+            { open: string; close: string }
+          >) || {},
+        is_active: store.isActive,
+        created_at: store.createdAt,
+        updated_at: store.updatedAt,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Error fetching store details for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to fetch store details');
+    }
   }
 
   async updateStore(
@@ -526,31 +584,59 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, update store in database
-    // For now, return updated mock data
-    const updatedStore: StoreResponseDto = {
-      id: 'store-1',
-      vendor_id: vendor.id,
-      name: updateStoreDto.name || `${vendor.businessName} Store`,
-      address:
-        updateStoreDto.address || vendor.businessAddress || 'Default Address',
-      phone: updateStoreDto.phone || '9876543210',
-      active_hours: updateStoreDto.active_hours || {
-        monday: { open: '09:00', close: '21:00' },
-        tuesday: { open: '09:00', close: '21:00' },
-        wednesday: { open: '09:00', close: '21:00' },
-        thursday: { open: '09:00', close: '21:00' },
-        friday: { open: '09:00', close: '21:00' },
-        saturday: { open: '09:00', close: '22:00' },
-        sunday: { open: '10:00', close: '20:00' },
-      },
-      is_active: updateStoreDto.is_active ?? true,
-      created_at: new Date(),
-      updated_at: new Date(),
-    };
+    try {
+      const store = await this.prisma.vendorStore.findFirst({
+        where: { vendorId: BigInt(vendor.id) },
+      });
 
-    this.logger.log(`Updated store for vendor ${vendor.id}`);
-    return updatedStore;
+      if (!store) {
+        throw new NotFoundException('Store not found for this vendor');
+      }
+
+      const updateData: any = {
+        updatedAt: new Date(),
+      };
+
+      if (updateStoreDto.name !== undefined)
+        updateData.name = updateStoreDto.name;
+      if (updateStoreDto.address !== undefined)
+        updateData.address = updateStoreDto.address;
+      if (updateStoreDto.phone !== undefined)
+        updateData.phone = updateStoreDto.phone;
+      if (updateStoreDto.active_hours !== undefined)
+        updateData.activeHours = updateStoreDto.active_hours;
+      if (updateStoreDto.is_active !== undefined)
+        updateData.isActive = updateStoreDto.is_active;
+
+      const updatedStore = await this.prisma.vendorStore.update({
+        where: { id: store.id },
+        data: updateData,
+      });
+
+      this.logger.log(`Updated store ${store.id} for vendor ${vendor.id}`);
+
+      return {
+        id: updatedStore.id.toString(),
+        vendor_id: vendor.id,
+        name: updatedStore.name,
+        address: updatedStore.address || '',
+        phone: updatedStore.phone || undefined,
+        active_hours:
+          (updatedStore.activeHours as Record<
+            string,
+            { open: string; close: string }
+          >) || {},
+        is_active: updatedStore.isActive,
+        created_at: updatedStore.createdAt,
+        updated_at: updatedStore.updatedAt,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Error updating store for vendor ${vendor.id}:`, error);
+      throw new BadRequestException('Failed to update store');
+    }
   }
 
   async createStoreHours(
@@ -562,23 +648,70 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, save to database
-    // For now, return mock created hours
-    const storeHours: StoreHoursResponseDto = {
-      id: uuidv4(),
-      storeId: 'store-1',
-      day: createStoreHoursDto.day,
-      openTime: createStoreHoursDto.openTime,
-      closeTime: createStoreHoursDto.closeTime,
-      isClosed: createStoreHoursDto.isClosed,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    try {
+      const store = await this.prisma.vendorStore.findFirst({
+        where: { vendorId: BigInt(vendor.id) },
+      });
 
-    this.logger.log(
-      `Created store hours ${storeHours.id} for vendor ${vendor.id}`,
-    );
-    return storeHours;
+      if (!store) {
+        throw new NotFoundException('Store not found for this vendor');
+      }
+
+      // Get current activeHours
+      const currentHours =
+        (store.activeHours as Record<
+          string,
+          { open: string; close: string; isClosed?: boolean }
+        >) || {};
+
+      // Update or add the day
+      if (createStoreHoursDto.isClosed) {
+        currentHours[createStoreHoursDto.day] = {
+          open: '00:00',
+          close: '00:00',
+          isClosed: true,
+        };
+      } else {
+        currentHours[createStoreHoursDto.day] = {
+          open: createStoreHoursDto.openTime,
+          close: createStoreHoursDto.closeTime,
+        };
+      }
+
+      // Update the store
+      await this.prisma.vendorStore.update({
+        where: { id: store.id },
+        data: {
+          activeHours: currentHours,
+          updatedAt: new Date(),
+        },
+      });
+
+      const storeHours: StoreHoursResponseDto = {
+        id: createStoreHoursDto.day, // Use day as ID since we don't have separate records
+        storeId: store.id.toString(),
+        day: createStoreHoursDto.day,
+        openTime: createStoreHoursDto.openTime,
+        closeTime: createStoreHoursDto.closeTime,
+        isClosed: createStoreHoursDto.isClosed,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      this.logger.log(
+        `Created store hours for ${createStoreHoursDto.day} for vendor ${vendor.id}`,
+      );
+      return storeHours;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Error creating store hours for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to create store hours');
+    }
   }
 
   async updateStoreHours(
@@ -591,21 +724,82 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, update in database
-    // For now, return mock updated hours
-    const updatedHours: StoreHoursResponseDto = {
-      id: hoursId,
-      storeId: 'store-1',
-      day: 'monday', // Would be fetched from database
-      openTime: updateStoreHoursDto.openTime || '09:00',
-      closeTime: updateStoreHoursDto.closeTime || '21:00',
-      isClosed: updateStoreHoursDto.isClosed ?? false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    try {
+      const store = await this.prisma.vendorStore.findFirst({
+        where: { vendorId: BigInt(vendor.id) },
+      });
 
-    this.logger.log(`Updated store hours ${hoursId} for vendor ${vendor.id}`);
-    return updatedHours;
+      if (!store) {
+        throw new NotFoundException('Store not found for this vendor');
+      }
+
+      // Get current activeHours
+      const currentHours =
+        (store.activeHours as Record<
+          string,
+          { open: string; close: string; isClosed?: boolean }
+        >) || {};
+
+      // Check if the day exists
+      if (!currentHours[hoursId]) {
+        throw new NotFoundException(`Store hours for ${hoursId} not found`);
+      }
+
+      // Update the day
+      if (
+        updateStoreHoursDto.isClosed !== undefined &&
+        updateStoreHoursDto.isClosed
+      ) {
+        currentHours[hoursId] = {
+          open: '00:00',
+          close: '00:00',
+          isClosed: true,
+        };
+      } else {
+        currentHours[hoursId] = {
+          open: updateStoreHoursDto.openTime || currentHours[hoursId].open,
+          close: updateStoreHoursDto.closeTime || currentHours[hoursId].close,
+          isClosed:
+            updateStoreHoursDto.isClosed ??
+            currentHours[hoursId].isClosed ??
+            false,
+        };
+      }
+
+      // Update the store
+      await this.prisma.vendorStore.update({
+        where: { id: store.id },
+        data: {
+          activeHours: currentHours,
+          updatedAt: new Date(),
+        },
+      });
+
+      const updatedHours: StoreHoursResponseDto = {
+        id: hoursId,
+        storeId: store.id.toString(),
+        day: hoursId,
+        openTime: currentHours[hoursId].open,
+        closeTime: currentHours[hoursId].close,
+        isClosed: currentHours[hoursId].isClosed ?? false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      this.logger.log(
+        `Updated store hours for ${hoursId} for vendor ${vendor.id}`,
+      );
+      return updatedHours;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Error updating store hours ${hoursId} for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to update store hours');
+    }
   }
 
   async deleteStoreHours(
@@ -617,9 +811,53 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, delete from database
-    this.logger.log(`Deleted store hours ${hoursId} for vendor ${vendor.id}`);
-    return { message: 'Store hours deleted successfully' };
+    try {
+      const store = await this.prisma.vendorStore.findFirst({
+        where: { vendorId: BigInt(vendor.id) },
+      });
+
+      if (!store) {
+        throw new NotFoundException('Store not found for this vendor');
+      }
+
+      // Get current activeHours
+      const currentHours =
+        (store.activeHours as Record<
+          string,
+          { open: string; close: string; isClosed?: boolean }
+        >) || {};
+
+      // Check if the day exists
+      if (!currentHours[hoursId]) {
+        throw new NotFoundException(`Store hours for ${hoursId} not found`);
+      }
+
+      // Remove the day
+      delete currentHours[hoursId];
+
+      // Update the store
+      await this.prisma.vendorStore.update({
+        where: { id: store.id },
+        data: {
+          activeHours: currentHours,
+          updatedAt: new Date(),
+        },
+      });
+
+      this.logger.log(
+        `Deleted store hours for ${hoursId} for vendor ${vendor.id}`,
+      );
+      return { message: 'Store hours deleted successfully' };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Error deleting store hours ${hoursId} for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to delete store hours');
+    }
   }
 
   async updateStoreStatus(
@@ -631,14 +869,43 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, update store status in database
-    this.logger.log(
-      `Updated store status to ${updateStoreStatusDto.status} for vendor ${vendor.id}`,
-    );
+    try {
+      const store = await this.prisma.vendorStore.findFirst({
+        where: { vendorId: BigInt(vendor.id) },
+      });
 
-    return {
-      message: `Store status updated to ${updateStoreStatusDto.status}`,
-    };
+      if (!store) {
+        throw new NotFoundException('Store not found for this vendor');
+      }
+
+      // Map status to isActive
+      const isActive = updateStoreStatusDto.status === 'open';
+
+      await this.prisma.vendorStore.update({
+        where: { id: store.id },
+        data: {
+          isActive,
+          updatedAt: new Date(),
+        },
+      });
+
+      this.logger.log(
+        `Updated store status to ${updateStoreStatusDto.status} for vendor ${vendor.id}`,
+      );
+
+      return {
+        message: `Store status updated to ${updateStoreStatusDto.status}`,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Error updating store status for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to update store status');
+    }
   }
 
   // Product Management Methods
@@ -652,37 +919,86 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, fetch from database with pagination
-    // For now, return mock data
-    const mockVariants: VendorProductVariantResponseDto[] = [
-      {
-        id: 'variant-1',
+    try {
+      // First, get the base product to determine variant pattern
+      const baseProduct = await this.prisma.product.findFirst({
+        where: {
+          id: BigInt(productId),
+          vendorId: BigInt(vendor.id),
+        },
+      });
+
+      if (!baseProduct) {
+        throw new NotFoundException('Base product not found');
+      }
+
+      // Find variants: products that start with base product name + " - "
+      const variantPrefix = `${baseProduct.name} - `;
+
+      const page = paginationQuery.page || 1;
+      const limit = paginationQuery.limit || 20;
+      const skip = (page - 1) * limit;
+
+      const [variants, total] = await Promise.all([
+        this.prisma.product.findMany({
+          where: {
+            vendorId: BigInt(vendor.id),
+            name: {
+              startsWith: variantPrefix,
+            },
+            isActive: true,
+          },
+          skip,
+          take: limit,
+          orderBy: {
+            createdAt: 'desc',
+          },
+        }),
+        this.prisma.product.count({
+          where: {
+            vendorId: BigInt(vendor.id),
+            name: {
+              startsWith: variantPrefix,
+            },
+            isActive: true,
+          },
+        }),
+      ]);
+
+      const totalPages = Math.ceil(total / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
+
+      const variantDtos = variants.map((variant) => ({
+        id: variant.id.toString(),
         product_id: productId,
-        variant_sku: 'PW-20L-MINERAL-001',
-        attributes: { type: 'mineral', brand: 'AquaPure' },
-        price_override: 55.0,
-        is_active: true,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-    ];
+        variant_sku: `VAR-${variant.id}`, // Generate SKU
+        attributes: (variant.specifications as Record<string, any>) || {},
+        price_override: Number(variant.price),
+        is_active: variant.isActive,
+        created_at: variant.createdAt,
+        updated_at: variant.updatedAt,
+      }));
 
-    const total = mockVariants.length;
-    const page = paginationQuery.page || 1;
-    const limit = paginationQuery.limit || 20;
-    const totalPages = Math.ceil(total / limit);
-    const hasNext = page < totalPages;
-    const hasPrev = page > 1;
-
-    return {
-      data: mockVariants,
-      page,
-      limit,
-      total,
-      totalPages,
-      hasNext,
-      hasPrev,
-    };
+      return {
+        data: variantDtos,
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext,
+        hasPrev,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Error fetching variants for product ${productId}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to fetch product variants');
+    }
   }
 
   async createProductVariant(
@@ -695,22 +1011,71 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, save to database
-    const newVariant: VendorProductVariantResponseDto = {
-      id: uuidv4(),
-      product_id: productId,
-      variant_sku: createVariantDto.variantSku,
-      attributes: createVariantDto.attributes,
-      price_override: createVariantDto.priceOverride,
-      is_active: true,
-      created_at: new Date(),
-      updated_at: new Date(),
-    };
+    try {
+      // Get the base product
+      const baseProduct = await this.prisma.product.findFirst({
+        where: {
+          id: BigInt(productId),
+          vendorId: BigInt(vendor.id),
+        },
+      });
 
-    this.logger.log(
-      `Created product variant ${newVariant.id} for vendor ${vendor.id}`,
-    );
-    return newVariant;
+      if (!baseProduct) {
+        throw new NotFoundException('Base product not found');
+      }
+
+      // Create variant name: base name + " - " + variant type
+      const variantType = createVariantDto.attributes?.type || 'variant';
+      const variantName = `${baseProduct.name} - ${variantType}`;
+
+      const variant = await this.prisma.product.create({
+        data: {
+          vendorId: BigInt(vendor.id),
+          name: variantName,
+          description: baseProduct.description,
+          category: baseProduct.category,
+          capacity: baseProduct.capacity,
+          unit: baseProduct.unit,
+          price: createVariantDto.priceOverride || baseProduct.price,
+          depositAmount: baseProduct.depositAmount,
+          hasDeposit: baseProduct.hasDeposit,
+          stockQuantity: 0, // Variants start with 0 stock
+          images: baseProduct.images,
+          specifications: {
+            ...((baseProduct.specifications as Record<string, any>) || {}),
+            ...createVariantDto.attributes,
+            isVariant: true,
+            baseProductId: productId,
+          },
+          isActive: true,
+        },
+      });
+
+      const variantDto: VendorProductVariantResponseDto = {
+        id: variant.id.toString(),
+        product_id: productId,
+        variant_sku: createVariantDto.variantSku || `VAR-${variant.id}`,
+        attributes: (variant.specifications as Record<string, any>) || {},
+        price_override: Number(variant.price),
+        is_active: variant.isActive,
+        created_at: variant.createdAt,
+        updated_at: variant.updatedAt,
+      };
+
+      this.logger.log(
+        `Created product variant ${variant.id} for vendor ${vendor.id}`,
+      );
+      return variantDto;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Error creating variant for product ${productId}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to create product variant');
+    }
   }
 
   async updateProductVariant(
@@ -724,22 +1089,65 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, update in database
-    const updatedVariant: VendorProductVariantResponseDto = {
-      id: variantId,
-      product_id: productId,
-      variant_sku: 'PW-20L-MINERAL-001', // Would be fetched from database
-      attributes: updateVariantDto.attributes,
-      price_override: updateVariantDto.priceOverride,
-      is_active: updateVariantDto.isActive ?? true,
-      created_at: new Date(),
-      updated_at: new Date(),
-    };
+    try {
+      // Get current variant to merge specifications
+      const currentVariant = await this.prisma.product.findUnique({
+        where: {
+          id: BigInt(variantId),
+          vendorId: BigInt(vendor.id),
+        },
+      });
 
-    this.logger.log(
-      `Updated product variant ${variantId} for vendor ${vendor.id}`,
-    );
-    return updatedVariant;
+      if (!currentVariant) {
+        throw new NotFoundException('Variant not found');
+      }
+
+      const newSpecifications = updateVariantDto.attributes
+        ? {
+            ...((currentVariant.specifications as Record<string, any>) || {}),
+            ...updateVariantDto.attributes,
+          }
+        : undefined;
+
+      // Update the variant product
+      const updatedVariant = await this.prisma.product.update({
+        where: {
+          id: BigInt(variantId),
+          vendorId: BigInt(vendor.id),
+        },
+        data: {
+          price: updateVariantDto.priceOverride,
+          specifications: newSpecifications,
+          isActive: updateVariantDto.isActive,
+          updatedAt: new Date(),
+        },
+      });
+
+      const variantDto: VendorProductVariantResponseDto = {
+        id: updatedVariant.id.toString(),
+        product_id: productId,
+        variant_sku: `VAR-${updatedVariant.id}`,
+        attributes:
+          (updatedVariant.specifications as Record<string, any>) || {},
+        price_override: Number(updatedVariant.price),
+        is_active: updatedVariant.isActive,
+        created_at: updatedVariant.createdAt,
+        updated_at: updatedVariant.updatedAt,
+      };
+
+      this.logger.log(
+        `Updated product variant ${variantId} for vendor ${vendor.id}`,
+      );
+      return variantDto;
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException(
+          'Variant not found or does not belong to this vendor',
+        );
+      }
+      this.logger.error(`Error updating variant ${variantId}:`, error);
+      throw new BadRequestException('Failed to update product variant');
+    }
   }
 
   async deleteProductVariant(
@@ -752,11 +1160,28 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, delete from database
-    this.logger.log(
-      `Deleted product variant ${variantId} for vendor ${vendor.id}`,
-    );
-    return { message: 'Product variant deleted successfully' };
+    try {
+      // Delete the variant product
+      await this.prisma.product.delete({
+        where: {
+          id: BigInt(variantId),
+          vendorId: BigInt(vendor.id),
+        },
+      });
+
+      this.logger.log(
+        `Deleted product variant ${variantId} for vendor ${vendor.id}`,
+      );
+      return { message: 'Product variant deleted successfully' };
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException(
+          'Variant not found or does not belong to this vendor',
+        );
+      }
+      this.logger.error(`Error deleting variant ${variantId}:`, error);
+      throw new BadRequestException('Failed to delete product variant');
+    }
   }
 
   async getProductCategories(userId: string): Promise<string[]> {
@@ -765,9 +1190,26 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, fetch unique categories from products
-    // For now, return mock categories
-    return ['water_jar', 'water_bottle', 'accessories', 'services'];
+    try {
+      const categories = await this.prisma.product.findMany({
+        where: {
+          vendorId: BigInt(vendor.id),
+          isActive: true,
+        },
+        select: {
+          category: true,
+        },
+        distinct: ['category'],
+      });
+
+      return categories.map((c) => c.category).filter(Boolean);
+    } catch (error) {
+      this.logger.error(
+        `Error fetching categories for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to fetch product categories');
+    }
   }
 
   async bulkProductOperations(
@@ -779,10 +1221,74 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, perform bulk operations on products
-    // For now, return mock result
-    this.logger.log(`Performed bulk operations for vendor ${vendor.id}`);
-    return { message: 'Bulk operations completed successfully', processed: 10 };
+    try {
+      let processed = 0;
+
+      // Handle different operation types
+      if (
+        bulkOperationsDto.operation === 'update_stock' &&
+        bulkOperationsDto.products
+      ) {
+        for (const productOp of bulkOperationsDto.products) {
+          await this.prisma.product.updateMany({
+            where: {
+              id: BigInt(productOp.productId),
+              vendorId: BigInt(vendor.id),
+            },
+            data: {
+              stockQuantity: productOp.stockQuantity,
+              updatedAt: new Date(),
+            },
+          });
+          processed++;
+        }
+      } else if (
+        bulkOperationsDto.operation === 'update_price' &&
+        bulkOperationsDto.products
+      ) {
+        for (const productOp of bulkOperationsDto.products) {
+          await this.prisma.product.updateMany({
+            where: {
+              id: BigInt(productOp.productId),
+              vendorId: BigInt(vendor.id),
+            },
+            data: {
+              price: productOp.price,
+              updatedAt: new Date(),
+            },
+          });
+          processed++;
+        }
+      } else if (
+        bulkOperationsDto.operation === 'deactivate' &&
+        bulkOperationsDto.productIds
+      ) {
+        await this.prisma.product.updateMany({
+          where: {
+            id: {
+              in: bulkOperationsDto.productIds.map((id: string) => BigInt(id)),
+            },
+            vendorId: BigInt(vendor.id),
+          },
+          data: {
+            isActive: false,
+            updatedAt: new Date(),
+          },
+        });
+        processed = bulkOperationsDto.productIds.length;
+      }
+
+      this.logger.log(
+        `Performed bulk operations for vendor ${vendor.id}, processed ${processed} items`,
+      );
+      return { message: 'Bulk operations completed successfully', processed };
+    } catch (error) {
+      this.logger.error(
+        `Error performing bulk operations for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to perform bulk operations');
+    }
   }
 
   // Analytics & Reports Methods
@@ -795,37 +1301,172 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, calculate analytics from orders and sales data
-    // For now, return mock analytics
-    const mockAnalytics: SalesAnalyticsResponseDto = {
-      vendorId: vendor.id,
-      period: analyticsQuery.period,
-      totalSales: 15000.0,
-      totalOrders: 150,
-      averageOrderValue: 100.0,
-      salesData: [
-        { date: '2024-01-01', sales: 500, orders: 5 },
-        { date: '2024-01-02', sales: 750, orders: 8 },
-        { date: '2024-01-03', sales: 600, orders: 6 },
-      ],
-      topProducts: [
-        {
-          productId: 'prod-1',
-          productName: '20L Water Jar',
-          sales: 5000,
-          orders: 50,
-        },
-        {
-          productId: 'prod-2',
-          productName: '10L Water Jar',
-          sales: 3000,
-          orders: 60,
-        },
-      ],
-    };
+    try {
+      // Calculate date range based on period
+      const now = new Date();
+      let startDate: Date;
+      let endDate: Date = now;
 
-    this.logger.log(`Generated sales analytics for vendor ${vendor.id}`);
-    return mockAnalytics;
+      switch (analyticsQuery.period) {
+        case 'daily':
+          startDate = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+          );
+          break;
+        case 'weekly':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'monthly':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
+        case 'yearly':
+          startDate = new Date(now.getFullYear(), 0, 1);
+          break;
+        default:
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Default to last 30 days
+      }
+
+      // Override with custom dates if provided
+      if (analyticsQuery.startDate) {
+        startDate = new Date(analyticsQuery.startDate);
+      }
+      if (analyticsQuery.endDate) {
+        endDate = new Date(analyticsQuery.endDate);
+      }
+
+      // Get total sales and orders
+      const totalStats = await this.prisma.order.aggregate({
+        where: {
+          vendorId: BigInt(vendor.id),
+          createdAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+          status: {
+            in: ['delivered', 'confirmed'], // Only count completed orders
+          },
+        },
+        _sum: {
+          totalAmount: true,
+        },
+        _count: {
+          id: true,
+        },
+      });
+
+      const totalSales = Number(totalStats._sum.totalAmount || 0);
+      const totalOrders = totalStats._count.id;
+      const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
+
+      // Get sales data grouped by date
+      const salesDataRaw = await this.prisma.order.groupBy({
+        by: ['createdAt'],
+        where: {
+          vendorId: BigInt(vendor.id),
+          createdAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+          status: {
+            in: ['delivered', 'confirmed'],
+          },
+        },
+        _sum: {
+          totalAmount: true,
+        },
+        _count: {
+          id: true,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+
+      const salesData = salesDataRaw.map((item) => ({
+        date: item.createdAt.toISOString().split('T')[0],
+        sales: Number(item._sum.totalAmount || 0),
+        orders: item._count.id,
+      }));
+
+      // Get top products by sales
+      const topProductsRaw = await this.prisma.orderItem.groupBy({
+        by: ['productId'],
+        where: {
+          order: {
+            vendorId: BigInt(vendor.id),
+            createdAt: {
+              gte: startDate,
+              lte: endDate,
+            },
+            status: {
+              in: ['delivered', 'confirmed'],
+            },
+          },
+        },
+        _sum: {
+          totalPrice: true,
+          quantity: true,
+        },
+        _count: {
+          orderId: true,
+        },
+        orderBy: {
+          _sum: {
+            totalPrice: 'desc',
+          },
+        },
+        take: 10,
+      });
+
+      // Get product names for top products
+      const productIds = topProductsRaw.map((item) => BigInt(item.productId));
+      const products = await this.prisma.product.findMany({
+        where: {
+          id: {
+            in: productIds,
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+        },
+      });
+
+      const productMap = new Map(
+        products.map((p) => [p.id.toString(), p.name]),
+      );
+
+      const topProducts = topProductsRaw.map((item) => ({
+        productId: item.productId.toString(),
+        productName:
+          productMap.get(item.productId.toString()) || 'Unknown Product',
+        sales: Number(item._sum.totalPrice || 0),
+        orders: item._count.orderId,
+      }));
+
+      const analytics: SalesAnalyticsResponseDto = {
+        vendorId: vendor.id,
+        period: analyticsQuery.period,
+        totalSales,
+        totalOrders,
+        averageOrderValue,
+        salesData,
+        topProducts,
+      };
+
+      this.logger.log(
+        `Generated sales analytics for vendor ${vendor.id} for period ${analyticsQuery.period}`,
+      );
+      return analytics;
+    } catch (error) {
+      this.logger.error(
+        `Error generating sales analytics for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to generate sales analytics');
+    }
   }
 
   async getProductPerformance(
@@ -837,47 +1478,142 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, calculate performance metrics from sales data
-    // For now, return mock performance data
-    const mockPerformance: ProductPerformanceDto[] = [
-      {
-        productId: 'prod-1',
-        productName: '20L Water Jar',
-        totalSales: 5000.0,
-        totalOrders: 50,
-        averageRating: 4.5,
-        reviewCount: 25,
-        currentStock: 100,
-        stockTurnoverRate: 2.5,
-      },
-      {
-        productId: 'prod-2',
-        productName: '10L Water Jar',
-        totalSales: 3000.0,
-        totalOrders: 60,
-        averageRating: 4.2,
-        reviewCount: 18,
-        currentStock: 75,
-        stockTurnoverRate: 3.2,
-      },
-    ];
+    try {
+      const page = paginationQuery.page || 1;
+      const limit = paginationQuery.limit || 20;
+      const skip = (page - 1) * limit;
 
-    const total = mockPerformance.length;
-    const page = paginationQuery.page || 1;
-    const limit = paginationQuery.limit || 20;
-    const totalPages = Math.ceil(total / limit);
-    const hasNext = page < totalPages;
-    const hasPrev = page > 1;
+      // Get products with their performance metrics
+      const products = await this.prisma.product.findMany({
+        where: {
+          vendorId: BigInt(vendor.id),
+          isActive: true,
+        },
+        select: {
+          id: true,
+          name: true,
+          stockQuantity: true,
+          specifications: true,
+          _count: {
+            select: {
+              OrderItem: {
+                where: {
+                  order: {
+                    status: {
+                      in: ['delivered', 'confirmed'],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
 
-    return {
-      data: mockPerformance,
-      page,
-      limit,
-      total,
-      totalPages,
-      hasNext,
-      hasPrev,
-    };
+      // Get sales aggregations for each product
+      const productIds = products.map((p) => p.id);
+      const salesData = await this.prisma.orderItem.groupBy({
+        by: ['productId'],
+        where: {
+          productId: {
+            in: productIds,
+          },
+          order: {
+            vendorId: BigInt(vendor.id),
+            status: {
+              in: ['delivered', 'confirmed'],
+            },
+          },
+        },
+        _sum: {
+          totalPrice: true,
+          quantity: true,
+        },
+        _count: {
+          orderId: true,
+        },
+      });
+
+      const salesMap = new Map(
+        salesData.map((item) => [
+          item.productId.toString(),
+          {
+            totalSales: Number(item._sum.totalPrice || 0),
+            totalOrders: item._count.orderId,
+            totalQuantity: item._sum.quantity || 0,
+          },
+        ]),
+      );
+
+      // Calculate stock turnover rate (simplified: total sold / current stock)
+      const performanceData: ProductPerformanceDto[] = products.map(
+        (product) => {
+          const salesInfo = salesMap.get(product.id.toString()) || {
+            totalSales: 0,
+            totalOrders: 0,
+            totalQuantity: 0,
+          };
+
+          const stockTurnoverRate =
+            product.stockQuantity > 0
+              ? salesInfo.totalQuantity / product.stockQuantity
+              : 0;
+
+          // Extract rating from specifications (assuming it's stored there)
+          const specs = product.specifications as any;
+          const averageRating = specs?.averageRating
+            ? Number(specs.averageRating)
+            : 0;
+          const reviewCount = specs?.reviewCount
+            ? Number(specs.reviewCount)
+            : 0;
+
+          return {
+            productId: product.id.toString(),
+            productName: product.name,
+            totalSales: salesInfo.totalSales,
+            totalOrders: salesInfo.totalOrders,
+            averageRating,
+            reviewCount,
+            currentStock: product.stockQuantity,
+            stockTurnoverRate: Number(stockTurnoverRate.toFixed(2)),
+          };
+        },
+      );
+
+      // Get total count for pagination
+      const total = await this.prisma.product.count({
+        where: {
+          vendorId: BigInt(vendor.id),
+          isActive: true,
+        },
+      });
+
+      const totalPages = Math.ceil(total / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
+
+      return {
+        data: performanceData,
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext,
+        hasPrev,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error fetching product performance for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to fetch product performance data');
+    }
   }
 
   async getCustomerInsights(
@@ -889,47 +1625,122 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, analyze customer behavior from order history
-    // For now, return mock customer insights
-    const mockInsights: CustomerInsightsDto[] = [
-      {
-        customerId: 'cust-1',
-        customerName: 'John Doe',
-        totalOrders: 15,
-        totalSpent: 1500.0,
-        averageOrderValue: 100.0,
-        firstOrderDate: new Date('2024-01-01'),
-        lastOrderDate: new Date('2024-01-15'),
-        loyaltyScore: 85,
-      },
-      {
-        customerId: 'cust-2',
-        customerName: 'Jane Smith',
-        totalOrders: 8,
-        totalSpent: 800.0,
-        averageOrderValue: 100.0,
-        firstOrderDate: new Date('2024-01-05'),
-        lastOrderDate: new Date('2024-01-12'),
-        loyaltyScore: 72,
-      },
-    ];
+    try {
+      const page = paginationQuery.page || 1;
+      const limit = paginationQuery.limit || 20;
+      const skip = (page - 1) * limit;
 
-    const total = mockInsights.length;
-    const page = paginationQuery.page || 1;
-    const limit = paginationQuery.limit || 20;
-    const totalPages = Math.ceil(total / limit);
-    const hasNext = page < totalPages;
-    const hasPrev = page > 1;
+      // Get customers who have ordered from this vendor
+      const customerOrders = await this.prisma.order.groupBy({
+        by: ['customerId'],
+        where: {
+          vendorId: BigInt(vendor.id),
+          status: {
+            in: ['delivered', 'confirmed'],
+          },
+        },
+        _sum: {
+          totalAmount: true,
+        },
+        _count: {
+          id: true,
+        },
+        _min: {
+          createdAt: true,
+        },
+        _max: {
+          createdAt: true,
+        },
+        orderBy: {
+          _sum: {
+            totalAmount: 'desc',
+          },
+        },
+        skip,
+        take: limit,
+      });
 
-    return {
-      data: mockInsights,
-      page,
-      limit,
-      total,
-      totalPages,
-      hasNext,
-      hasPrev,
-    };
+      // Get customer details
+      const customerIds = customerOrders.map((co) => BigInt(co.customerId));
+      const customers = await this.prisma.customer.findMany({
+        where: {
+          id: {
+            in: customerIds,
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          uuid: true,
+        },
+      });
+
+      const customerMap = new Map(
+        customers.map((c) => [c.id.toString(), { name: c.name, uuid: c.uuid }]),
+      );
+
+      const insightsData: CustomerInsightsDto[] = customerOrders.map(
+        (orderStats) => {
+          const customerInfo = customerMap.get(
+            orderStats.customerId.toString(),
+          );
+          const totalSpent = Number(orderStats._sum.totalAmount || 0);
+          const totalOrders = orderStats._count.id;
+          const averageOrderValue =
+            totalOrders > 0 ? totalSpent / totalOrders : 0;
+
+          // Calculate loyalty score based on order frequency and total spent
+          // Simple algorithm: base score from order count + spending score
+          const orderScore = Math.min(totalOrders * 5, 50); // Max 50 points for orders
+          const spendingScore = Math.min(totalSpent / 100, 50); // Max 50 points for spending
+          const loyaltyScore = Math.round(orderScore + spendingScore);
+
+          return {
+            customerId: customerInfo?.uuid || orderStats.customerId.toString(),
+            customerName: customerInfo?.name || 'Unknown Customer',
+            totalOrders,
+            totalSpent,
+            averageOrderValue: Number(averageOrderValue.toFixed(2)),
+            firstOrderDate: orderStats._min.createdAt,
+            lastOrderDate: orderStats._max.createdAt,
+            loyaltyScore,
+          };
+        },
+      );
+
+      // Get total count for pagination
+      const total = await this.prisma.order
+        .groupBy({
+          by: ['customerId'],
+          where: {
+            vendorId: BigInt(vendor.id),
+            status: {
+              in: ['delivered', 'confirmed'],
+            },
+          },
+        })
+        .then((groups) => groups.length);
+
+      const totalPages = Math.ceil(total / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
+
+      return {
+        data: insightsData,
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext,
+        hasPrev,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error fetching customer insights for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to fetch customer insights');
+    }
   }
 
   async getDailyReport(userId: string, date?: string): Promise<DailyReportDto> {
@@ -938,40 +1749,169 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    const reportDate = date ? new Date(date) : new Date();
+    try {
+      const reportDate = date ? new Date(date) : new Date();
+      const startOfDay = new Date(
+        reportDate.getFullYear(),
+        reportDate.getMonth(),
+        reportDate.getDate(),
+      );
+      const endOfDay = new Date(
+        reportDate.getFullYear(),
+        reportDate.getMonth(),
+        reportDate.getDate() + 1,
+      );
 
-    // In real implementation, generate report from daily sales data
-    // For now, return mock daily report
-    const mockReport: DailyReportDto = {
-      date: reportDate.toISOString().split('T')[0],
-      totalSales: 5000.0,
-      totalOrders: 50,
-      newCustomers: 5,
-      topProducts: [
-        {
-          productId: 'prod-1',
-          productName: '20L Water Jar',
-          quantity: 25,
-          revenue: 2500,
+      // Get total sales and orders for the day
+      const dailyStats = await this.prisma.order.aggregate({
+        where: {
+          vendorId: BigInt(vendor.id),
+          createdAt: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
         },
-        {
-          productId: 'prod-2',
-          productName: '10L Water Jar',
-          quantity: 15,
-          revenue: 1500,
+        _sum: {
+          totalAmount: true,
         },
-      ],
-      orderStatusBreakdown: {
-        pending: 5,
-        confirmed: 20,
-        in_transit: 15,
-        delivered: 10,
-        cancelled: 0,
-      },
-    };
+        _count: {
+          id: true,
+        },
+      });
 
-    this.logger.log(`Generated daily report for vendor ${vendor.id}`);
-    return mockReport;
+      const totalSales = Number(dailyStats._sum.totalAmount || 0);
+      const totalOrders = dailyStats._count.id;
+
+      // Get new customers for the day (first order on this date)
+      const newCustomers = await this.prisma.order
+        .groupBy({
+          by: ['customerId'],
+          where: {
+            vendorId: BigInt(vendor.id),
+            createdAt: {
+              gte: startOfDay,
+              lte: endOfDay,
+            },
+            status: {
+              in: ['delivered', 'confirmed'],
+            },
+          },
+        })
+        .then((groups) => {
+          // For simplicity, count all customers who ordered today as "new"
+          // In a real implementation, you'd check if this is their first order ever
+          return groups.length;
+        });
+
+      // Get top products for the day
+      const topProductsRaw = await this.prisma.orderItem.groupBy({
+        by: ['productId'],
+        where: {
+          order: {
+            vendorId: BigInt(vendor.id),
+            createdAt: {
+              gte: startOfDay,
+              lte: endOfDay,
+            },
+            status: {
+              in: ['delivered', 'confirmed'],
+            },
+          },
+        },
+        _sum: {
+          quantity: true,
+          totalPrice: true,
+        },
+        orderBy: {
+          _sum: {
+            totalPrice: 'desc',
+          },
+        },
+        take: 10,
+      });
+
+      // Get product names
+      const productIds = topProductsRaw.map((item) => BigInt(item.productId));
+      const products = await this.prisma.product.findMany({
+        where: {
+          id: {
+            in: productIds,
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+        },
+      });
+
+      const productMap = new Map(
+        products.map((p) => [p.id.toString(), p.name]),
+      );
+
+      const topProducts = topProductsRaw.map((item) => ({
+        productId: item.productId.toString(),
+        productName:
+          productMap.get(item.productId.toString()) || 'Unknown Product',
+        quantity: item._sum.quantity || 0,
+        revenue: Number(item._sum.totalPrice || 0),
+      }));
+
+      // Get order status breakdown
+      const statusBreakdown = await this.prisma.order.groupBy({
+        by: ['status'],
+        where: {
+          vendorId: BigInt(vendor.id),
+          createdAt: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+        },
+        _count: {
+          id: true,
+        },
+      });
+
+      const orderStatusBreakdown: Record<string, number> = {};
+      statusBreakdown.forEach((item) => {
+        orderStatusBreakdown[item.status] = item._count.id;
+      });
+
+      // Ensure all status types are present
+      const allStatuses = [
+        'placed',
+        'confirmed',
+        'preparing',
+        'ready',
+        'in_transit',
+        'delivered',
+        'cancelled',
+      ];
+      allStatuses.forEach((status) => {
+        if (!(status in orderStatusBreakdown)) {
+          orderStatusBreakdown[status] = 0;
+        }
+      });
+
+      const report: DailyReportDto = {
+        date: reportDate.toISOString().split('T')[0],
+        totalSales,
+        totalOrders,
+        newCustomers,
+        topProducts,
+        orderStatusBreakdown,
+      };
+
+      this.logger.log(
+        `Generated daily report for vendor ${vendor.id} for date ${report.date}`,
+      );
+      return report;
+    } catch (error) {
+      this.logger.error(
+        `Error generating daily report for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to generate daily report');
+    }
   }
 
   async getMonthlyReport(
@@ -983,25 +1923,128 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    const reportMonth = month || new Date().toISOString().slice(0, 7);
+    try {
+      const reportMonth = month || new Date().toISOString().slice(0, 7);
+      const [year, monthNum] = reportMonth.split('-').map(Number);
+      const startOfMonth = new Date(year, monthNum - 1, 1);
+      const endOfMonth = new Date(year, monthNum, 1);
 
-    // In real implementation, generate report from monthly sales data
-    // For now, return mock monthly report
-    const mockReport: MonthlyReportDto = {
-      month: reportMonth,
-      totalSales: 150000.0,
-      totalOrders: 1500,
-      averageDailySales: 5000.0,
-      growthPercentage: 15.5,
-      dailyBreakdown: [
-        { day: 1, sales: 4500, orders: 45 },
-        { day: 2, sales: 5200, orders: 52 },
-        { day: 3, sales: 4800, orders: 48 },
-      ],
-    };
+      // Get current month stats
+      const currentMonthStats = await this.prisma.order.aggregate({
+        where: {
+          vendorId: BigInt(vendor.id),
+          createdAt: {
+            gte: startOfMonth,
+            lte: endOfMonth,
+          },
+          status: {
+            in: ['delivered', 'confirmed'],
+          },
+        },
+        _sum: {
+          totalAmount: true,
+        },
+        _count: {
+          id: true,
+        },
+      });
 
-    this.logger.log(`Generated monthly report for vendor ${vendor.id}`);
-    return mockReport;
+      const totalSales = Number(currentMonthStats._sum.totalAmount || 0);
+      const totalOrders = currentMonthStats._count.id;
+
+      // Calculate days in month for average
+      const daysInMonth = new Date(year, monthNum, 0).getDate();
+      const averageDailySales = totalSales / daysInMonth;
+
+      // Get previous month stats for growth calculation
+      const prevMonthStart = new Date(year, monthNum - 2, 1);
+      const prevMonthEnd = new Date(year, monthNum - 1, 1);
+
+      const prevMonthStats = await this.prisma.order.aggregate({
+        where: {
+          vendorId: BigInt(vendor.id),
+          createdAt: {
+            gte: prevMonthStart,
+            lte: prevMonthEnd,
+          },
+          status: {
+            in: ['delivered', 'confirmed'],
+          },
+        },
+        _sum: {
+          totalAmount: true,
+        },
+      });
+
+      const prevMonthSales = Number(prevMonthStats._sum.totalAmount || 0);
+      const growthPercentage =
+        prevMonthSales > 0
+          ? ((totalSales - prevMonthSales) / prevMonthSales) * 100
+          : 0;
+
+      // Get daily breakdown for current month
+      const dailyBreakdownRaw = await this.prisma.order.groupBy({
+        by: ['createdAt'],
+        where: {
+          vendorId: BigInt(vendor.id),
+          createdAt: {
+            gte: startOfMonth,
+            lte: endOfMonth,
+          },
+          status: {
+            in: ['delivered', 'confirmed'],
+          },
+        },
+        _sum: {
+          totalAmount: true,
+        },
+        _count: {
+          id: true,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+
+      // Group by day
+      const dailyMap = new Map<number, { sales: number; orders: number }>();
+      dailyBreakdownRaw.forEach((item) => {
+        const day = item.createdAt.getDate();
+        const existing = dailyMap.get(day) || { sales: 0, orders: 0 };
+        dailyMap.set(day, {
+          sales: existing.sales + Number(item._sum.totalAmount || 0),
+          orders: existing.orders + item._count.id,
+        });
+      });
+
+      const dailyBreakdown = Array.from(dailyMap.entries())
+        .map(([day, data]) => ({
+          day,
+          sales: Number(data.sales.toFixed(2)),
+          orders: data.orders,
+        }))
+        .sort((a, b) => a.day - b.day);
+
+      const report: MonthlyReportDto = {
+        month: reportMonth,
+        totalSales,
+        totalOrders,
+        averageDailySales: Number(averageDailySales.toFixed(2)),
+        growthPercentage: Number(growthPercentage.toFixed(2)),
+        dailyBreakdown,
+      };
+
+      this.logger.log(
+        `Generated monthly report for vendor ${vendor.id} for month ${reportMonth}`,
+      );
+      return report;
+    } catch (error) {
+      this.logger.error(
+        `Error generating monthly report for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to generate monthly report');
+    }
   }
 
   // Inventory Management Methods
@@ -1014,47 +2057,98 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, fetch inventory data from database
-    // For now, return mock inventory status
-    const mockInventory: InventoryStatusDto[] = [
-      {
-        productId: 'prod-1',
-        productName: '20L Water Jar',
-        currentStock: 100,
-        reservedStock: 10,
-        availableStock: 90,
-        lowStockThreshold: 20,
-        isLowStock: false,
-        lastUpdated: new Date(),
-      },
-      {
-        productId: 'prod-2',
-        productName: '10L Water Jar',
-        currentStock: 15,
-        reservedStock: 5,
-        availableStock: 10,
-        lowStockThreshold: 20,
-        isLowStock: true,
-        lastUpdated: new Date(),
-      },
-    ];
+    try {
+      const page = paginationQuery.page || 1;
+      const limit = paginationQuery.limit || 20;
+      const skip = (page - 1) * limit;
 
-    const total = mockInventory.length;
-    const page = paginationQuery.page || 1;
-    const limit = paginationQuery.limit || 20;
-    const totalPages = Math.ceil(total / limit);
-    const hasNext = page < totalPages;
-    const hasPrev = page > 1;
+      // Get all ProductStoreMapping records for this vendor's products
+      const [storeMappings, total] = await Promise.all([
+        this.prisma.productStoreMapping.findMany({
+          where: {
+            store: {
+              vendorId: BigInt(vendor.id),
+            },
+            product: {
+              isActive: true,
+            },
+          },
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                specifications: true,
+              },
+            },
+            store: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+          skip,
+          take: limit,
+          orderBy: {
+            updatedAt: 'desc',
+          },
+        }),
+        this.prisma.productStoreMapping.count({
+          where: {
+            store: {
+              vendorId: BigInt(vendor.id),
+            },
+            product: {
+              isActive: true,
+            },
+          },
+        }),
+      ]);
 
-    return {
-      data: mockInventory,
-      page,
-      limit,
-      total,
-      totalPages,
-      hasNext,
-      hasPrev,
-    };
+      const inventoryData: InventoryStatusDto[] = storeMappings.map((mapping) => {
+        const product = mapping.product;
+        const specs = product.specifications as any;
+        // Get lowStockThreshold from product specifications or use default
+        const lowStockThreshold = specs?.lowStockThreshold || 20;
+
+        const currentStock = mapping.stockQuantity;
+        const reservedStock = mapping.reservedStock;
+        const availableStock = currentStock - reservedStock;
+        const isLowStock = availableStock <= lowStockThreshold;
+
+        return {
+          productId: product.id.toString(),
+          productName: product.name,
+          currentStock,
+          reservedStock,
+          availableStock,
+          lowStockThreshold,
+          isLowStock,
+          lastUpdated: mapping.updatedAt,
+        };
+      });
+
+      const totalPages = Math.ceil(total / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
+
+      return {
+        data: inventoryData,
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext,
+        hasPrev,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error fetching inventory status for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to fetch inventory status');
+    }
   }
 
   async updateInventory(
@@ -1067,23 +2161,82 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, update inventory in database
-    // For now, return mock updated inventory
-    const updatedInventory: InventoryStatusDto = {
-      productId,
-      productName: '20L Water Jar', // Would be fetched from database
-      currentStock: updateInventoryDto.quantity,
-      reservedStock: 0, // Would be calculated
-      availableStock: updateInventoryDto.quantity,
-      lowStockThreshold: 20,
-      isLowStock: updateInventoryDto.quantity < 20,
-      lastUpdated: new Date(),
-    };
+    try {
+      // Find the ProductStoreMapping for this product and vendor's store
+      const storeMapping = await this.prisma.productStoreMapping.findFirst({
+        where: {
+          productId: BigInt(productId),
+          store: {
+            vendorId: BigInt(vendor.id),
+          },
+        },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              specifications: true,
+            },
+          },
+        },
+      });
 
-    this.logger.log(
-      `Updated inventory for product ${productId} to ${updateInventoryDto.quantity}`,
-    );
-    return updatedInventory;
+      if (!storeMapping) {
+        throw new NotFoundException(
+          'Product not found in vendor inventory or store mapping does not exist',
+        );
+      }
+
+      // Update the stock quantity
+      const updatedMapping = await this.prisma.productStoreMapping.update({
+        where: {
+          id: storeMapping.id,
+        },
+        data: {
+          stockQuantity: updateInventoryDto.quantity,
+          updatedAt: new Date(),
+        },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              specifications: true,
+            },
+          },
+        },
+      });
+
+      const product = updatedMapping.product;
+      const specs = product.specifications as any;
+      const lowStockThreshold = specs?.lowStockThreshold || 20;
+
+      const currentStock = updatedMapping.stockQuantity;
+      const reservedStock = updatedMapping.reservedStock;
+      const availableStock = currentStock - reservedStock;
+      const isLowStock = availableStock <= lowStockThreshold;
+
+      this.logger.log(
+        `Updated inventory for product ${productId} to ${updateInventoryDto.quantity}`,
+      );
+
+      return {
+        productId: product.id.toString(),
+        productName: product.name,
+        currentStock,
+        reservedStock,
+        availableStock,
+        lowStockThreshold,
+        isLowStock,
+        lastUpdated: updatedMapping.updatedAt,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Error updating inventory for product ${productId}:`, error);
+      throw new BadRequestException('Failed to update inventory');
+    }
   }
 
   async adjustInventory(
@@ -1095,18 +2248,56 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, adjust inventory in database
-    // For now, return mock adjustment result
-    const newStock = 100 + adjustmentDto.adjustmentQuantity; // Mock calculation
+    try {
+      // Find the ProductStoreMapping for this product and vendor's store
+      const storeMapping = await this.prisma.productStoreMapping.findFirst({
+        where: {
+          productId: BigInt(adjustmentDto.productId),
+          store: {
+            vendorId: BigInt(vendor.id),
+          },
+        },
+      });
 
-    this.logger.log(
-      `Adjusted inventory for product ${adjustmentDto.productId} by ${adjustmentDto.adjustmentQuantity}`,
-    );
+      if (!storeMapping) {
+        throw new NotFoundException(
+          'Product not found in vendor inventory or store mapping does not exist',
+        );
+      }
 
-    return {
-      message: `Inventory adjusted successfully`,
-      newStock: Math.max(0, newStock),
-    };
+      // Calculate new stock quantity
+      const currentStock = storeMapping.stockQuantity;
+      const newStock = Math.max(0, currentStock + adjustmentDto.adjustmentQuantity);
+
+      // Update the stock quantity
+      await this.prisma.productStoreMapping.update({
+        where: {
+          id: storeMapping.id,
+        },
+        data: {
+          stockQuantity: newStock,
+          updatedAt: new Date(),
+        },
+      });
+
+      this.logger.log(
+        `Adjusted inventory for product ${adjustmentDto.productId} by ${adjustmentDto.adjustmentQuantity}. New stock: ${newStock}`,
+      );
+
+      return {
+        message: `Inventory adjusted successfully`,
+        newStock,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Error adjusting inventory for product ${adjustmentDto.productId}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to adjust inventory');
+    }
   }
 
   async getLowStockAlerts(userId: string): Promise<LowStockAlertDto[]> {
@@ -1115,21 +2306,77 @@ export class VendorService {
       throw new NotFoundException('Vendor profile not found');
     }
 
-    // In real implementation, fetch products with low stock
-    // For now, return mock alerts
-    const mockAlerts: LowStockAlertDto[] = [
-      {
-        productId: 'prod-2',
-        productName: '10L Water Jar',
-        currentStock: 15,
-        lowStockThreshold: 20,
-        severity: 'medium',
-        alertDate: new Date(),
-      },
-    ];
+    try {
+      // Get all ProductStoreMapping records for this vendor's products
+      const storeMappings = await this.prisma.productStoreMapping.findMany({
+        where: {
+          store: {
+            vendorId: BigInt(vendor.id),
+          },
+          product: {
+            isActive: true,
+          },
+        },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              specifications: true,
+            },
+          },
+        },
+      });
 
-    this.logger.log(`Retrieved low stock alerts for vendor ${vendor.id}`);
-    return mockAlerts;
+      const lowStockAlerts: LowStockAlertDto[] = [];
+
+      for (const mapping of storeMappings) {
+        const product = mapping.product;
+        const specs = product.specifications as any;
+        const lowStockThreshold = specs?.lowStockThreshold || 20;
+
+        const currentStock = mapping.stockQuantity;
+        const reservedStock = mapping.reservedStock;
+        const availableStock = currentStock - reservedStock;
+
+        // Check if stock is low
+        if (availableStock <= lowStockThreshold) {
+          // Determine severity based on stock level
+          let severity: 'low' | 'medium' | 'high' | 'critical';
+          const stockRatio = availableStock / lowStockThreshold;
+
+          if (stockRatio <= 0.25) {
+            severity = 'critical';
+          } else if (stockRatio <= 0.5) {
+            severity = 'high';
+          } else if (stockRatio <= 0.75) {
+            severity = 'medium';
+          } else {
+            severity = 'low';
+          }
+
+          lowStockAlerts.push({
+            productId: product.id.toString(),
+            productName: product.name,
+            currentStock,
+            lowStockThreshold,
+            severity,
+            alertDate: mapping.updatedAt,
+          });
+        }
+      }
+
+      this.logger.log(
+        `Retrieved ${lowStockAlerts.length} low stock alerts for vendor ${vendor.id}`,
+      );
+      return lowStockAlerts;
+    } catch (error) {
+      this.logger.error(
+        `Error fetching low stock alerts for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to fetch low stock alerts');
+    }
   }
 
   // Order Management Methods
@@ -1137,103 +2384,165 @@ export class VendorService {
     vendor: Vendor,
     paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
+    try {
+      const page = paginationQuery.page || 1;
+      const limit = paginationQuery.limit || 20;
+      const skip = (page - 1) * limit;
 
-    // In real implementation, fetch pending orders from database
-    // For now, return mock pending orders
-    const mockOrders: OrderSummaryDto[] = [
-      {
-        id: 'order-1',
-        customerId: 'cust-1',
-        customerName: 'John Doe',
-        status: 'pending',
-        totalAmount: 150.0,
-        createdAt: new Date(),
-        deliveryAddress: '123 Customer Street, Delhi, 110001',
-        contactPhone: '+91-9876543210',
-      },
-    ];
+      const [orders, total] = await Promise.all([
+        this.prisma.order.findMany({
+          where: {
+            vendorId: BigInt(vendor.id),
+            status: 'placed', // Assuming 'placed' is the pending status
+          },
+          include: {
+            customer: true,
+            address: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          skip,
+          take: limit,
+        }),
+        this.prisma.order.count({
+          where: {
+            vendorId: BigInt(vendor.id),
+            status: 'placed',
+          },
+        }),
+      ]);
 
-    const total = mockOrders.length;
-    const page = paginationQuery.page || 1;
-    const limit = paginationQuery.limit || 20;
-    const totalPages = Math.ceil(total / limit);
-    const hasNext = page < totalPages;
-    const hasPrev = page > 1;
+      const totalPages = Math.ceil(total / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
 
-    return {
-      data: mockOrders,
-      page,
-      limit,
-      total,
-      totalPages,
-      hasNext,
-      hasPrev,
-    };
+      return {
+        data: orders.map((order) => this.mapOrderToOrderSummaryDto(order)),
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext,
+        hasPrev,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error fetching pending orders for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to fetch pending orders');
+    }
   }
 
   async getCompletedOrders(
     vendor: Vendor,
     paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
+    try {
+      const page = paginationQuery.page || 1;
+      const limit = paginationQuery.limit || 20;
+      const skip = (page - 1) * limit;
 
-    // In real implementation, fetch completed orders from database
-    // For now, return mock completed orders
-    const mockOrders: OrderSummaryDto[] = [
-      {
-        id: 'order-2',
-        customerId: 'cust-2',
-        customerName: 'Jane Smith',
-        status: 'delivered',
-        totalAmount: 200.0,
-        createdAt: new Date(),
-        deliveryAddress: '456 Customer Avenue, Delhi, 110002',
-        contactPhone: '+91-9876543211',
-      },
-    ];
+      const [orders, total] = await Promise.all([
+        this.prisma.order.findMany({
+          where: {
+            vendorId: BigInt(vendor.id),
+            status: 'delivered',
+          },
+          include: {
+            customer: true,
+            address: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          skip,
+          take: limit,
+        }),
+        this.prisma.order.count({
+          where: {
+            vendorId: BigInt(vendor.id),
+            status: 'delivered',
+          },
+        }),
+      ]);
 
-    const total = mockOrders.length;
-    const page = paginationQuery.page || 1;
-    const limit = paginationQuery.limit || 20;
-    const totalPages = Math.ceil(total / limit);
-    const hasNext = page < totalPages;
-    const hasPrev = page > 1;
+      const totalPages = Math.ceil(total / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
 
-    return {
-      data: mockOrders,
-      page,
-      limit,
-      total,
-      totalPages,
-      hasNext,
-      hasPrev,
-    };
+      return {
+        data: orders.map((order) => this.mapOrderToOrderSummaryDto(order)),
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext,
+        hasPrev,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error fetching completed orders for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to fetch completed orders');
+    }
   }
 
   async getCancelledOrders(
     vendor: Vendor,
     paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
+    try {
+      const page = paginationQuery.page || 1;
+      const limit = paginationQuery.limit || 20;
+      const skip = (page - 1) * limit;
 
-    // In real implementation, fetch cancelled orders from database
-    // For now, return empty array (no cancelled orders)
-    const mockOrders: OrderSummaryDto[] = [];
+      const [orders, total] = await Promise.all([
+        this.prisma.order.findMany({
+          where: {
+            vendorId: BigInt(vendor.id),
+            status: 'cancelled',
+          },
+          include: {
+            customer: true,
+            address: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          skip,
+          take: limit,
+        }),
+        this.prisma.order.count({
+          where: {
+            vendorId: BigInt(vendor.id),
+            status: 'cancelled',
+          },
+        }),
+      ]);
 
-    const total = mockOrders.length;
-    const page = paginationQuery.page || 1;
-    const limit = paginationQuery.limit || 20;
-    const totalPages = Math.ceil(total / limit);
-    const hasNext = page < totalPages;
-    const hasPrev = page > 1;
+      const totalPages = Math.ceil(total / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
 
-    return {
-      data: mockOrders,
-      page,
-      limit,
-      total,
-      totalPages,
-      hasNext,
-      hasPrev,
-    };
+      return {
+        data: orders.map((order) => this.mapOrderToOrderSummaryDto(order)),
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext,
+        hasPrev,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error fetching cancelled orders for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to fetch cancelled orders');
+    }
   }
 
   async acceptOrder(
@@ -1241,22 +2550,56 @@ export class VendorService {
     vendor: Vendor,
     acceptOrderDto: AcceptOrderDto,
   ): Promise<OrderSummaryDto> {
+    try {
+      // First, find the order to ensure it belongs to this vendor and is in acceptable state
+      const existingOrder = await this.prisma.order.findFirst({
+        where: {
+          orderUuid: orderId,
+          vendorId: BigInt(vendor.id),
+          status: 'placed', // Only accept orders that are placed/pending
+        },
+        include: {
+          customer: true,
+          address: true,
+        },
+      });
 
-    // In real implementation, update order status in database
-    // For now, return mock accepted order
-    const acceptedOrder: OrderSummaryDto = {
-      id: orderId,
-      customerId: 'cust-1',
-      customerName: 'John Doe',
-      status: 'confirmed',
-      totalAmount: 150.0,
-      createdAt: new Date(),
-      deliveryAddress: '123 Customer Street, Delhi, 110001',
-      contactPhone: '+91-9876543210',
-    };
+      if (!existingOrder) {
+        throw new NotFoundException(
+          'Order not found, does not belong to this vendor, or cannot be accepted',
+        );
+      }
 
-    this.logger.log(`Accepted order ${orderId} for vendor ${vendor.id}`);
-    return acceptedOrder;
+      // Update the order status to confirmed
+      const updatedOrder = await this.prisma.order.update({
+        where: {
+          id_createdAt: {
+            id: existingOrder.id,
+            createdAt: existingOrder.createdAt,
+          },
+        },
+        data: {
+          status: 'confirmed',
+          updatedAt: new Date(),
+        },
+        include: {
+          customer: true,
+          address: true,
+        },
+      });
+
+      this.logger.log(`Accepted order ${orderId} for vendor ${vendor.id}`);
+      return this.mapOrderToOrderSummaryDto(updatedOrder);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Error accepting order ${orderId} for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to accept order');
+    }
   }
 
   async rejectOrder(
@@ -1264,14 +2607,166 @@ export class VendorService {
     vendor: Vendor,
     rejectOrderDto: RejectOrderDto,
   ): Promise<{ message: string }> {
+    try {
+      // First, find the order to ensure it belongs to this vendor and is in rejectable state
+      const existingOrder = await this.prisma.order.findFirst({
+        where: {
+          orderUuid: orderId,
+          vendorId: BigInt(vendor.id),
+          status: { in: ['placed', 'confirmed'] }, // Only reject orders that are placed or confirmed
+        },
+      });
 
-    // In real implementation, update order status in database
-    this.logger.log(
-      `Rejected order ${orderId} for vendor ${vendor.id} with reason: ${rejectOrderDto.reason}`,
-    );
+      if (!existingOrder) {
+        throw new NotFoundException(
+          'Order not found, does not belong to this vendor, or cannot be rejected',
+        );
+      }
+
+      // Update the order status to cancelled
+      await this.prisma.order.update({
+        where: {
+          id_createdAt: {
+            id: existingOrder.id,
+            createdAt: existingOrder.createdAt,
+          },
+        },
+        data: {
+          status: 'cancelled',
+          updatedAt: new Date(),
+        },
+      });
+
+      this.logger.log(
+        `Rejected order ${orderId} for vendor ${vendor.id} with reason: ${rejectOrderDto.reason}`,
+      );
+
+      return {
+        message: `Order rejected: ${rejectOrderDto.reason}`,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Error rejecting order ${orderId} for vendor ${vendor.id}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to reject order');
+    }
+  }
+
+  private mapOrderToOrderResponseDto(order: any): OrderResponseDto {
+    // For orders with multiple items, take the first item's details
+    // This is a simplification since OrderResponseDto seems designed for single-item orders
+    const firstItem = order.items?.[0];
+    const totalQuantity =
+      order.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) ||
+      0;
 
     return {
-      message: `Order rejected: ${rejectOrderDto.reason}`,
+      id: order.orderUuid,
+      userId: order.customer?.uuid || order.customerId.toString(),
+      vendorId: order.vendorId?.toString() || '',
+      productId: firstItem?.productId?.toString() || '',
+      quantity: totalQuantity,
+      totalAmount: Number(order.totalAmount),
+      status: order.status,
+      schedule: order.scheduledDelivery ? 'scheduled' : 'instant',
+      deliveryTime: order.scheduledDelivery,
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
+      deliveryAddress: {
+        street: order.address?.street || '',
+        city: order.address?.city || '',
+        state: order.address?.state || '',
+        pincode: order.address?.pincode || '',
+        landmark: order.address?.landmark,
+        latitude: Number(order.address?.latitude) || 0,
+        longitude: Number(order.address?.longitude) || 0,
+        contactPhone: order.address?.street ? '' : '', // Address doesn't have phone, customer might
+      },
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+    };
+  }
+
+  private mapOrderToOrderSummaryDto(order: any): OrderSummaryDto {
+    return {
+      id: order.orderUuid,
+      customerId: order.customer?.uuid || order.customerId.toString(),
+      customerName: order.customer?.name || 'Unknown Customer',
+      status: order.status,
+      totalAmount: Number(order.totalAmount),
+      createdAt: order.createdAt,
+      deliveryAddress:
+        `${order.address?.street || ''}, ${order.address?.city || ''}, ${order.address?.pincode || ''}`.trim(),
+      contactPhone: order.customer?.phone || '',
+    };
+  }
+
+  private mapPrismaVendorToInterface(vendor: any): Vendor {
+    return {
+      id: vendor.id.toString(),
+      userId: vendor.phone || vendor.email || '',
+      businessName: vendor.name,
+      businessAddress: vendor.addresses?.[0]?.line1 || '',
+      businessPhone: vendor.phone,
+      businessEmail: vendor.email,
+      gstNumber: vendor.gstin,
+      licenseNumber: '', // Not in schema
+      documents: {}, // Not in schema
+      approvalStatus:
+        vendor.kycStatus === 'verified' ? 'approved' : 'pending_approval',
+      rejectionReason: undefined,
+      bankAccounts: [], // Would need BankAccount model
+      deliveryZones: [], // We'll derive from products
+      isActive: vendor.isActive,
+      rating: Number(vendor.rating) || 0,
+      totalOrders: 0, // Would need to calculate from orders
+      createdAt: vendor.createdAt,
+      updatedAt: vendor.updatedAt,
+    };
+  }
+
+  private mapProductToProductResponseDto(
+    product: any,
+    vendor: Vendor,
+  ): ProductResponseDto {
+    return {
+      id: product.id.toString(),
+      vendorId: vendor.id,
+      name: product.name,
+      description: product.description,
+      category: product.category,
+      size: product.capacity, // Using capacity as size
+      price: Number(product.price),
+      depositAmount: Number(product.depositAmount),
+      hasDeposit: product.hasDeposit,
+      stockQuantity: product.stockQuantity,
+      isActive: product.isActive,
+      images: product.images,
+      specifications: product.specifications || {
+        capacity: parseFloat(product.capacity) || 0,
+        material: 'Plastic',
+        brand: 'Generic',
+      },
+      vendor: {
+        id: vendor.id,
+        businessName: vendor.businessName,
+        rating: vendor.rating,
+        totalOrders: vendor.totalOrders,
+        deliveryZones: vendor.deliveryZones.map((zone) => ({
+          id: zone.id,
+          name: zone.name,
+          deliveryFee: zone.deliveryFee,
+          minOrderAmount: zone.minOrderAmount,
+          maxDeliveryTime: zone.maxDeliveryTime,
+          isActive: zone.isActive,
+        })),
+      },
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
     };
   }
 }

@@ -5,10 +5,7 @@ import { ProductModule } from '../product/product.module';
 import { OrderModule } from '../order/order.module';
 
 @Module({
-  imports: [
-    ProductModule,
-    OrderModule,
-  ],
+  imports: [ProductModule, OrderModule],
   controllers: [SubscriptionController],
   providers: [SubscriptionService],
   exports: [SubscriptionService],

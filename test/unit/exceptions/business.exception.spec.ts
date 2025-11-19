@@ -100,7 +100,10 @@ describe('BusinessException', () => {
 
   describe('Validation Exceptions', () => {
     it('should create ValidationException', () => {
-      const exception = new ValidationException('Invalid email format', 'email');
+      const exception = new ValidationException(
+        'Invalid email format',
+        'email',
+      );
 
       expect(exception.message).toBe('Invalid email format');
       expect(exception.getStatus()).toBe(HttpStatus.BAD_REQUEST);
@@ -161,7 +164,9 @@ describe('BusinessException', () => {
     it('should create InvalidTokenException', () => {
       const exception = new InvalidTokenException();
 
-      expect(exception.message).toBe('Invalid or malformed authentication token');
+      expect(exception.message).toBe(
+        'Invalid or malformed authentication token',
+      );
       expect(exception.getStatus()).toBe(HttpStatus.UNAUTHORIZED);
       expect(exception.errorCode).toBe('INVALID_TOKEN');
     });
@@ -181,10 +186,15 @@ describe('BusinessException', () => {
     it('should create InsufficientPermissionsException', () => {
       const exception = new InsufficientPermissionsException('admin', 'user');
 
-      expect(exception.message).toBe('Insufficient permissions. Required: admin, Current: user');
+      expect(exception.message).toBe(
+        'Insufficient permissions. Required: admin, Current: user',
+      );
       expect(exception.getStatus()).toBe(HttpStatus.FORBIDDEN);
       expect(exception.errorCode).toBe('INSUFFICIENT_PERMISSIONS');
-      expect(exception.context).toEqual({ requiredRole: 'admin', userRole: 'user' });
+      expect(exception.context).toEqual({
+        requiredRole: 'admin',
+        userRole: 'user',
+      });
     });
 
     it('should create ResourceAccessDeniedException', () => {
@@ -193,7 +203,10 @@ describe('BusinessException', () => {
       expect(exception.message).toBe('Access denied to resource: order');
       expect(exception.getStatus()).toBe(HttpStatus.FORBIDDEN);
       expect(exception.errorCode).toBe('RESOURCE_ACCESS_DENIED');
-      expect(exception.context).toEqual({ resource: 'order', userId: 'user123' });
+      expect(exception.context).toEqual({
+        resource: 'order',
+        userId: 'user123',
+      });
     });
   });
 
@@ -201,7 +214,9 @@ describe('BusinessException', () => {
     it('should create InsufficientFundsException', () => {
       const exception = new InsufficientFundsException(1000, 500);
 
-      expect(exception.message).toBe('Insufficient funds. Required: ₹1000, Available: ₹500');
+      expect(exception.message).toBe(
+        'Insufficient funds. Required: ₹1000, Available: ₹500',
+      );
       expect(exception.getStatus()).toBe(HttpStatus.PAYMENT_REQUIRED);
       expect(exception.errorCode).toBe('INSUFFICIENT_FUNDS');
       expect(exception.category).toBe(ErrorCategory.BUSINESS_LOGIC);
@@ -224,7 +239,10 @@ describe('BusinessException', () => {
       expect(exception.message).toBe('Cannot cancel order with status pending');
       expect(exception.getStatus()).toBe(HttpStatus.CONFLICT);
       expect(exception.errorCode).toBe('INVALID_ORDER_STATUS');
-      expect(exception.context).toEqual({ currentStatus: 'pending', attemptedAction: 'cancel' });
+      expect(exception.context).toEqual({
+        currentStatus: 'pending',
+        attemptedAction: 'cancel',
+      });
     });
 
     it('should create ProductOutOfStockException', () => {
@@ -233,20 +251,27 @@ describe('BusinessException', () => {
       expect(exception.message).toBe('Product iPhone 15 is out of stock');
       expect(exception.getStatus()).toBe(HttpStatus.CONFLICT);
       expect(exception.errorCode).toBe('PRODUCT_OUT_OF_STOCK');
-      expect(exception.context).toEqual({ productName: 'iPhone 15', productId: 'prod123' });
+      expect(exception.context).toEqual({
+        productName: 'iPhone 15',
+        productId: 'prod123',
+      });
     });
 
     it('should create DeliveryZoneNotSupportedException', () => {
       const exception = new DeliveryZoneNotSupportedException('Remote Island');
 
-      expect(exception.message).toBe('Delivery is not available in Remote Island. Please check our service areas.');
+      expect(exception.message).toBe(
+        'Delivery is not available in Remote Island. Please check our service areas.',
+      );
       expect(exception.getStatus()).toBe(HttpStatus.NOT_FOUND);
       expect(exception.errorCode).toBe('DELIVERY_ZONE_NOT_SUPPORTED');
       expect(exception.context).toEqual({ location: 'Remote Island' });
     });
 
     it('should create InvalidSubscriptionException', () => {
-      const exception = new InvalidSubscriptionException('Subscription expired');
+      const exception = new InvalidSubscriptionException(
+        'Subscription expired',
+      );
 
       expect(exception.message).toBe('Subscription expired');
       expect(exception.getStatus()).toBe(HttpStatus.BAD_REQUEST);
@@ -254,7 +279,10 @@ describe('BusinessException', () => {
     });
 
     it('should create WalletTransactionException', () => {
-      const exception = new WalletTransactionException('Transaction failed', 'txn123');
+      const exception = new WalletTransactionException(
+        'Transaction failed',
+        'txn123',
+      );
 
       expect(exception.message).toBe('Transaction failed');
       expect(exception.getStatus()).toBe(HttpStatus.PAYMENT_REQUIRED);
@@ -265,7 +293,11 @@ describe('BusinessException', () => {
 
   describe('Database Exceptions', () => {
     it('should create DatabaseException', () => {
-      const exception = new DatabaseException('Connection timeout', 'insert', true);
+      const exception = new DatabaseException(
+        'Connection timeout',
+        'insert',
+        true,
+      );
 
       expect(exception.message).toBe('Connection timeout');
       expect(exception.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -282,7 +314,10 @@ describe('BusinessException', () => {
       expect(exception.message).toBe('User not found');
       expect(exception.getStatus()).toBe(HttpStatus.NOT_FOUND);
       expect(exception.errorCode).toBe('RECORD_NOT_FOUND');
-      expect(exception.context).toEqual({ resource: 'User', identifier: 'user123' });
+      expect(exception.context).toEqual({
+        resource: 'User',
+        identifier: 'user123',
+      });
     });
 
     it('should create DuplicateRecordException', () => {
@@ -307,9 +342,15 @@ describe('BusinessException', () => {
 
   describe('External Service Exceptions', () => {
     it('should create ExternalServiceException', () => {
-      const exception = new ExternalServiceException('payment-gateway', 'Gateway timeout', true);
+      const exception = new ExternalServiceException(
+        'payment-gateway',
+        'Gateway timeout',
+        true,
+      );
 
-      expect(exception.message).toBe('External service payment-gateway error: Gateway timeout');
+      expect(exception.message).toBe(
+        'External service payment-gateway error: Gateway timeout',
+      );
       expect(exception.getStatus()).toBe(HttpStatus.BAD_GATEWAY);
       expect(exception.errorCode).toBe('EXTERNAL_SERVICE_ERROR');
       expect(exception.category).toBe(ErrorCategory.EXTERNAL_SERVICE);
@@ -319,7 +360,10 @@ describe('BusinessException', () => {
     });
 
     it('should create PaymentServiceException', () => {
-      const exception = new PaymentServiceException('Payment declined', 'txn123');
+      const exception = new PaymentServiceException(
+        'Payment declined',
+        'txn123',
+      );
 
       expect(exception.message).toBe('Payment service error: Payment declined');
       expect(exception.getStatus()).toBe(HttpStatus.BAD_GATEWAY);
@@ -330,7 +374,10 @@ describe('BusinessException', () => {
     });
 
     it('should create NotificationServiceException', () => {
-      const exception = new NotificationServiceException('SMS failed', 'user123');
+      const exception = new NotificationServiceException(
+        'SMS failed',
+        'user123',
+      );
 
       expect(exception.message).toBe('Notification service error: SMS failed');
       expect(exception.getStatus()).toBe(HttpStatus.BAD_GATEWAY);
@@ -342,7 +389,10 @@ describe('BusinessException', () => {
 
   describe('System Exceptions', () => {
     it('should create ConfigurationException', () => {
-      const exception = new ConfigurationException('Missing API key', 'STRIPE_API_KEY');
+      const exception = new ConfigurationException(
+        'Missing API key',
+        'STRIPE_API_KEY',
+      );
 
       expect(exception.message).toBe('Configuration error: Missing API key');
       expect(exception.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -364,7 +414,10 @@ describe('BusinessException', () => {
     });
 
     it('should create CircuitBreakerException', () => {
-      const exception = new CircuitBreakerException('payment-service', 'Circuit open');
+      const exception = new CircuitBreakerException(
+        'payment-service',
+        'Circuit open',
+      );
 
       expect(exception.message).toBe('payment-service: Circuit open');
       expect(exception.getStatus()).toBe(HttpStatus.SERVICE_UNAVAILABLE);

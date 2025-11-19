@@ -1,10 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { OrderService } from '../../../src/order/services/order.service';
 import { ProductService } from '../../../src/product/services/product.service';
 import { LedgerService } from '../../../src/ledger/services/ledger.service';
 import { CommissionService } from '../../../src/commission/services/commission.service';
-import { OrderStatus, PaymentMethod, PaymentStatus } from '../../../src/order/interfaces/order.interface';
+import {
+  OrderStatus,
+  PaymentMethod,
+  PaymentStatus,
+} from '../../../src/order/interfaces/order.interface';
 import { ConflictException as CustomConflictException } from '../../../src/common/exceptions/business.exception';
 
 // Mock services
@@ -66,8 +74,9 @@ describe('OrderService - Conflict Scenarios', () => {
       };
       productService.findById.mockResolvedValue(product as any);
 
-      await expect(service.create(userId, createOrderDto))
-        .rejects.toThrow(CustomConflictException);
+      await expect(service.create(userId, createOrderDto)).rejects.toThrow(
+        CustomConflictException,
+      );
 
       expect(productService.findById).toHaveBeenCalledWith('product456');
       expect(productService.updateStock).not.toHaveBeenCalled();
@@ -106,7 +115,10 @@ describe('OrderService - Conflict Scenarios', () => {
       productService.updateStock.mockResolvedValue(undefined);
 
       // Change payment method to COD to avoid wallet balance check
-      const codCreateOrderDto = { ...createOrderDto, payment_method: PaymentMethod.COD };
+      const codCreateOrderDto = {
+        ...createOrderDto,
+        payment_method: PaymentMethod.COD,
+      };
 
       const result = await service.create(userId, createOrderDto);
 
@@ -152,7 +164,10 @@ describe('OrderService - Conflict Scenarios', () => {
       productService.updateStock.mockResolvedValue(undefined);
 
       // Change payment method to COD to avoid wallet balance check
-      const codCreateOrderDto = { ...createOrderDto, payment_method: PaymentMethod.COD };
+      const codCreateOrderDto = {
+        ...createOrderDto,
+        payment_method: PaymentMethod.COD,
+      };
 
       const result = await service.create(userId, codCreateOrderDto);
 
@@ -197,8 +212,9 @@ describe('OrderService - Conflict Scenarios', () => {
       // Manually add order to service (since it's in-memory)
       (service as any).orders.set(orderId, deliveredOrder);
 
-      await expect(service.cancelOrder(orderId, userId))
-        .rejects.toThrow(BadRequestException);
+      await expect(service.cancelOrder(orderId, userId)).rejects.toThrow(
+        BadRequestException,
+      );
 
       expect(productService.updateStock).not.toHaveBeenCalled();
     });
@@ -237,8 +253,9 @@ describe('OrderService - Conflict Scenarios', () => {
       // Manually add order to service
       (service as any).orders.set(orderId, cancelledOrder);
 
-      await expect(service.cancelOrder(orderId, userId))
-        .rejects.toThrow(BadRequestException);
+      await expect(service.cancelOrder(orderId, userId)).rejects.toThrow(
+        BadRequestException,
+      );
 
       expect(productService.updateStock).not.toHaveBeenCalled();
     });
@@ -327,7 +344,7 @@ describe('OrderService - Conflict Scenarios', () => {
       expect(productService.updateStock).toHaveBeenCalledWith('product123', 2);
     });
 
-    it('should throw BadRequestException when user tries to cancel another user\'s order', async () => {
+    it("should throw BadRequestException when user tries to cancel another user's order", async () => {
       const orderId = 'order123';
       const orderOwnerId = 'user456';
       const wrongUserId = 'user789';
@@ -362,8 +379,9 @@ describe('OrderService - Conflict Scenarios', () => {
       // Manually add order to service
       (service as any).orders.set(orderId, order);
 
-      await expect(service.cancelOrder(orderId, wrongUserId))
-        .rejects.toThrow(BadRequestException);
+      await expect(service.cancelOrder(orderId, wrongUserId)).rejects.toThrow(
+        BadRequestException,
+      );
 
       expect(productService.updateStock).not.toHaveBeenCalled();
     });
@@ -404,10 +422,15 @@ describe('OrderService - Conflict Scenarios', () => {
       (service as any).orders.set(orderId, order);
 
       // Mock ledger service to throw error
-      ledgerService.createLedgerEntry.mockRejectedValue(new Error('Ledger service unavailable'));
+      ledgerService.createLedgerEntry.mockRejectedValue(
+        new Error('Ledger service unavailable'),
+      );
 
       // Should not throw error even if ledger creation fails
-      const result = await service.updateOrderStatus(orderId, OrderStatus.DELIVERED);
+      const result = await service.updateOrderStatus(
+        orderId,
+        OrderStatus.DELIVERED,
+      );
 
       expect(result.status).toBe(OrderStatus.DELIVERED);
       expect(result.id).toBe(orderId);
@@ -457,13 +480,20 @@ describe('OrderService - Conflict Scenarios', () => {
 
       // Mock user profile with monthly payment mode by overriding the method
       const originalUpdateOrderStatus = service.updateOrderStatus.bind(service);
-      service.updateOrderStatus = async (orderId: string, status: any, notes?: string) => {
+      service.updateOrderStatus = async (
+        orderId: string,
+        status: any,
+        notes?: string,
+      ) => {
         // Mock user profile check to return monthly payment mode
         const result = await originalUpdateOrderStatus(orderId, status, notes);
         return result;
       };
 
-      const result = await service.updateOrderStatus(orderId, OrderStatus.DELIVERED);
+      const result = await service.updateOrderStatus(
+        orderId,
+        OrderStatus.DELIVERED,
+      );
 
       expect(result.status).toBe(OrderStatus.DELIVERED);
       expect(result.id).toBe(orderId);
@@ -476,8 +506,9 @@ describe('OrderService - Conflict Scenarios', () => {
       const orderId = 'non-existent-order';
       const userId = 'user123';
 
-      await expect(service.cancelOrder(orderId, userId))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.cancelOrder(orderId, userId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException for invalid payment method', async () => {
@@ -511,8 +542,9 @@ describe('OrderService - Conflict Scenarios', () => {
       };
       productService.findById.mockResolvedValue(product as any);
 
-      await expect(service.create(userId, createOrderDto))
-        .rejects.toThrow(BadRequestException);
+      await expect(service.create(userId, createOrderDto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw ConflictException with proper context for stock issues', async () => {

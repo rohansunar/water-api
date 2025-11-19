@@ -41,7 +41,6 @@ export class VendorController {
 
   constructor(private readonly vendorService: VendorService) {}
 
-
   // Analytics & Reports Endpoints
   @Get('analytics/sales')
   async getSalesAnalytics(
@@ -130,5 +129,4 @@ export class VendorController {
     this.logger.log(`Getting low stock alerts for vendor user: ${user.id}`);
     return this.vendorService.getLowStockAlerts(user.id);
   }
-
 }

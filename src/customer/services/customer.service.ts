@@ -67,10 +67,7 @@ export class CustomerService {
     }
   }
 
-  async update(
-    id: string,
-    updateData: any,
-  ): Promise<any> {
+  async update(id: string, updateData: any): Promise<any> {
     try {
       const updatedCustomer = await this.prisma.customer.update({
         where: { uuid: id },
@@ -178,7 +175,7 @@ export class CustomerService {
     operation: 'add' | 'subtract' | 'set' = 'set',
   ): Promise<any> {
     try {
-      let updateData: any = { updatedAt: new Date() };
+      const updateData: any = { updatedAt: new Date() };
 
       switch (operation) {
         case 'add':
@@ -237,10 +234,7 @@ export class CustomerService {
     }
   }
 
-  async searchCustomers(
-    query: string,
-    limit: number = 10,
-  ): Promise<any[]> {
+  async searchCustomers(query: string, limit: number = 10): Promise<any[]> {
     try {
       return await this.prisma.customer.findMany({
         where: {
@@ -414,10 +408,7 @@ export class CustomerService {
 
       const addresses = await this.prisma.customerAddress.findMany({
         where: { customerId: customer.id },
-        orderBy: [
-          { isDefault: 'desc' },
-          { createdAt: 'desc' },
-        ],
+        orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
       });
 
       return addresses.map((address) => ({

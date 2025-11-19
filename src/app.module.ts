@@ -99,11 +99,11 @@ import { PrismaModule } from './common/database/prisma.module';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(
-        // RequestIdMiddleware,
-        // SecurityMiddleware,
-        // GracefulDegradationMiddleware,
-      )
+      .apply
+      // RequestIdMiddleware,
+      // SecurityMiddleware,
+      // GracefulDegradationMiddleware,
+      ()
       .forRoutes('*');
   }
 }

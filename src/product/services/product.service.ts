@@ -116,10 +116,7 @@ export class ProductService {
     }
   }
 
-  async update(
-    id: string,
-    updateData: Partial<Product>,
-  ): Promise<Product> {
+  async update(id: string, updateData: Partial<Product>): Promise<Product> {
     try {
       const product = await this.prisma.product.update({
         where: { id: BigInt(id) },
@@ -134,10 +131,7 @@ export class ProductService {
     }
   }
 
-  async updateStock(
-    id: string,
-    quantityChange: number,
-  ): Promise<Product> {
+  async updateStock(id: string, quantityChange: number): Promise<Product> {
     try {
       const product = await this.findById(id);
       if (!product) {
@@ -319,9 +313,7 @@ export class ProductService {
     }
   }
 
-  private mapToProductResponseDto(
-    product: Product,
-  ): ProductResponseDto {
+  private mapToProductResponseDto(product: Product): ProductResponseDto {
     return {
       id: product.id.toString(),
       vendorId: product.vendorId.toString(),

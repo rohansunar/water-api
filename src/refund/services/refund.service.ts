@@ -84,11 +84,16 @@ export class RefundService {
         },
       });
 
-      this.logger.log(`Created refund ${refund.id} for order ${createRefundDto.orderId}`);
+      this.logger.log(
+        `Created refund ${refund.id} for order ${createRefundDto.orderId}`,
+      );
 
       return this.mapToResponseDto(refund);
     } catch (error) {
-      this.logger.error(`Failed to create refund for order ${createRefundDto.orderId}:`, error);
+      this.logger.error(
+        `Failed to create refund for order ${createRefundDto.orderId}:`,
+        error,
+      );
       throw error;
     }
   }

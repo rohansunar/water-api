@@ -1,16 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import {
-  FastifyAdapter,
-  NestFastifyApplication,
-} from '@nestjs/platform-fastify';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/common/database/prisma.service';
 import { VendorAuthService } from '../../src/vendor/services/vendor-auth.service';
 
 describe('Vendor Authentication (Integration)', () => {
-  let app: NestFastifyApplication;
+  let app: INestApplication;
   let prismaService: PrismaService;
   let vendorAuthService: VendorAuthService;
   let testVendor: any;
@@ -20,8 +16,16 @@ describe('Vendor Authentication (Integration)', () => {
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication<NestFastifyApplication>(
-      new FastifyAdapter(),
+    app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        transformOptions: {
+          enableImplicitConversion: true,
+        },
+      }),
     );
     await app.init();
 
@@ -32,7 +36,7 @@ describe('Vendor Authentication (Integration)', () => {
   beforeEach(async () => {
     // Clean up any existing test data
     await prismaService.vendor.deleteMany({
-      where: { phone: { startsWith: '+91-test' } },
+      where: { phone: { startsWith: '+91' } },
     });
 
     // Create a test vendor for authentication
@@ -40,7 +44,7 @@ describe('Vendor Authentication (Integration)', () => {
       await vendorAuthService.hashPassword('testPassword123');
     testVendor = await prismaService.vendor.create({
       data: {
-        phone: '+91-test-9876543210',
+        phone: '+919876543210',
         email: 'test-vendor@example.com',
         passwordHash: hashedPassword,
         name: 'Test Vendor',
@@ -52,7 +56,7 @@ describe('Vendor Authentication (Integration)', () => {
   afterEach(async () => {
     // Clean up test data
     await prismaService.vendor.deleteMany({
-      where: { phone: { startsWith: '+91-test' } },
+      where: { phone: { startsWith: '+91' } },
     });
   });
 
@@ -63,7 +67,7 @@ describe('Vendor Authentication (Integration)', () => {
   describe('POST /vendors/auth/login', () => {
     it('should successfully authenticate vendor with valid phone and password', async () => {
       const loginDto = {
-        phone: '+91-test-9876543210',
+        phone: '+919876543210',
         password: 'testPassword123',
       };
 
@@ -84,14 +88,14 @@ describe('Vendor Authentication (Integration)', () => {
       );
       expect(response.body.vendor).toHaveProperty(
         'phone',
-        '+91-test-9876543210',
+        '+919876543210',
       );
       expect(response.body.expiresIn).toBe(36000);
     });
 
     it('should fail authentication with invalid phone number', async () => {
       const loginDto = {
-        phone: '+91-nonexistent-1234567890',
+        phone: '+911234567890',
         password: 'testPassword123',
       };
 
@@ -110,7 +114,7 @@ describe('Vendor Authentication (Integration)', () => {
 
     it('should fail authentication with wrong password', async () => {
       const loginDto = {
-        phone: '+91-test-9876543210',
+        phone: '+919876543210',
         password: 'wrongPassword',
       };
 
@@ -135,7 +139,7 @@ describe('Vendor Authentication (Integration)', () => {
       });
 
       const loginDto = {
-        phone: '+91-test-9876543210',
+        phone: '+919876543210',
         password: 'testPassword123',
       };
 
@@ -165,7 +169,7 @@ describe('Vendor Authentication (Integration)', () => {
 
     it('should fail with missing password field', async () => {
       const loginDto = {
-        phone: '+91-test-9876543210',
+        phone: '+919876543210',
       };
 
       const response = await request(app.getHttpServer())
@@ -179,7 +183,7 @@ describe('Vendor Authentication (Integration)', () => {
 
     it('should fail with password too short', async () => {
       const loginDto = {
-        phone: '+91-test-9876543210',
+        phone: '+919876543210',
         password: '123',
       };
 
@@ -194,7 +198,7 @@ describe('Vendor Authentication (Integration)', () => {
 
     it('should update lastActiveAt timestamp on successful login', async () => {
       const loginDto = {
-        phone: '+91-test-9876543210',
+        phone: '+919876543210',
         password: 'testPassword123',
       };
 

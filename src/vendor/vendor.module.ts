@@ -10,11 +10,7 @@ import { VendorOrderModule } from './vendor-order.module';
 import { VendorPaymentModule } from './vendor-payment.module';
 
 @Module({
-  imports: [
-    VendorAuthModule,
-    VendorOrderModule,
-    VendorPaymentModule,
-  ],
+  imports: [VendorAuthModule, VendorOrderModule, VendorPaymentModule],
   controllers: [
     VendorController,
     VendorStoreController,

@@ -241,7 +241,7 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
           true,
         );
       }
-      return customer as any;
+      return customer;
     } catch (error) {
       this.customLogger.logDatabaseOperation(
         'findOrCreate',

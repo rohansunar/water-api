@@ -12,9 +12,7 @@ import { LoggerModule } from '../common/logger/logger.module';
  * Replaces the old MonthlyLedgerModule with comprehensive ledger functionality
  */
 @Module({
-  imports: [
-    LoggerModule,
-  ],
+  imports: [LoggerModule],
   controllers: [LedgerController, AdminLedgerController],
   providers: [LedgerService],
   exports: [LedgerService],

@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { VendorService } from '../../vendor/services/vendor.service';
 import { LedgerService } from '../../ledger/services/ledger.service';
 import { LedgerSummaryResponseDto } from '../../ledger/dto/ledger.dto';
@@ -62,7 +67,6 @@ export interface AdminDashboardStats {
   pendingProductModerations: number;
   flaggedProducts: number;
 }
-
 
 export interface VendorApprovalDto {
   id: string;
@@ -143,7 +147,6 @@ export class AdminService {
     };
   }
 
-
   async getAllCustomers(
     query: AdminPaginationQueryDto,
   ): Promise<AdminPaginatedResponseDto<AdminUserListResponseDto>> {
@@ -155,7 +158,7 @@ export class AdminService {
 
       // Build where clause for filtering
       const where: any = {
-        role: "CUSTOMER",
+        role: 'CUSTOMER',
         isDeleted: false,
       };
 
@@ -174,7 +177,7 @@ export class AdminService {
       // Get total count
       const total = await this.prisma.customer.count({
         where: {
-          role: "CUSTOMER",
+          role: 'CUSTOMER',
           isDeleted: false,
         },
       });
@@ -201,20 +204,26 @@ export class AdminService {
       });
 
       // Transform to response format
-      const customerResponses: AdminUserListResponseDto[] = customers.map(customer => ({
-        id: customer.uuid,
-        phone: customer.phone,
-        name: customer.name || undefined,
-        role: customer.role === 'CUSTOMER' ? UserRole.CUSTOMER :
-              customer.role === 'VENDOR' ? UserRole.VENDOR :
-              customer.role === 'DELIVERY_RIDER' ? UserRole.DELIVERY_RIDER :
-              UserRole.ADMIN,
-        isActive: customer.isActive,
-        monthlyPaymentMode: customer.monthlyPaymentMode,
-        walletBalance: Number(customer.walletBalance),
-        createdAt: customer.createdAt,
-        updatedAt: customer.updatedAt,
-      }));
+      const customerResponses: AdminUserListResponseDto[] = customers.map(
+        (customer) => ({
+          id: customer.uuid,
+          phone: customer.phone,
+          name: customer.name || undefined,
+          role:
+            customer.role === 'CUSTOMER'
+              ? UserRole.CUSTOMER
+              : customer.role === 'VENDOR'
+                ? UserRole.VENDOR
+                : customer.role === 'DELIVERY_RIDER'
+                  ? UserRole.DELIVERY_RIDER
+                  : UserRole.ADMIN,
+          isActive: customer.isActive,
+          monthlyPaymentMode: customer.monthlyPaymentMode,
+          walletBalance: Number(customer.walletBalance),
+          createdAt: customer.createdAt,
+          updatedAt: customer.updatedAt,
+        }),
+      );
 
       const response = PaginationUtil.createPaginatedResponse(
         customerResponses,
@@ -280,17 +289,19 @@ export class AdminService {
       });
 
       // Transform to response format
-      const vendorResponses: AdminUserListResponseDto[] = vendors.map(vendor => ({
-        id: vendor.id.toString(),
-        phone: vendor.phone || undefined,
-        name: vendor.name,
-        role: UserRole.VENDOR,
-        isActive: vendor.isActive,
-        monthlyPaymentMode: false, // Vendors don't have monthly payment mode
-        walletBalance: 0, // Vendors don't have wallet balance in this context
-        createdAt: vendor.createdAt,
-        updatedAt: vendor.updatedAt,
-      }));
+      const vendorResponses: AdminUserListResponseDto[] = vendors.map(
+        (vendor) => ({
+          id: vendor.id.toString(),
+          phone: vendor.phone || undefined,
+          name: vendor.name,
+          role: UserRole.VENDOR,
+          isActive: vendor.isActive,
+          monthlyPaymentMode: false, // Vendors don't have monthly payment mode
+          walletBalance: 0, // Vendors don't have wallet balance in this context
+          createdAt: vendor.createdAt,
+          updatedAt: vendor.updatedAt,
+        }),
+      );
 
       const response = PaginationUtil.createPaginatedResponse(
         vendorResponses,
@@ -359,17 +370,19 @@ export class AdminService {
       });
 
       // Transform to response format
-      const riderResponses: AdminUserListResponseDto[] = riders.map(rider => ({
-        id: rider.uuid,
-        phone: rider.phone || undefined,
-        name: rider.name,
-        role: UserRole.DELIVERY_RIDER,
-        isActive: rider.isActive,
-        monthlyPaymentMode: false, // Riders don't have monthly payment mode
-        walletBalance: 0, // Riders don't have wallet balance in this context
-        createdAt: rider.createdAt,
-        updatedAt: rider.updatedAt,
-      }));
+      const riderResponses: AdminUserListResponseDto[] = riders.map(
+        (rider) => ({
+          id: rider.uuid,
+          phone: rider.phone || undefined,
+          name: rider.name,
+          role: UserRole.DELIVERY_RIDER,
+          isActive: rider.isActive,
+          monthlyPaymentMode: false, // Riders don't have monthly payment mode
+          walletBalance: 0, // Riders don't have wallet balance in this context
+          createdAt: rider.createdAt,
+          updatedAt: rider.updatedAt,
+        }),
+      );
 
       const response = PaginationUtil.createPaginatedResponse(
         riderResponses,
@@ -387,11 +400,6 @@ export class AdminService {
       throw new BadRequestException('Failed to retrieve riders');
     }
   }
-
-
-
-
-
 
   async getPendingVendorApprovals(): Promise<VendorApprovalDto[]> {
     try {
@@ -1348,7 +1356,7 @@ export class AdminService {
         phone: admin.phone || undefined,
         name: admin.name,
         roleLevel: admin.roleLevel,
-        permissions: admin.permissions as Record<string, any> || {},
+        permissions: (admin.permissions as Record<string, any>) || {},
         isActive: admin.isActive,
         createdAt: admin.createdAt,
         updatedAt: admin.updatedAt,
@@ -1360,7 +1368,10 @@ export class AdminService {
     }
   }
 
-  async createAdmin(createDto: CreateAdminDto, createdBy: string): Promise<AdminResponseDto> {
+  async createAdmin(
+    createDto: CreateAdminDto,
+    createdBy: string,
+  ): Promise<AdminResponseDto> {
     try {
       // Check for existing email
       const existingEmail = await this.prisma.admin.findUnique({
@@ -1380,7 +1391,9 @@ export class AdminService {
         }
       }
 
-      const hashedPassword = await this.adminAuthService.hashPassword(createDto.password);
+      const hashedPassword = await this.adminAuthService.hashPassword(
+        createDto.password,
+      );
 
       const admin = await this.prisma.admin.create({
         data: {
@@ -1403,7 +1416,7 @@ export class AdminService {
         phone: admin.phone || undefined,
         name: admin.name,
         roleLevel: admin.roleLevel,
-        permissions: admin.permissions as Record<string, any> || {},
+        permissions: (admin.permissions as Record<string, any>) || {},
         isActive: admin.isActive,
         createdAt: admin.createdAt,
         updatedAt: admin.updatedAt,
@@ -1415,7 +1428,11 @@ export class AdminService {
     }
   }
 
-  async updateAdmin(id: string, updateDto: UpdateAdminDto, updatedBy: string): Promise<AdminResponseDto> {
+  async updateAdmin(
+    id: string,
+    updateDto: UpdateAdminDto,
+    updatedBy: string,
+  ): Promise<AdminResponseDto> {
     try {
       const existingAdmin = await this.prisma.admin.findUnique({
         where: { id: BigInt(id), isDeleted: false },
@@ -1466,7 +1483,7 @@ export class AdminService {
         phone: admin.phone || undefined,
         name: admin.name,
         roleLevel: admin.roleLevel,
-        permissions: admin.permissions as Record<string, any> || {},
+        permissions: (admin.permissions as Record<string, any>) || {},
         isActive: admin.isActive,
         createdAt: admin.createdAt,
         updatedAt: admin.updatedAt,
@@ -1478,7 +1495,10 @@ export class AdminService {
     }
   }
 
-  async deleteAdmin(id: string, deletedBy: string): Promise<{ message: string }> {
+  async deleteAdmin(
+    id: string,
+    deletedBy: string,
+  ): Promise<{ message: string }> {
     try {
       const existingAdmin = await this.prisma.admin.findUnique({
         where: { id: BigInt(id), isDeleted: false },
@@ -1533,10 +1553,14 @@ export class AdminService {
         id: customer.uuid,
         phone: customer.phone,
         name: customer.name || undefined,
-        role: customer.role === 'CUSTOMER' ? UserRole.CUSTOMER :
-              customer.role === 'VENDOR' ? UserRole.VENDOR :
-              customer.role === 'DELIVERY_RIDER' ? UserRole.DELIVERY_RIDER :
-              UserRole.ADMIN,
+        role:
+          customer.role === 'CUSTOMER'
+            ? UserRole.CUSTOMER
+            : customer.role === 'VENDOR'
+              ? UserRole.VENDOR
+              : customer.role === 'DELIVERY_RIDER'
+                ? UserRole.DELIVERY_RIDER
+                : UserRole.ADMIN,
         isActive: customer.isActive,
         monthlyPaymentMode: customer.monthlyPaymentMode,
         walletBalance: Number(customer.walletBalance),
@@ -1579,7 +1603,8 @@ export class AdminService {
           name: createDto.name,
           role: 'CUSTOMER',
           walletBalance: createDto.walletBalance || 0,
-          isActive: createDto.isActive !== undefined ? createDto.isActive : true,
+          isActive:
+            createDto.isActive !== undefined ? createDto.isActive : true,
           monthlyPaymentMode: createDto.monthlyPaymentMode || false,
         },
         select: {
@@ -1597,7 +1622,9 @@ export class AdminService {
         },
       });
 
-      this.logger.log(`Created customer ${customer.uuid} by admin ${createdBy}`);
+      this.logger.log(
+        `Created customer ${customer.uuid} by admin ${createdBy}`,
+      );
 
       return {
         id: customer.uuid,
@@ -1685,7 +1712,10 @@ export class AdminService {
     }
   }
 
-  async deleteCustomer(id: string, deletedBy: string): Promise<{ message: string }> {
+  async deleteCustomer(
+    id: string,
+    deletedBy: string,
+  ): Promise<{ message: string }> {
     try {
       const existingCustomer = await this.prisma.customer.findUnique({
         where: {
@@ -1733,11 +1763,13 @@ export class AdminService {
         name: vendor.name,
         kycStatus: vendor.kycStatus,
         gstin: vendor.gstin || undefined,
-        bankAccountId: vendor.bankAccountId ? Number(vendor.bankAccountId) : undefined,
+        bankAccountId: vendor.bankAccountId
+          ? Number(vendor.bankAccountId)
+          : undefined,
         rating: vendor.rating ? Number(vendor.rating) : undefined,
         isVerified: vendor.isVerified,
         isActive: vendor.isActive,
-        metadata: vendor.metadata as Record<string, any> || undefined,
+        metadata: (vendor.metadata as Record<string, any>) || undefined,
         createdAt: vendor.createdAt,
         updatedAt: vendor.updatedAt,
         lastActiveAt: vendor.lastActiveAt || undefined,
@@ -1779,9 +1811,12 @@ export class AdminService {
           email: createDto.email,
           name: createDto.name,
           gstin: createDto.gstin,
-          bankAccountId: createDto.bankAccountId ? BigInt(createDto.bankAccountId) : undefined,
+          bankAccountId: createDto.bankAccountId
+            ? BigInt(createDto.bankAccountId)
+            : undefined,
           metadata: createDto.metadata,
-          isActive: createDto.isActive !== undefined ? createDto.isActive : true,
+          isActive:
+            createDto.isActive !== undefined ? createDto.isActive : true,
         },
       });
 
@@ -1794,11 +1829,13 @@ export class AdminService {
         name: vendor.name,
         kycStatus: vendor.kycStatus,
         gstin: vendor.gstin || undefined,
-        bankAccountId: vendor.bankAccountId ? Number(vendor.bankAccountId) : undefined,
+        bankAccountId: vendor.bankAccountId
+          ? Number(vendor.bankAccountId)
+          : undefined,
         rating: vendor.rating ? Number(vendor.rating) : undefined,
         isVerified: vendor.isVerified,
         isActive: vendor.isActive,
-        metadata: vendor.metadata as Record<string, any> || undefined,
+        metadata: (vendor.metadata as Record<string, any>) || undefined,
         createdAt: vendor.createdAt,
         updatedAt: vendor.updatedAt,
         lastActiveAt: vendor.lastActiveAt || undefined,
@@ -1853,7 +1890,9 @@ export class AdminService {
           email: updateDto.email,
           name: updateDto.name,
           gstin: updateDto.gstin,
-          bankAccountId: updateDto.bankAccountId ? BigInt(updateDto.bankAccountId) : undefined,
+          bankAccountId: updateDto.bankAccountId
+            ? BigInt(updateDto.bankAccountId)
+            : undefined,
           kycStatus: updateDto.kycStatus,
           isVerified: updateDto.isVerified,
           isActive: updateDto.isActive,
@@ -1870,11 +1909,13 @@ export class AdminService {
         name: vendor.name,
         kycStatus: vendor.kycStatus,
         gstin: vendor.gstin || undefined,
-        bankAccountId: vendor.bankAccountId ? Number(vendor.bankAccountId) : undefined,
+        bankAccountId: vendor.bankAccountId
+          ? Number(vendor.bankAccountId)
+          : undefined,
         rating: vendor.rating ? Number(vendor.rating) : undefined,
         isVerified: vendor.isVerified,
         isActive: vendor.isActive,
-        metadata: vendor.metadata as Record<string, any> || undefined,
+        metadata: (vendor.metadata as Record<string, any>) || undefined,
         createdAt: vendor.createdAt,
         updatedAt: vendor.updatedAt,
         lastActiveAt: vendor.lastActiveAt || undefined,
@@ -1885,7 +1926,10 @@ export class AdminService {
     }
   }
 
-  async deleteVendor(id: string, deletedBy: string): Promise<{ message: string }> {
+  async deleteVendor(
+    id: string,
+    deletedBy: string,
+  ): Promise<{ message: string }> {
     try {
       const existingVendor = await this.prisma.vendor.findUnique({
         where: {
@@ -1934,11 +1978,11 @@ export class AdminService {
         name: rider.name,
         licenseNo: rider.licenseNo || undefined,
         vehicleType: rider.vehicleType || undefined,
-        shift: rider.shift as Record<string, any> || undefined,
+        shift: (rider.shift as Record<string, any>) || undefined,
         status: rider.status,
         rating: rider.rating ? Number(rider.rating) : undefined,
         isActive: rider.isActive,
-        metadata: rider.metadata as Record<string, any> || undefined,
+        metadata: (rider.metadata as Record<string, any>) || undefined,
         createdAt: rider.createdAt,
         updatedAt: rider.updatedAt,
         lastActiveAt: rider.lastActiveAt || undefined,
@@ -1983,7 +2027,8 @@ export class AdminService {
           vehicleType: createDto.vehicleType,
           shift: createDto.shift,
           metadata: createDto.metadata,
-          isActive: createDto.isActive !== undefined ? createDto.isActive : true,
+          isActive:
+            createDto.isActive !== undefined ? createDto.isActive : true,
         },
       });
 
@@ -1997,11 +2042,11 @@ export class AdminService {
         name: rider.name,
         licenseNo: rider.licenseNo || undefined,
         vehicleType: rider.vehicleType || undefined,
-        shift: rider.shift as Record<string, any> || undefined,
+        shift: (rider.shift as Record<string, any>) || undefined,
         status: rider.status,
         rating: rider.rating ? Number(rider.rating) : undefined,
         isActive: rider.isActive,
-        metadata: rider.metadata as Record<string, any> || undefined,
+        metadata: (rider.metadata as Record<string, any>) || undefined,
         createdAt: rider.createdAt,
         updatedAt: rider.updatedAt,
         lastActiveAt: rider.lastActiveAt || undefined,
@@ -2074,11 +2119,11 @@ export class AdminService {
         name: rider.name,
         licenseNo: rider.licenseNo || undefined,
         vehicleType: rider.vehicleType || undefined,
-        shift: rider.shift as Record<string, any> || undefined,
+        shift: (rider.shift as Record<string, any>) || undefined,
         status: rider.status,
         rating: rider.rating ? Number(rider.rating) : undefined,
         isActive: rider.isActive,
-        metadata: rider.metadata as Record<string, any> || undefined,
+        metadata: (rider.metadata as Record<string, any>) || undefined,
         createdAt: rider.createdAt,
         updatedAt: rider.updatedAt,
         lastActiveAt: rider.lastActiveAt || undefined,
@@ -2089,7 +2134,10 @@ export class AdminService {
     }
   }
 
-  async deleteRider(id: string, deletedBy: string): Promise<{ message: string }> {
+  async deleteRider(
+    id: string,
+    deletedBy: string,
+  ): Promise<{ message: string }> {
     try {
       const existingRider = await this.prisma.rider.findUnique({
         where: {

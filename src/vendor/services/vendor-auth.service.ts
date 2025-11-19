@@ -31,7 +31,6 @@ export class VendorAuthService {
     private readonly otpService: OtpService,
   ) {}
 
-
   async validateVendor(vendorId: string): Promise<any> {
     const startTime = Date.now();
     try {
@@ -271,7 +270,10 @@ export class VendorAuthService {
       }
 
       // Verify password
-      const isPasswordValid = await bcrypt.compare(password, vendor.passwordHash);
+      const isPasswordValid = await bcrypt.compare(
+        password,
+        vendor.passwordHash,
+      );
       if (!isPasswordValid) {
         this.customLogger.logSecurityEvent(
           'vendor_login_failure',
@@ -323,10 +325,7 @@ export class VendorAuthService {
         undefined,
         undefined,
       );
-      this.logger.error(
-        `Vendor login failed for ${loginDto.phone}:`,
-        error,
-      );
+      this.logger.error(`Vendor login failed for ${loginDto.phone}:`, error);
       throw new UnauthorizedException('Login failed');
     }
   }

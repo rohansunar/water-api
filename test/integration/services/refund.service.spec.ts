@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { RefundService } from '../../../src/refund/services/refund.service';
 import { PrismaService } from '../../../src/common/database/prisma.service';
 import { LedgerService } from '../../../src/ledger/services/ledger.service';
@@ -27,11 +31,7 @@ describe('RefundService - Conflict Scenarios', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        RefundService,
-        PrismaService,
-        LedgerService,
-      ],
+      providers: [RefundService, PrismaService, LedgerService],
     }).compile();
 
     service = module.get<RefundService>(RefundService);
@@ -68,8 +68,9 @@ describe('RefundService - Conflict Scenarios', () => {
       };
       prismaService.refund.findFirst.mockResolvedValue(existingRefund as any);
 
-      await expect(service.createRefund(createRefundDto, createdBy))
-        .rejects.toThrow(CustomConflictException);
+      await expect(
+        service.createRefund(createRefundDto, createdBy),
+      ).rejects.toThrow(CustomConflictException);
 
       expect(prismaService.refund.create).not.toHaveBeenCalled();
     });
@@ -149,8 +150,9 @@ describe('RefundService - Conflict Scenarios', () => {
       // Mock no existing refund
       prismaService.refund.findFirst.mockResolvedValue(null);
 
-      await expect(service.createRefund(createRefundDto, createdBy))
-        .rejects.toThrow(BadRequestException);
+      await expect(
+        service.createRefund(createRefundDto, createdBy),
+      ).rejects.toThrow(BadRequestException);
 
       expect(prismaService.refund.create).not.toHaveBeenCalled();
     });
@@ -172,8 +174,9 @@ describe('RefundService - Conflict Scenarios', () => {
       };
       prismaService.refund.findUnique.mockResolvedValue(mockRefund as any);
 
-      await expect(service.approveRefund(refundId, approveDto, approvedBy))
-        .rejects.toThrow(BadRequestException);
+      await expect(
+        service.approveRefund(refundId, approveDto, approvedBy),
+      ).rejects.toThrow(BadRequestException);
 
       expect(prismaService.refund.update).not.toHaveBeenCalled();
     });
@@ -204,7 +207,11 @@ describe('RefundService - Conflict Scenarios', () => {
       };
       prismaService.refund.update.mockResolvedValue(updatedRefund as any);
 
-      const result = await service.approveRefund(refundId, approveDto, approvedBy);
+      const result = await service.approveRefund(
+        refundId,
+        approveDto,
+        approvedBy,
+      );
 
       expect(result.status).toBe(RefundStatus.APPROVED);
       expect(result.approvedBy).toBe(approvedBy);
@@ -228,8 +235,9 @@ describe('RefundService - Conflict Scenarios', () => {
       };
       prismaService.refund.findUnique.mockResolvedValue(mockRefund as any);
 
-      await expect(service.rejectRefund(refundId, rejectDto, rejectedBy))
-        .rejects.toThrow(BadRequestException);
+      await expect(
+        service.rejectRefund(refundId, rejectDto, rejectedBy),
+      ).rejects.toThrow(BadRequestException);
 
       expect(prismaService.refund.update).not.toHaveBeenCalled();
     });
@@ -258,7 +266,11 @@ describe('RefundService - Conflict Scenarios', () => {
       };
       prismaService.refund.update.mockResolvedValue(updatedRefund as any);
 
-      const result = await service.rejectRefund(refundId, rejectDto, rejectedBy);
+      const result = await service.rejectRefund(
+        refundId,
+        rejectDto,
+        rejectedBy,
+      );
 
       expect(result.status).toBe(RefundStatus.REJECTED);
       expect(result.notes).toBe('Refund request does not meet criteria');
@@ -283,8 +295,9 @@ describe('RefundService - Conflict Scenarios', () => {
       };
       prismaService.refund.findUnique.mockResolvedValue(mockRefund as any);
 
-      await expect(service.processRefund(refundId, processDto, processedBy))
-        .rejects.toThrow(BadRequestException);
+      await expect(
+        service.processRefund(refundId, processDto, processedBy),
+      ).rejects.toThrow(BadRequestException);
 
       expect(prismaService.refund.update).not.toHaveBeenCalled();
     });
@@ -306,8 +319,9 @@ describe('RefundService - Conflict Scenarios', () => {
       };
       prismaService.refund.findUnique.mockResolvedValue(mockRefund as any);
 
-      await expect(service.processRefund(refundId, processDto, processedBy))
-        .rejects.toThrow(BadRequestException);
+      await expect(
+        service.processRefund(refundId, processDto, processedBy),
+      ).rejects.toThrow(BadRequestException);
 
       expect(prismaService.refund.update).not.toHaveBeenCalled();
     });
@@ -351,7 +365,11 @@ describe('RefundService - Conflict Scenarios', () => {
       // Mock ledger service
       ledgerService.createLedgerEntry.mockResolvedValue(undefined);
 
-      const result = await service.processRefund(refundId, processDto, processedBy);
+      const result = await service.processRefund(
+        refundId,
+        processDto,
+        processedBy,
+      );
 
       expect(result.status).toBe(RefundStatus.PROCESSING);
       expect(result.refundMethod).toBe('wallet');
@@ -384,8 +402,9 @@ describe('RefundService - Conflict Scenarios', () => {
       };
       prismaService.refund.findUnique.mockResolvedValue(mockRefund as any);
 
-      await expect(service.completeRefund(refundId, transactionId))
-        .rejects.toThrow(BadRequestException);
+      await expect(
+        service.completeRefund(refundId, transactionId),
+      ).rejects.toThrow(BadRequestException);
 
       expect(prismaService.refund.update).not.toHaveBeenCalled();
     });
@@ -439,8 +458,9 @@ describe('RefundService - Conflict Scenarios', () => {
       // Mock order not found
       prismaService.order.findUnique.mockResolvedValue(null);
 
-      await expect(service.createRefund(createRefundDto, createdBy))
-        .rejects.toThrow(NotFoundException);
+      await expect(
+        service.createRefund(createRefundDto, createdBy),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw NotFoundException for non-existent refund', async () => {
@@ -449,8 +469,9 @@ describe('RefundService - Conflict Scenarios', () => {
       // Mock refund not found
       prismaService.refund.findUnique.mockResolvedValue(null);
 
-      await expect(service.approveRefund(refundId, {}, BigInt(456)))
-        .rejects.toThrow(NotFoundException);
+      await expect(
+        service.approveRefund(refundId, {}, BigInt(456)),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ConflictException with proper context for duplicate refunds', async () => {

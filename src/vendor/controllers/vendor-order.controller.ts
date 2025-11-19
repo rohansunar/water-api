@@ -11,7 +11,13 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { VendorOrderService } from '../services/vendor-order.service';
 import { VendorJwtAuthGuard } from '../guards/vendor-jwt-auth.guard';
 import { CurrentVendor } from '../decorators/current-vendor.decorator';
@@ -59,7 +65,7 @@ export class VendorOrderController {
   async getVendorOrders(
     @CurrentVendor() vendor: Vendor,
   ): Promise<OrderResponseDto[]> {
-    const {id} = vendor;
+    const { id } = vendor;
     try {
       this.logger.log(`Getting orders for vendor: ${id}`);
       return await this.vendorOrderService.getVendorOrders(vendor);
@@ -80,7 +86,8 @@ export class VendorOrderController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Update order status',
-    description: 'Update the status of a specific order for the authenticated vendor',
+    description:
+      'Update the status of a specific order for the authenticated vendor',
   })
   @ApiBody({ type: UpdateOrderStatusDto })
   @ApiResponse({
@@ -105,7 +112,7 @@ export class VendorOrderController {
     @CurrentVendor() vendor: Vendor,
     @Body() updateOrderStatusDto: UpdateOrderStatusDto,
   ): Promise<OrderResponseDto> {
-    const {id} = vendor;
+    const { id } = vendor;
     try {
       this.logger.log(`Updating order ${orderId} status for vendor: ${id}`);
       return await this.vendorOrderService.updateOrderStatus(
@@ -114,7 +121,10 @@ export class VendorOrderController {
         updateOrderStatusDto,
       );
     } catch (error) {
-      this.logger.error(`Error updating order ${orderId} status for vendor ${id}:`, error);
+      this.logger.error(
+        `Error updating order ${orderId} status for vendor ${id}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -129,7 +139,8 @@ export class VendorOrderController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get pending orders',
-    description: 'Retrieve pending orders for the authenticated vendor with pagination',
+    description:
+      'Retrieve pending orders for the authenticated vendor with pagination',
   })
   @ApiQuery({
     name: 'page',
@@ -151,7 +162,10 @@ export class VendorOrderController {
     schema: {
       type: 'object',
       properties: {
-        data: { type: 'array', items: { $ref: '#/components/schemas/OrderSummaryDto' } },
+        data: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/OrderSummaryDto' },
+        },
         total: { type: 'number' },
         page: { type: 'number' },
         limit: { type: 'number' },
@@ -162,12 +176,18 @@ export class VendorOrderController {
     @CurrentVendor() vendor: Vendor,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
-    const {id} = vendor;
+    const { id } = vendor;
     try {
       this.logger.log(`Getting pending orders for vendor: ${id}`);
-      return await this.vendorOrderService.getPendingOrders(vendor, paginationQuery);
+      return await this.vendorOrderService.getPendingOrders(
+        vendor,
+        paginationQuery,
+      );
     } catch (error) {
-      this.logger.error(`Error getting pending orders for vendor ${id}:`, error);
+      this.logger.error(
+        `Error getting pending orders for vendor ${id}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -182,7 +202,8 @@ export class VendorOrderController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get completed orders',
-    description: 'Retrieve completed orders for the authenticated vendor with pagination',
+    description:
+      'Retrieve completed orders for the authenticated vendor with pagination',
   })
   @ApiQuery({
     name: 'page',
@@ -204,7 +225,10 @@ export class VendorOrderController {
     schema: {
       type: 'object',
       properties: {
-        data: { type: 'array', items: { $ref: '#/components/schemas/OrderSummaryDto' } },
+        data: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/OrderSummaryDto' },
+        },
         total: { type: 'number' },
         page: { type: 'number' },
         limit: { type: 'number' },
@@ -215,12 +239,18 @@ export class VendorOrderController {
     @CurrentVendor() vendor: Vendor,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
-    const {id} = vendor;
+    const { id } = vendor;
     try {
       this.logger.log(`Getting completed orders for vendor: ${id}`);
-      return await this.vendorOrderService.getCompletedOrders(vendor, paginationQuery);
+      return await this.vendorOrderService.getCompletedOrders(
+        vendor,
+        paginationQuery,
+      );
     } catch (error) {
-      this.logger.error(`Error getting completed orders for vendor ${id}:`, error);
+      this.logger.error(
+        `Error getting completed orders for vendor ${id}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -235,7 +265,8 @@ export class VendorOrderController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get cancelled orders',
-    description: 'Retrieve cancelled orders for the authenticated vendor with pagination',
+    description:
+      'Retrieve cancelled orders for the authenticated vendor with pagination',
   })
   @ApiQuery({
     name: 'page',
@@ -257,7 +288,10 @@ export class VendorOrderController {
     schema: {
       type: 'object',
       properties: {
-        data: { type: 'array', items: { $ref: '#/components/schemas/OrderSummaryDto' } },
+        data: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/OrderSummaryDto' },
+        },
         total: { type: 'number' },
         page: { type: 'number' },
         limit: { type: 'number' },
@@ -268,12 +302,18 @@ export class VendorOrderController {
     @CurrentVendor() vendor: Vendor,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
-    const {id} = vendor;
+    const { id } = vendor;
     try {
       this.logger.log(`Getting cancelled orders for vendor: ${id}`);
-      return await this.vendorOrderService.getCancelledOrders(vendor, paginationQuery);
+      return await this.vendorOrderService.getCancelledOrders(
+        vendor,
+        paginationQuery,
+      );
     } catch (error) {
-      this.logger.error(`Error getting cancelled orders for vendor ${id}:`, error);
+      this.logger.error(
+        `Error getting cancelled orders for vendor ${id}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -310,12 +350,19 @@ export class VendorOrderController {
     @CurrentVendor() vendor: Vendor,
     @Body() acceptOrderDto: AcceptOrderDto,
   ): Promise<OrderSummaryDto> {
-    const {id} = vendor;
+    const { id } = vendor;
     try {
       this.logger.log(`Accepting order ${orderId} for vendor: ${id}`);
-      return await this.vendorOrderService.acceptOrder(orderId, vendor, acceptOrderDto);
+      return await this.vendorOrderService.acceptOrder(
+        orderId,
+        vendor,
+        acceptOrderDto,
+      );
     } catch (error) {
-      this.logger.error(`Error accepting order ${orderId} for vendor ${id}:`, error);
+      this.logger.error(
+        `Error accepting order ${orderId} for vendor ${id}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -357,12 +404,19 @@ export class VendorOrderController {
     @CurrentVendor() vendor: Vendor,
     @Body() rejectOrderDto: RejectOrderDto,
   ): Promise<{ message: string }> {
-    const {id} = vendor;
+    const { id } = vendor;
     try {
       this.logger.log(`Rejecting order ${orderId} for vendor: ${id}`);
-      return await this.vendorOrderService.rejectOrder(orderId, vendor, rejectOrderDto);
+      return await this.vendorOrderService.rejectOrder(
+        orderId,
+        vendor,
+        rejectOrderDto,
+      );
     } catch (error) {
-      this.logger.error(`Error rejecting order ${orderId} for vendor ${id}:`, error);
+      this.logger.error(
+        `Error rejecting order ${orderId} for vendor ${id}:`,
+        error,
+      );
       throw error;
     }
   }

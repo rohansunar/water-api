@@ -127,7 +127,11 @@ export class AdminController {
       action: 'admin_created',
       resourceType: 'admin',
       resourceId: admin.id,
-      newValues: { email: admin.email, name: admin.name, roleLevel: admin.roleLevel },
+      newValues: {
+        email: admin.email,
+        name: admin.name,
+        roleLevel: admin.roleLevel,
+      },
       metadata: { createdBy: user.id },
     });
 
@@ -144,7 +148,11 @@ export class AdminController {
     this.logger.log(`Admin ${user.id} updating admin ${id}`);
 
     const oldAdmin = await this.adminService.getAdminById(id);
-    const updatedAdmin = await this.adminService.updateAdmin(id, updateDto, user.id);
+    const updatedAdmin = await this.adminService.updateAdmin(
+      id,
+      updateDto,
+      user.id,
+    );
 
     await this.auditService.logAction({
       adminId: BigInt(user.id),
@@ -187,7 +195,6 @@ export class AdminController {
     this.logger.log(`Admin ${user.id} accessing dashboard stats`);
     return this.adminService.getDashboardStats();
   }
-
 
   @Get('customers')
   async getAllCustomers(
@@ -246,7 +253,11 @@ export class AdminController {
     this.logger.log(`Admin ${user.id} updating customer ${id}`);
 
     const oldCustomer = await this.adminService.getCustomerById(id);
-    const updatedCustomer = await this.adminService.updateCustomer(id, updateDto, user.id);
+    const updatedCustomer = await this.adminService.updateCustomer(
+      id,
+      updateDto,
+      user.id,
+    );
 
     await this.auditService.logAction({
       adminId: BigInt(user.id),
@@ -340,7 +351,11 @@ export class AdminController {
     this.logger.log(`Admin ${user.id} updating vendor ${id}`);
 
     const oldVendor = await this.adminService.getVendorById(id);
-    const updatedVendor = await this.adminService.updateVendor(id, updateDto, user.id);
+    const updatedVendor = await this.adminService.updateVendor(
+      id,
+      updateDto,
+      user.id,
+    );
 
     await this.auditService.logAction({
       adminId: BigInt(user.id),
@@ -435,7 +450,11 @@ export class AdminController {
     this.logger.log(`Admin ${user.id} updating rider ${id}`);
 
     const oldRider = await this.adminService.getRiderById(id);
-    const updatedRider = await this.adminService.updateRider(id, updateDto, user.id);
+    const updatedRider = await this.adminService.updateRider(
+      id,
+      updateDto,
+      user.id,
+    );
 
     await this.auditService.logAction({
       adminId: BigInt(user.id),
@@ -470,7 +489,6 @@ export class AdminController {
 
     return result;
   }
-
 
   @Get('vendors/pending-approvals')
   async getPendingVendorApprovals(

@@ -35,7 +35,7 @@ export class VendorProductService {
     vendor: Vendor,
     createProductDto: CreateVendorProductDto,
   ): Promise<VendorProductResponseDto> {
-    const {id} = vendor;
+    const { id } = vendor;
     const startTime = Date.now();
     try {
       const {
@@ -56,7 +56,9 @@ export class VendorProductService {
       );
 
       // Check if vendor exists and is active
-      const vendorRecord = await this.prisma.vendor.findFirst({where:{id: BigInt(id)}});
+      const vendorRecord = await this.prisma.vendor.findFirst({
+        where: { id: BigInt(id) },
+      });
       if (!vendorRecord) {
         this.customLogger.logBusinessEvent(
           'product_creation_failure',
@@ -140,10 +142,7 @@ export class VendorProductService {
         { vendorId: id, error: error.message },
         id,
       );
-      this.logger.error(
-        `Product creation failed for vendor ${id}:`,
-        error,
-      );
+      this.logger.error(`Product creation failed for vendor ${id}:`, error);
       throw new BadRequestException('Product creation failed');
     }
   }
@@ -160,7 +159,7 @@ export class VendorProductService {
     page: number;
     limit: number;
   }> {
-    const {id} = vendor;
+    const { id } = vendor;
     const startTime = Date.now();
     try {
       const skip = (page - 1) * limit;
@@ -175,12 +174,12 @@ export class VendorProductService {
       }
 
       const query = {
-            vendorId: BigInt(id),
-            ...(isActive !== undefined && { isActive }),
-            ...(category && { category }),
-          }
+        vendorId: BigInt(id),
+        ...(isActive !== undefined && { isActive }),
+        ...(category && { category }),
+      };
 
-      console.log("filter",filter)
+      console.log('filter', filter);
 
       // Get products with pagination
       const [products, total] = await Promise.all([
@@ -215,10 +214,7 @@ export class VendorProductService {
         { vendorId: id, error: error.message },
         id,
       );
-      this.logger.error(
-        `Products retrieval failed for vendor ${id}:`,
-        error,
-      );
+      this.logger.error(`Products retrieval failed for vendor ${id}:`, error);
       throw new BadRequestException('Failed to retrieve products');
     }
   }
@@ -227,7 +223,7 @@ export class VendorProductService {
     vendor: Vendor,
     productId: string,
   ): Promise<VendorProductResponseDto> {
-    const {id} = vendor;
+    const { id } = vendor;
     const startTime = Date.now();
     try {
       const product = await this.prisma.product.findFirst({
@@ -275,7 +271,7 @@ export class VendorProductService {
     productId: string,
     updateProductDto: UpdateVendorProductDto,
   ): Promise<VendorProductResponseDto> {
-    const {id} = vendor;
+    const { id } = vendor;
     const startTime = Date.now();
     try {
       const {
@@ -372,7 +368,7 @@ export class VendorProductService {
   }
 
   async deleteProduct(vendor: Vendor, productId: string): Promise<any> {
-    const {id} = vendor;
+    const { id } = vendor;
     const startTime = Date.now();
     try {
       // Check if product exists and belongs to vendor
@@ -404,8 +400,8 @@ export class VendorProductService {
         id,
       );
       return {
-       message :"Deleted"
-      }
+        message: 'Deleted',
+      };
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -428,7 +424,7 @@ export class VendorProductService {
     productId: string,
     createProductVariantDto: CreateVendorProductVariantDto,
   ): Promise<VendorProductVariantResponseDto> {
-    const {id} = vendor;
+    const { id } = vendor;
     const startTime = Date.now();
     try {
       const { variant_sku, attributes, price_override } =
@@ -447,7 +443,10 @@ export class VendorProductService {
       }
 
       // Check if variant SKU already exists in specifications
-      if (product.specifications && (product.specifications as any).sku === variant_sku) {
+      if (
+        product.specifications &&
+        (product.specifications as any).sku === variant_sku
+      ) {
         throw new ConflictException(
           `Product variant with SKU '${variant_sku}' already exists for product ${productId}`,
         );
@@ -455,7 +454,7 @@ export class VendorProductService {
 
       // Update product with variant information
       const updatedSpecifications = {
-        ...(product.specifications as any || {}),
+        ...((product.specifications as any) || {}),
         sku: variant_sku,
         ...attributes,
       };
@@ -500,7 +499,7 @@ export class VendorProductService {
     variantId: string,
     updateProductVariantDto: UpdateVendorProductVariantDto,
   ): Promise<VendorProductVariantResponseDto> {
-    const {id} = vendor;
+    const { id } = vendor;
     const startTime = Date.now();
     try {
       const { attributes, price_override, is_active } = updateProductVariantDto;
@@ -522,7 +521,7 @@ export class VendorProductService {
       if (price_override !== undefined) updateData.price = price_override;
       if (attributes) {
         updateData.specifications = {
-          ...(existingProduct.specifications as any || {}),
+          ...((existingProduct.specifications as any) || {}),
           ...attributes,
         };
       }
@@ -552,11 +551,8 @@ export class VendorProductService {
     }
   }
 
-  async deleteProductVariant(
-    vendor: Vendor,
-    variantId: string,
-  ): Promise<void> {
-    const {id} = vendor;
+  async deleteProductVariant(vendor: Vendor, variantId: string): Promise<void> {
+    const { id } = vendor;
     const startTime = Date.now();
     try {
       // Check if product exists and belongs to vendor
@@ -572,7 +568,7 @@ export class VendorProductService {
       }
 
       // Reset variant-specific data
-      const currentSpecs = existingProduct.specifications as any || {};
+      const currentSpecs = (existingProduct.specifications as any) || {};
       const updatedSpecs = { ...currentSpecs };
       delete updatedSpecs.sku;
 
@@ -606,7 +602,7 @@ export class VendorProductService {
     vendor: Vendor,
     createProductMappingDto: CreateVendorProductMappingDto,
   ): Promise<VendorProductMappingResponseDto> {
-    const {id} = vendor;
+    const { id } = vendor;
     const startTime = Date.now();
     try {
       const { store_id, product_variant_id, price, stock, area_pincodes } =
@@ -690,7 +686,7 @@ export class VendorProductService {
     mappingId: string,
     updateProductMappingDto: UpdateVendorProductMappingDto,
   ): Promise<VendorProductMappingResponseDto> {
-    const {id} = vendor;
+    const { id } = vendor;
     const startTime = Date.now();
     try {
       const { price, stock, area_pincodes, is_active } =
@@ -754,7 +750,7 @@ export class VendorProductService {
     page: number;
     limit: number;
   }> {
-    const {id} = vendor;
+    const { id } = vendor;
     const startTime = Date.now();
     try {
       const skip = (page - 1) * limit;
@@ -790,8 +786,12 @@ export class VendorProductService {
         id,
       );
 
-      const mappings: VendorProductMappingResponseDto[] = mappingsData.map((mapping) =>
-        this.mapMappingToResponseDto(mapping.product, mapping.storeId.toString()),
+      const mappings: VendorProductMappingResponseDto[] = mappingsData.map(
+        (mapping) =>
+          this.mapMappingToResponseDto(
+            mapping.product,
+            mapping.storeId.toString(),
+          ),
       );
 
       return {
@@ -809,9 +809,7 @@ export class VendorProductService {
     }
   }
 
-  private mapProductToResponseDto(
-    product: any,
-  ): VendorProductResponseDto {
+  private mapProductToResponseDto(product: any): VendorProductResponseDto {
     return {
       id: product.id.toString(),
       vendor_id: product.vendorId.toString(),

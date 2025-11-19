@@ -92,7 +92,7 @@ export class VendorStoreController {
     @Body() createStoreDto: CreateStoreDto,
     @CurrentVendor() vendor: Vendor,
   ): Promise<StoreResponseDto> {
-    const {id} = vendor;
+    const { id } = vendor;
     this.logger.log(
       `Store creation attempt for vendor: ${id}, store name: ${createStoreDto.name}`,
     );
@@ -166,7 +166,7 @@ export class VendorStoreController {
     page: number;
     limit: number;
   }> {
-    const {id} = vendor;
+    const { id } = vendor;
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
     const isActiveBool =
@@ -223,7 +223,7 @@ export class VendorStoreController {
     @Param('id') storeId: string,
     @CurrentVendor() vendor: Vendor,
   ): Promise<StoreResponseDto> {
-    const {id} = vendor;
+    const { id } = vendor;
     this.logger.log(
       `Store retrieval attempt for vendor: ${id}, store ID: ${storeId}`,
     );
@@ -286,15 +286,11 @@ export class VendorStoreController {
     @Body() updateStoreDto: UpdateStoreDto,
     @CurrentVendor() vendor: Vendor,
   ): Promise<StoreResponseDto> {
-    const {id} = vendor;
+    const { id } = vendor;
     this.logger.log(
       `Store update attempt for vendor: ${id}, store ID: ${storeId}`,
     );
-    return this.vendorStoreService.updateStore(
-      vendor,
-      storeId,
-      updateStoreDto,
-    );
+    return this.vendorStoreService.updateStore(vendor, storeId, updateStoreDto);
   }
 
   @Delete(':id')
@@ -335,7 +331,7 @@ export class VendorStoreController {
     @Param('id') storeId: string,
     @CurrentVendor() vendor: Vendor,
   ): Promise<void> {
-    const {id} = vendor;
+    const { id } = vendor;
     this.logger.log(
       `Store deletion attempt for vendor: ${id}, store ID: ${storeId}`,
     );

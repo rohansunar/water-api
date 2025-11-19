@@ -50,7 +50,9 @@ export class CustomerJwtAuthGuard extends AuthGuard('customer-jwt') {
 
     // Ensure user is a customer
     if (user.type !== 'customer') {
-      throw new UnauthorizedException('Invalid user type for customer authentication');
+      throw new UnauthorizedException(
+        'Invalid user type for customer authentication',
+      );
     }
 
     return user;

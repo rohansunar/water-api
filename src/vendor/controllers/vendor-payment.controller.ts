@@ -13,9 +13,7 @@ import { VendorPaymentService } from '../services/vendor-payment.service';
 import { VendorJwtAuthGuard } from '../guards/vendor-jwt-auth.guard';
 import { CurrentVendor } from '../decorators/current-vendor.decorator';
 import { PaginationQueryDto, PaginatedResponseDto } from '../dto/vendor.dto';
-import {
-  PaymentResponseDto,
-} from '../dto/payment.dto';
+import { PaymentResponseDto } from '../dto/payment.dto';
 import { Vendor } from '../interfaces/vendor.interface';
 
 @ApiTags('Vendor Payments')
@@ -25,7 +23,6 @@ export class VendorPaymentController {
   private readonly logger = new Logger(VendorPaymentController.name);
 
   constructor(private readonly vendorPaymentService: VendorPaymentService) {}
-
 
   /**
    * Retrieves all payments for the authenticated vendor with pagination.
@@ -37,7 +34,8 @@ export class VendorPaymentController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get all payments',
-    description: 'Retrieve all payments for the authenticated vendor with pagination',
+    description:
+      'Retrieve all payments for the authenticated vendor with pagination',
   })
   @ApiQuery({
     name: 'page',
@@ -59,7 +57,10 @@ export class VendorPaymentController {
     schema: {
       type: 'object',
       properties: {
-        data: { type: 'array', items: { $ref: '#/components/schemas/PaymentResponseDto' } },
+        data: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/PaymentResponseDto' },
+        },
         total: { type: 'number' },
         page: { type: 'number' },
         limit: { type: 'number' },
@@ -70,10 +71,13 @@ export class VendorPaymentController {
     @CurrentVendor() vendor: Vendor,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<PaymentResponseDto>> {
-    const {id} = vendor;
+    const { id } = vendor;
     try {
       this.logger.log(`Getting payments for vendor: ${id}`);
-      return await this.vendorPaymentService.getPayments(vendor, paginationQuery);
+      return await this.vendorPaymentService.getPayments(
+        vendor,
+        paginationQuery,
+      );
     } catch (error) {
       this.logger.error(`Error getting payments for vendor ${id}:`, error);
       throw error;
@@ -90,7 +94,8 @@ export class VendorPaymentController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get payment by ID',
-    description: 'Retrieve a specific payment by its ID for the authenticated vendor',
+    description:
+      'Retrieve a specific payment by its ID for the authenticated vendor',
   })
   @ApiResponse({
     status: 200,
@@ -105,14 +110,16 @@ export class VendorPaymentController {
     @Param('id') paymentId: string,
     @CurrentVendor() vendor: Vendor,
   ): Promise<PaymentResponseDto> {
-    const {id} = vendor;
+    const { id } = vendor;
     try {
       this.logger.log(`Getting payment ${paymentId} for vendor: ${id}`);
       return await this.vendorPaymentService.getPaymentById(vendor, paymentId);
     } catch (error) {
-      this.logger.error(`Error getting payment ${paymentId} for vendor ${id}:`, error);
+      this.logger.error(
+        `Error getting payment ${paymentId} for vendor ${id}:`,
+        error,
+      );
       throw error;
     }
   }
-
 }
