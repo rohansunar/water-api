@@ -32,7 +32,8 @@ import {
   VendorProductMappingResponseDto,
 } from '../dto/vendor.dto';
 import { VendorJwtAuthGuard } from '../guards/vendor-jwt-auth.guard';
-import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { CurrentVendor } from '../decorators/current-vendor.decorator';
+import { Vendor } from '../interfaces/vendor.interface';
 
 @ApiTags('Vendor Products')
 @Controller('vendors/me/products')
@@ -95,13 +96,13 @@ export class VendorProductController {
   })
   async createProduct(
     @Body() createProductDto: CreateVendorProductDto,
-    @CurrentUser('sub') vendorId: any,
+    @CurrentVendor() vendor: Vendor,
   ): Promise<VendorProductResponseDto> {
-    const {id} = vendorId;
+    const {id} = vendor;
     this.logger.log(
       `Product creation attempt for vendor: ${id}, product title: ${createProductDto.title}`,
     );
-    return this.vendorProductService.createProduct(id, createProductDto);
+    return this.vendorProductService.createProduct(vendor, createProductDto);
   }
 
   @Get()
@@ -168,7 +169,7 @@ export class VendorProductController {
     },
   })
   async getProducts(
-    @CurrentUser('sub') vendor:any,
+    @CurrentVendor() vendor: Vendor,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('category') category?: string,
@@ -179,17 +180,16 @@ export class VendorProductController {
     limit: number;
   }> {
     const {id, isActive } = vendor;
-    const vendorId = id;
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
     const isActiveBool =
       isActive !== undefined ? isActive === true : undefined;
 
     this.logger.log(
-      `Products retrieval attempt for vendor: ${vendorId}, page: ${pageNum}, limit: ${limitNum}`,
+      `Products retrieval attempt for vendor: ${id}, page: ${pageNum}, limit: ${limitNum}`,
     );
     return this.vendorProductService.getProducts(
-      vendorId,
+      vendor,
       pageNum,
       limitNum,
       isActiveBool,
@@ -235,12 +235,13 @@ export class VendorProductController {
   })
   async getProductById(
     @Param('id') productId: string,
-    @CurrentUser('sub') vendor: any,
+    @CurrentVendor() vendor: Vendor,
   ): Promise<VendorProductResponseDto> {
+    const {id} = vendor;
     this.logger.log(
-      `Product retrieval attempt for vendor: ${vendor.id}, product ID: ${productId}`,
+      `Product retrieval attempt for vendor: ${id}, product ID: ${productId}`,
     );
-    return this.vendorProductService.getProductById(vendor.id, productId);
+    return this.vendorProductService.getProductById(vendor, productId);
   }
 
   @Put(':id')
@@ -297,13 +298,14 @@ export class VendorProductController {
   async updateProduct(
     @Param('id') productId: string,
     @Body() updateProductDto: UpdateVendorProductDto,
-    @CurrentUser('sub') vendor: any,
+    @CurrentVendor() vendor: Vendor,
   ): Promise<VendorProductResponseDto> {
+    const {id} = vendor;
     this.logger.log(
-      `Product update attempt for vendor: ${vendor.id}, product ID: ${productId}`,
+      `Product update attempt for vendor: ${id}, product ID: ${productId}`,
     );
     return this.vendorProductService.updateProduct(
-      vendor.id,
+      vendor,
       productId,
       updateProductDto,
     );
@@ -351,12 +353,13 @@ export class VendorProductController {
   })
   async deleteProduct(
     @Param('id') productId: string,
-    @CurrentUser('sub') vendor: any,
+    @CurrentVendor() vendor: Vendor,
   ): Promise<{ message: string }> {
+    const {id} = vendor;
     this.logger.log(
-      `Product deletion attempt for vendor: ${vendor.id}, product ID: ${productId}`,
+      `Product deletion attempt for vendor: ${id}, product ID: ${productId}`,
     );
-    await this.vendorProductService.deleteProduct(vendor.id, productId);
+    await this.vendorProductService.deleteProduct(vendor, productId);
     return { message: 'Product deleted successfully' };
   }
 
@@ -399,7 +402,7 @@ export class VendorProductController {
   async createProductVariant(
     @Param('id') productId: string,
     @Body() createProductVariantDto: CreateVendorProductVariantDto,
-    @CurrentUser('sub') vendor: any,
+    @CurrentVendor() vendor: Vendor,
   ): Promise<VendorProductVariantResponseDto> {
     const { id } = vendor;
 
@@ -408,7 +411,7 @@ export class VendorProductController {
     );
 
     return this.vendorProductService.createProductVariant(
-      id,
+      vendor,
       productId,
       createProductVariantDto,
     );
@@ -441,13 +444,14 @@ export class VendorProductController {
   async updateProductVariant(
     @Param('id') variantId: string,
     @Body() updateProductVariantDto: UpdateVendorProductVariantDto,
-    @CurrentUser('sub') vendorId: string,
+    @CurrentVendor() vendor: Vendor,
   ): Promise<VendorProductVariantResponseDto> {
+    const {id} = vendor;
     this.logger.log(
-      `Product variant update attempt for vendor: ${vendorId}, variant ID: ${variantId}`,
+      `Product variant update attempt for vendor: ${id}, variant ID: ${variantId}`,
     );
     return this.vendorProductService.updateProductVariant(
-      vendorId,
+      vendor,
       variantId,
       updateProductVariantDto,
     );
@@ -477,12 +481,13 @@ export class VendorProductController {
   })
   async deleteProductVariant(
     @Param('id') variantId: string,
-    @CurrentUser('sub') vendorId: string,
+    @CurrentVendor() vendor: Vendor,
   ): Promise<void> {
+    const {id} = vendor;
     this.logger.log(
-      `Product variant deletion attempt for vendor: ${vendorId}, variant ID: ${variantId}`,
+      `Product variant deletion attempt for vendor: ${id}, variant ID: ${variantId}`,
     );
-    await this.vendorProductService.deleteProductVariant(vendorId, variantId);
+    await this.vendorProductService.deleteProductVariant(vendor, variantId);
   }
 
   @Post('/mapping')
@@ -526,11 +531,12 @@ export class VendorProductController {
   })
   async createProductMapping(
     @Body() createProductMappingDto: CreateVendorProductMappingDto,
-    @CurrentUser('sub') vendorId: string,
+    @CurrentVendor() vendor: Vendor,
   ): Promise<VendorProductMappingResponseDto> {
-    this.logger.log(`Product mapping creation attempt for vendor: ${vendorId}`);
+    const {id} = vendor;
+    this.logger.log(`Product mapping creation attempt for vendor: ${id}`);
     return this.vendorProductService.createProductMapping(
-      vendorId,
+      vendor,
       createProductMappingDto,
     );
   }
@@ -562,13 +568,14 @@ export class VendorProductController {
   async updateProductMapping(
     @Param('id') mappingId: string,
     @Body() updateProductMappingDto: UpdateVendorProductMappingDto,
-    @CurrentUser('sub') vendorId: string,
+    @CurrentVendor() vendor: Vendor,
   ): Promise<VendorProductMappingResponseDto> {
+    const {id} = vendor;
     this.logger.log(
-      `Product mapping update attempt for vendor: ${vendorId}, mapping ID: ${mappingId}`,
+      `Product mapping update attempt for vendor: ${id}, mapping ID: ${mappingId}`,
     );
     return this.vendorProductService.updateProductMapping(
-      vendorId,
+      vendor,
       mappingId,
       updateProductMappingDto,
     );
@@ -613,7 +620,7 @@ export class VendorProductController {
     },
   })
   async getProductMappings(
-    @CurrentUser('sub') vendorId: string,
+    @CurrentVendor() vendor: Vendor,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ): Promise<{
@@ -622,14 +629,15 @@ export class VendorProductController {
     page: number;
     limit: number;
   }> {
+    const {id} = vendor;
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
 
     this.logger.log(
-      `Product mappings retrieval attempt for vendor: ${vendorId}, page: ${pageNum}, limit: ${limitNum}`,
+      `Product mappings retrieval attempt for vendor: ${id}, page: ${pageNum}, limit: ${limitNum}`,
     );
     return this.vendorProductService.getProductMappings(
-      vendorId,
+      vendor,
       pageNum,
       limitNum,
     );

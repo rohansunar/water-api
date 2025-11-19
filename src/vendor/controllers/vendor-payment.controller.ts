@@ -11,11 +11,12 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { VendorPaymentService } from '../services/vendor-payment.service';
 import { VendorJwtAuthGuard } from '../guards/vendor-jwt-auth.guard';
-import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { CurrentVendor } from '../decorators/current-vendor.decorator';
 import { PaginationQueryDto, PaginatedResponseDto } from '../dto/vendor.dto';
 import {
   PaymentResponseDto,
 } from '../dto/payment.dto';
+import { Vendor } from '../interfaces/vendor.interface';
 
 @ApiTags('Vendor Payments')
 @Controller('vendors/me/payments')
@@ -66,14 +67,15 @@ export class VendorPaymentController {
     },
   })
   async getPayments(
-    @CurrentUser('sub') vendorId: string,
+    @CurrentVendor() vendor: Vendor,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<PaymentResponseDto>> {
+    const {id} = vendor;
     try {
-      this.logger.log(`Getting payments for vendor: ${vendorId}`);
-      return await this.vendorPaymentService.getPayments(vendorId, paginationQuery);
+      this.logger.log(`Getting payments for vendor: ${id}`);
+      return await this.vendorPaymentService.getPayments(vendor, paginationQuery);
     } catch (error) {
-      this.logger.error(`Error getting payments for vendor ${vendorId}:`, error);
+      this.logger.error(`Error getting payments for vendor ${id}:`, error);
       throw error;
     }
   }
@@ -101,13 +103,14 @@ export class VendorPaymentController {
   })
   async getPaymentById(
     @Param('id') paymentId: string,
-    @CurrentUser('sub') vendorId: string,
+    @CurrentVendor() vendor: Vendor,
   ): Promise<PaymentResponseDto> {
+    const {id} = vendor;
     try {
-      this.logger.log(`Getting payment ${paymentId} for vendor: ${vendorId}`);
-      return await this.vendorPaymentService.getPaymentById(vendorId, paymentId);
+      this.logger.log(`Getting payment ${paymentId} for vendor: ${id}`);
+      return await this.vendorPaymentService.getPaymentById(vendor, paymentId);
     } catch (error) {
-      this.logger.error(`Error getting payment ${paymentId} for vendor ${vendorId}:`, error);
+      this.logger.error(`Error getting payment ${paymentId} for vendor ${id}:`, error);
       throw error;
     }
   }

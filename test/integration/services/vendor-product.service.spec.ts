@@ -1,10 +1,11 @@
   import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
-import { VendorProductService } from '../../../src/vendor/services/vendor-product.service';
-import { PrismaService } from '../../../src/common/database/prisma.service';
-import { CustomLoggerService } from '../../../src/common/logger/logger.service';
-import { VendorService } from '../../../src/vendor/services/vendor.service';
-import { BusinessException, ConflictException as CustomConflictException } from '../../../src/common/exceptions/business.exception';
+  import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+  import { VendorProductService } from '../../../src/vendor/services/vendor-product.service';
+  import { PrismaService } from '../../../src/common/database/prisma.service';
+  import { CustomLoggerService } from '../../../src/common/logger/logger.service';
+  import { VendorService } from '../../../src/vendor/services/vendor.service';
+  import { BusinessException, ConflictException as CustomConflictException } from '../../../src/common/exceptions/business.exception';
+  import { Vendor } from '../../../src/vendor/interfaces/vendor.interface';
 
 // Mock PrismaService methods
 jest.mock('../../../src/common/database/prisma.service', () => ({
@@ -33,6 +34,21 @@ describe('VendorProductService - Conflict Scenarios', () => {
   let prismaService: any;
   let customLogger: jest.Mocked<CustomLoggerService>;
   let vendorService: jest.Mocked<VendorService>;
+
+  const mockVendor: Vendor = {
+    id: '123',
+    userId: 'user-123',
+    businessName: 'Test Vendor',
+    businessAddress: 'Test Address',
+    approvalStatus: 'approved',
+    bankAccounts: [],
+    deliveryZones: [],
+    isActive: true,
+    rating: 4.5,
+    totalOrders: 100,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
 
   beforeEach(async () => {
 
@@ -65,7 +81,6 @@ describe('VendorProductService - Conflict Scenarios', () => {
 
   describe('createProduct - Conflict Scenarios', () => {
     it('should throw ConflictException when product name already exists for vendor', async () => {
-      const vendorId = '123';
       const createProductDto = {
         title: 'Existing Product',
         sku: 'SKU123',
@@ -88,22 +103,21 @@ describe('VendorProductService - Conflict Scenarios', () => {
         name: 'Existing Product',
       } as any);
 
-      await expect(service.createProduct(vendorId, createProductDto))
+      await expect(service.createProduct(mockVendor, createProductDto))
         .rejects.toThrow(ConflictException);
 
       expect(customLogger.logBusinessEvent).toHaveBeenCalledWith(
         'product_creation_failure',
         {
-          vendorId,
+          vendorId: mockVendor.id,
           productTitle: 'Existing Product',
           reason: 'product_name_exists'
         },
-        vendorId,
+        mockVendor.id,
       );
     });
 
     it('should throw ConflictException when creating product with duplicate name (case sensitive)', async () => {
-      const vendorId = '123';
       const createProductDto = {
         title: 'existing product',
         sku: 'SKU123',
@@ -126,7 +140,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
         name: 'Existing Product',
       } as any);
 
-      await expect(service.createProduct(vendorId, createProductDto))
+      await expect(service.createProduct(mockVendor, createProductDto))
         .rejects.toThrow(ConflictException);
 
       expect(prismaService.product.create).not.toHaveBeenCalled();
@@ -135,7 +149,6 @@ describe('VendorProductService - Conflict Scenarios', () => {
 
   describe('updateProduct - Conflict Scenarios', () => {
     it('should throw ConflictException when updating product name to existing name', async () => {
-      const vendorId = '123';
       const productId = '456';
       const updateProductDto = {
         title: 'New Product Name',
@@ -160,22 +173,21 @@ describe('VendorProductService - Conflict Scenarios', () => {
           name: 'New Product Name',
         } as any);
 
-      await expect(service.updateProduct(vendorId, productId, updateProductDto))
+      await expect(service.updateProduct(mockVendor, productId, updateProductDto))
         .rejects.toThrow(ConflictException);
 
       expect(customLogger.logBusinessEvent).toHaveBeenCalledWith(
         'product_update_failure',
         {
-          vendorId,
+          vendorId: mockVendor.id,
           productId,
           reason: 'name_conflict'
         },
-        vendorId,
+        mockVendor.id,
       );
     });
 
     it('should allow updating product with same name (no change)', async () => {
-      const vendorId = '123';
       const productId = '456';
       const updateProductDto = {
         title: 'Same Product Name',
@@ -212,7 +224,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
       const updatedProduct = { ...existingProduct, name: 'Same Product Name', description: 'Updated Description' };
       prismaService.product.update.mockResolvedValue(updatedProduct as any);
 
-      const result = await service.updateProduct(vendorId, productId, updateProductDto);
+      const result = await service.updateProduct(mockVendor, productId, updateProductDto);
 
       expect(result.title).toBe('Same Product Name');
       expect(prismaService.product.update).toHaveBeenCalled();
@@ -221,7 +233,6 @@ describe('VendorProductService - Conflict Scenarios', () => {
 
   describe('createProductVariant - Conflict Scenarios', () => {
     it('should throw ConflictException when variant SKU already exists', async () => {
-      const vendorId = '123';
       const productId = '456';
       const createVariantDto = {
         variant_sku: 'EXISTING-SKU',
@@ -238,14 +249,13 @@ describe('VendorProductService - Conflict Scenarios', () => {
       // Mock product exists
       prismaService.product.findFirst.mockResolvedValue(existingProduct as any);
 
-      await expect(service.createProductVariant(vendorId, productId, createVariantDto))
+      await expect(service.createProductVariant(mockVendor, productId, createVariantDto))
         .rejects.toThrow(ConflictException);
 
       expect(prismaService.product.update).not.toHaveBeenCalled();
     });
 
     it('should allow creating variant when SKU is different', async () => {
-      const vendorId = '123';
       const productId = '456';
       const createVariantDto = {
         variant_sku: 'NEW-SKU',
@@ -274,7 +284,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
       };
       prismaService.product.update.mockResolvedValue(updatedProduct as any);
 
-      const result = await service.createProductVariant(vendorId, productId, createVariantDto);
+      const result = await service.createProductVariant(mockVendor, productId, createVariantDto);
 
       expect(result.variant_sku).toBe('NEW-SKU');
       expect(result.attributes).toEqual({ sku: 'NEW-SKU', size: 'L', color: 'red' });
@@ -283,7 +293,6 @@ describe('VendorProductService - Conflict Scenarios', () => {
 
   describe('createProductMapping - Conflict Scenarios', () => {
     it('should throw ConflictException when product mapping already exists', async () => {
-      const vendorId = '123';
       const createMappingDto = {
         store_id: '789',
         product_variant_id: '456',
@@ -312,14 +321,13 @@ describe('VendorProductService - Conflict Scenarios', () => {
         storeId: BigInt(789),
       } as any);
 
-      await expect(service.createProductMapping(vendorId, createMappingDto))
+      await expect(service.createProductMapping(mockVendor, createMappingDto))
         .rejects.toThrow(ConflictException);
 
       expect(prismaService.productStoreMapping.create).not.toHaveBeenCalled();
     });
 
     it('should allow creating mapping when no existing mapping exists', async () => {
-      const vendorId = '123';
       const createMappingDto = {
         store_id: '789',
         product_variant_id: '456',
@@ -362,7 +370,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
       };
       prismaService.productStoreMapping.create.mockResolvedValue(createdMapping as any);
 
-      const result = await service.createProductMapping(vendorId, createMappingDto);
+      const result = await service.createProductMapping(mockVendor, createMappingDto);
 
       expect(result.product_id).toBe('456');
       expect(result.store_id).toBe('789');
@@ -373,7 +381,6 @@ describe('VendorProductService - Conflict Scenarios', () => {
 
   describe('Error Response Structure Verification', () => {
     it('should throw standard NestJS exceptions that get converted by filter', async () => {
-      const vendorId = '123';
       const createProductDto = {
         title: 'Test Product',
         sku: 'SKU123',
@@ -387,12 +394,11 @@ describe('VendorProductService - Conflict Scenarios', () => {
       // Mock vendor not found
       prismaService.vendor.findFirst.mockResolvedValue(null);
 
-      await expect(service.createProduct(vendorId, createProductDto))
+      await expect(service.createProduct(mockVendor, createProductDto))
         .rejects.toThrow(NotFoundException);
     });
 
     it('should throw ConflictException with proper message', async () => {
-      const vendorId = '123';
       const createProductDto = {
         title: 'Existing Product',
         sku: 'SKU123',
@@ -416,7 +422,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
       } as any);
 
       try {
-        await service.createProduct(vendorId, createProductDto);
+        await service.createProduct(mockVendor, createProductDto);
         fail('Expected ConflictException to be thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(ConflictException);
@@ -428,7 +434,6 @@ describe('VendorProductService - Conflict Scenarios', () => {
 
   describe('Backward Compatibility', () => {
     it('should maintain existing error messages for ConflictException', async () => {
-      const vendorId = '123';
       const createMappingDto = {
         store_id: '789',
         product_variant_id: '456',
@@ -458,7 +463,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
       } as any);
 
       try {
-        await service.createProductMapping(vendorId, createMappingDto);
+        await service.createProductMapping(mockVendor, createMappingDto);
         fail('Expected ConflictException to be thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(ConflictException);
@@ -468,7 +473,6 @@ describe('VendorProductService - Conflict Scenarios', () => {
     });
 
     it('should handle undefined optional fields gracefully', async () => {
-      const vendorId = '123';
       const createProductDto = {
         title: 'Test Product',
         sku: 'SKU123',
@@ -513,7 +517,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
       };
       prismaService.product.create.mockResolvedValue(createdProduct as any);
 
-      const result = await service.createProduct(vendorId, createProductDto);
+      const result = await service.createProduct(mockVendor, createProductDto);
 
       expect(result.title).toBe('Test Product');
       expect(result.attributes?.specifications?.sku).toBe('SKU123');

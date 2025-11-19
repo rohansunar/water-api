@@ -15,6 +15,7 @@ import {
   PaginationQueryDto,
   PaginatedResponseDto,
 } from '../dto/vendor.dto';
+import { Vendor } from '../interfaces/vendor.interface';
 
 @Injectable()
 export class VendorOrderService {
@@ -27,8 +28,8 @@ export class VendorOrderService {
    * @param vendorId - The ID of the vendor.
    * @returns A promise that resolves to an array of OrderResponseDto.
    */
-  async getVendorOrders(vendorId: string): Promise<OrderResponseDto[]> {
-    return this.vendorService.getVendorOrders(vendorId);
+  async getVendorOrders(vendor: Vendor): Promise<OrderResponseDto[]> {
+    return this.vendorService.getVendorOrders(vendor);
   }
 
   /**
@@ -40,10 +41,10 @@ export class VendorOrderService {
    */
   async updateOrderStatus(
     orderId: string,
-    vendorId: string,
+    vendor: Vendor,
     updateOrderStatusDto: UpdateOrderStatusDto,
   ): Promise<OrderResponseDto> {
-    return this.vendorService.updateOrderStatus(orderId, vendorId, updateOrderStatusDto);
+    return this.vendorService.updateOrderStatus(orderId, vendor, updateOrderStatusDto);
   }
 
   /**
@@ -53,10 +54,10 @@ export class VendorOrderService {
    * @returns A promise that resolves to a paginated response of OrderSummaryDto.
    */
   async getPendingOrders(
-    vendorId: string,
+    vendor: Vendor,
     paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
-    return this.vendorService.getPendingOrders(vendorId, paginationQuery);
+    return this.vendorService.getPendingOrders(vendor, paginationQuery);
   }
 
   /**
@@ -66,10 +67,10 @@ export class VendorOrderService {
    * @returns A promise that resolves to a paginated response of OrderSummaryDto.
    */
   async getCompletedOrders(
-    vendorId: string,
+    vendor: Vendor,
     paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
-    return this.vendorService.getCompletedOrders(vendorId, paginationQuery);
+    return this.vendorService.getCompletedOrders(vendor, paginationQuery);
   }
 
   /**
@@ -79,10 +80,10 @@ export class VendorOrderService {
    * @returns A promise that resolves to a paginated response of OrderSummaryDto.
    */
   async getCancelledOrders(
-    vendorId: string,
+    vendor: Vendor,
     paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
-    return this.vendorService.getCancelledOrders(vendorId, paginationQuery);
+    return this.vendorService.getCancelledOrders(vendor, paginationQuery);
   }
 
   /**
@@ -94,10 +95,10 @@ export class VendorOrderService {
    */
   async acceptOrder(
     orderId: string,
-    vendorId: string,
+    vendor: Vendor,
     acceptOrderDto: AcceptOrderDto,
   ): Promise<OrderSummaryDto> {
-    return this.vendorService.acceptOrder(orderId, vendorId, acceptOrderDto);
+    return this.vendorService.acceptOrder(orderId, vendor, acceptOrderDto);
   }
 
   /**
@@ -109,9 +110,9 @@ export class VendorOrderService {
    */
   async rejectOrder(
     orderId: string,
-    vendorId: string,
+    vendor: Vendor,
     rejectOrderDto: RejectOrderDto,
   ): Promise<{ message: string }> {
-    return this.vendorService.rejectOrder(orderId, vendorId, rejectOrderDto);
+    return this.vendorService.rejectOrder(orderId, vendor, rejectOrderDto);
   }
 }

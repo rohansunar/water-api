@@ -26,7 +26,8 @@ import {
   StoreResponseDto,
 } from '../dto/vendor.dto';
 import { VendorJwtAuthGuard } from '../guards/vendor-jwt-auth.guard';
-import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { CurrentVendor } from '../decorators/current-vendor.decorator';
+import { Vendor } from '../interfaces/vendor.interface';
 
 @ApiTags('Vendor Stores')
 @Controller('vendors/me/stores')
@@ -89,12 +90,13 @@ export class VendorStoreController {
   })
   async createStore(
     @Body() createStoreDto: CreateStoreDto,
-    @CurrentUser('sub') vendorId: string,
+    @CurrentVendor() vendor: Vendor,
   ): Promise<StoreResponseDto> {
+    const {id} = vendor;
     this.logger.log(
-      `Store creation attempt for vendor: ${vendorId}, store name: ${createStoreDto.name}`,
+      `Store creation attempt for vendor: ${id}, store name: ${createStoreDto.name}`,
     );
-    return this.vendorStoreService.createStore(vendorId, createStoreDto);
+    return this.vendorStoreService.createStore(vendor, createStoreDto);
   }
 
   @Get()
@@ -154,7 +156,7 @@ export class VendorStoreController {
     },
   })
   async getStores(
-    @CurrentUser('sub') vendorId: string,
+    @CurrentVendor() vendor: Vendor,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('isActive') isActive?: string,
@@ -164,16 +166,17 @@ export class VendorStoreController {
     page: number;
     limit: number;
   }> {
+    const {id} = vendor;
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
     const isActiveBool =
       isActive !== undefined ? isActive === 'true' : undefined;
 
     this.logger.log(
-      `Stores retrieval attempt for vendor: ${vendorId}, page: ${pageNum}, limit: ${limitNum}`,
+      `Stores retrieval attempt for vendor: ${id}, page: ${pageNum}, limit: ${limitNum}`,
     );
     return this.vendorStoreService.getStores(
-      vendorId,
+      vendor,
       pageNum,
       limitNum,
       isActiveBool,
@@ -218,12 +221,13 @@ export class VendorStoreController {
   })
   async getStoreById(
     @Param('id') storeId: string,
-    @CurrentUser('sub') vendorId: string,
+    @CurrentVendor() vendor: Vendor,
   ): Promise<StoreResponseDto> {
+    const {id} = vendor;
     this.logger.log(
-      `Store retrieval attempt for vendor: ${vendorId}, store ID: ${storeId}`,
+      `Store retrieval attempt for vendor: ${id}, store ID: ${storeId}`,
     );
-    return this.vendorStoreService.getStoreById(vendorId, storeId);
+    return this.vendorStoreService.getStoreById(vendor, storeId);
   }
 
   @Put(':id')
@@ -280,13 +284,14 @@ export class VendorStoreController {
   async updateStore(
     @Param('id') storeId: string,
     @Body() updateStoreDto: UpdateStoreDto,
-    @CurrentUser('sub') vendorId: string,
+    @CurrentVendor() vendor: Vendor,
   ): Promise<StoreResponseDto> {
+    const {id} = vendor;
     this.logger.log(
-      `Store update attempt for vendor: ${vendorId}, store ID: ${storeId}`,
+      `Store update attempt for vendor: ${id}, store ID: ${storeId}`,
     );
     return this.vendorStoreService.updateStore(
-      vendorId,
+      vendor,
       storeId,
       updateStoreDto,
     );
@@ -328,11 +333,12 @@ export class VendorStoreController {
   })
   async deleteStore(
     @Param('id') storeId: string,
-    @CurrentUser('sub') vendorId: string,
+    @CurrentVendor() vendor: Vendor,
   ): Promise<void> {
+    const {id} = vendor;
     this.logger.log(
-      `Store deletion attempt for vendor: ${vendorId}, store ID: ${storeId}`,
+      `Store deletion attempt for vendor: ${id}, store ID: ${storeId}`,
     );
-    await this.vendorStoreService.deleteStore(vendorId, storeId);
+    await this.vendorStoreService.deleteStore(vendor, storeId);
   }
 }

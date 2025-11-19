@@ -16,7 +16,7 @@ import { VendorService } from '../services/vendor.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
-import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { CurrentVendor } from '../decorators/current-vendor.decorator';
 import { User, UserRole } from '../../common/interfaces/user.interface';
 import {
   SalesAnalyticsDto,
@@ -45,7 +45,7 @@ export class VendorController {
   // Analytics & Reports Endpoints
   @Get('analytics/sales')
   async getSalesAnalytics(
-    @CurrentUser() user: User,
+    @CurrentVendor() user: User,
     @Query() analyticsQuery: SalesAnalyticsDto,
   ): Promise<SalesAnalyticsResponseDto> {
     this.logger.log(`Getting sales analytics for vendor user: ${user.id}`);
@@ -54,7 +54,7 @@ export class VendorController {
 
   @Get('analytics/products')
   async getProductPerformance(
-    @CurrentUser() user: User,
+    @CurrentVendor() user: User,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<ProductPerformanceDto>> {
     this.logger.log(`Getting product performance for vendor user: ${user.id}`);
@@ -63,7 +63,7 @@ export class VendorController {
 
   @Get('analytics/customers')
   async getCustomerInsights(
-    @CurrentUser() user: User,
+    @CurrentVendor() user: User,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<CustomerInsightsDto>> {
     this.logger.log(`Getting customer insights for vendor user: ${user.id}`);
@@ -72,7 +72,7 @@ export class VendorController {
 
   @Get('reports/daily')
   async getDailyReport(
-    @CurrentUser() user: User,
+    @CurrentVendor() user: User,
     @Query('date') date?: string,
   ): Promise<DailyReportDto> {
     this.logger.log(`Getting daily report for vendor user: ${user.id}`);
@@ -81,7 +81,7 @@ export class VendorController {
 
   @Get('reports/monthly')
   async getMonthlyReport(
-    @CurrentUser() user: User,
+    @CurrentVendor() user: User,
     @Query('month') month?: string,
   ): Promise<MonthlyReportDto> {
     this.logger.log(`Getting monthly report for vendor user: ${user.id}`);
@@ -91,7 +91,7 @@ export class VendorController {
   // Inventory Management Endpoints
   @Get('inventory')
   async getInventoryStatus(
-    @CurrentUser() user: User,
+    @CurrentVendor() user: User,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<InventoryStatusDto>> {
     this.logger.log(`Getting inventory status for vendor user: ${user.id}`);
@@ -101,7 +101,7 @@ export class VendorController {
   @Put('inventory/:productId')
   async updateInventory(
     @Param('productId') productId: string,
-    @CurrentUser() user: User,
+    @CurrentVendor() user: User,
     @Body() updateInventoryDto: UpdateInventoryDto,
   ): Promise<InventoryStatusDto> {
     this.logger.log(
@@ -116,7 +116,7 @@ export class VendorController {
 
   @Post('inventory/adjustment')
   async adjustInventory(
-    @CurrentUser() user: User,
+    @CurrentVendor() user: User,
     @Body() adjustmentDto: InventoryAdjustmentDto,
   ): Promise<{ message: string; newStock: number }> {
     this.logger.log(`Adjusting inventory for vendor user: ${user.id}`);
@@ -125,7 +125,7 @@ export class VendorController {
 
   @Get('inventory/alerts')
   async getLowStockAlerts(
-    @CurrentUser() user: User,
+    @CurrentVendor() user: User,
   ): Promise<LowStockAlertDto[]> {
     this.logger.log(`Getting low stock alerts for vendor user: ${user.id}`);
     return this.vendorService.getLowStockAlerts(user.id);

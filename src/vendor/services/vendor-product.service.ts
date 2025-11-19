@@ -19,6 +19,7 @@ import {
   VendorProductVariantResponseDto,
   VendorProductMappingResponseDto,
 } from '../dto/vendor.dto';
+import { Vendor } from '../interfaces/vendor.interface';
 
 @Injectable()
 export class VendorProductService {
@@ -31,9 +32,10 @@ export class VendorProductService {
   ) {}
 
   async createProduct(
-    vendorId: string,
+    vendor: Vendor,
     createProductDto: CreateVendorProductDto,
   ): Promise<VendorProductResponseDto> {
+    const {id} = vendor;
     const startTime = Date.now();
     try {
       const {
@@ -49,26 +51,26 @@ export class VendorProductService {
       // Log product creation attempt
       this.customLogger.logBusinessEvent(
         'product_creation_attempt',
-        { vendorId, productTitle: title, sku },
-        vendorId,
+        { vendorId: id, productTitle: title, sku },
+        id,
       );
 
       // Check if vendor exists and is active
-      const vendor = await this.prisma.vendor.findFirst({where:{id: BigInt(vendorId)}});
-      if (!vendor) {
+      const vendorRecord = await this.prisma.vendor.findFirst({where:{id: BigInt(id)}});
+      if (!vendorRecord) {
         this.customLogger.logBusinessEvent(
           'product_creation_failure',
-          { vendorId, reason: 'vendor_not_found' },
-          vendorId,
+          { vendorId: id, reason: 'vendor_not_found' },
+          id,
         );
         throw new NotFoundException('Vendor not found');
       }
 
-      if (!vendor.isActive) {
+      if (!vendorRecord.isActive) {
         this.customLogger.logBusinessEvent(
           'product_creation_failure',
-          { vendorId, reason: 'vendor_not_active' },
-          vendorId,
+          { vendorId: id, reason: 'vendor_not_active' },
+          id,
         );
         throw new BadRequestException('Vendor is not active');
       }
@@ -76,7 +78,7 @@ export class VendorProductService {
       // Check if product name already exists for this vendor
       const existingProduct = await this.prisma.product.findFirst({
         where: {
-          vendorId: BigInt(vendorId),
+          vendorId: BigInt(id),
           name: title,
         },
       });
@@ -84,18 +86,18 @@ export class VendorProductService {
       if (existingProduct) {
         this.customLogger.logBusinessEvent(
           'product_creation_failure',
-          { vendorId, productTitle: title, reason: 'product_name_exists' },
-          vendorId,
+          { vendorId: id, productTitle: title, reason: 'product_name_exists' },
+          id,
         );
         throw new ConflictException(
-          `Product with name '${title}' already exists for vendor ${vendorId}`,
+          `Product with name '${title}' already exists for vendor ${id}`,
         );
       }
 
       // Create product
       const product = await this.prisma.product.create({
         data: {
-          vendorId: BigInt(vendorId),
+          vendorId: BigInt(id),
           name: title,
           category,
           price: base_price,
@@ -120,8 +122,8 @@ export class VendorProductService {
 
       this.customLogger.logBusinessEvent(
         'product_created',
-        { vendorId, productId: product.id.toString(), productTitle: title },
-        vendorId,
+        { vendorId: id, productId: product.id.toString(), productTitle: title },
+        id,
       );
 
       return this.mapProductToResponseDto(product);
@@ -135,11 +137,11 @@ export class VendorProductService {
       }
       this.customLogger.logBusinessEvent(
         'product_creation_error',
-        { vendorId, error: error.message },
-        vendorId,
+        { vendorId: id, error: error.message },
+        id,
       );
       this.logger.error(
-        `Product creation failed for vendor ${vendorId}:`,
+        `Product creation failed for vendor ${id}:`,
         error,
       );
       throw new BadRequestException('Product creation failed');
@@ -147,7 +149,7 @@ export class VendorProductService {
   }
 
   async getProducts(
-    vendorId: string,
+    vendor: Vendor,
     page: number = 1,
     limit: number = 10,
     isActive?: boolean,
@@ -158,12 +160,13 @@ export class VendorProductService {
     page: number;
     limit: number;
   }> {
+    const {id} = vendor;
     const startTime = Date.now();
     try {
       const skip = (page - 1) * limit;
 
       // Build filter condition
-      const filter: any = { vendorId };
+      const filter: any = { vendorId: id };
       if (isActive !== undefined) {
         filter.isActive = isActive;
       }
@@ -172,11 +175,11 @@ export class VendorProductService {
       }
 
       const query = {
-            vendorId: BigInt(vendorId),
+            vendorId: BigInt(id),
             ...(isActive !== undefined && { isActive }),
             ...(category && { category }),
           }
-      
+
       console.log("filter",filter)
 
       // Get products with pagination
@@ -194,8 +197,8 @@ export class VendorProductService {
 
       this.customLogger.logBusinessEvent(
         'products_retrieved',
-        { vendorId, count: products.length, page, limit },
-        vendorId,
+        { vendorId: id, count: products.length, page, limit },
+        id,
       );
 
       return {
@@ -209,11 +212,11 @@ export class VendorProductService {
     } catch (error) {
       this.customLogger.logBusinessEvent(
         'products_retrieval_error',
-        { vendorId, error: error.message },
-        vendorId,
+        { vendorId: id, error: error.message },
+        id,
       );
       this.logger.error(
-        `Products retrieval failed for vendor ${vendorId}:`,
+        `Products retrieval failed for vendor ${id}:`,
         error,
       );
       throw new BadRequestException('Failed to retrieve products');
@@ -221,31 +224,32 @@ export class VendorProductService {
   }
 
   async getProductById(
-    vendorId: string,
+    vendor: Vendor,
     productId: string,
   ): Promise<VendorProductResponseDto> {
+    const {id} = vendor;
     const startTime = Date.now();
     try {
       const product = await this.prisma.product.findFirst({
         where: {
           id: BigInt(productId),
-          vendorId: BigInt(vendorId),
+          vendorId: BigInt(id),
         },
       });
 
       if (!product) {
         this.customLogger.logBusinessEvent(
           'product_retrieval_failure',
-          { vendorId, productId, reason: 'product_not_found' },
-          vendorId,
+          { vendorId: id, productId, reason: 'product_not_found' },
+          id,
         );
         throw new NotFoundException('Product not found');
       }
 
       this.customLogger.logBusinessEvent(
         'product_retrieved',
-        { vendorId, productId },
-        vendorId,
+        { vendorId: id, productId },
+        id,
       );
 
       return this.mapProductToResponseDto(product);
@@ -255,11 +259,11 @@ export class VendorProductService {
       }
       this.customLogger.logBusinessEvent(
         'product_retrieval_error',
-        { vendorId, productId, error: error.message },
-        vendorId,
+        { vendorId: id, productId, error: error.message },
+        id,
       );
       this.logger.error(
-        `Product retrieval failed for vendor ${vendorId}, product ${productId}:`,
+        `Product retrieval failed for vendor ${id}, product ${productId}:`,
         error,
       );
       throw new BadRequestException('Failed to retrieve product');
@@ -267,10 +271,11 @@ export class VendorProductService {
   }
 
   async updateProduct(
-    vendorId: string,
+    vendor: Vendor,
     productId: string,
     updateProductDto: UpdateVendorProductDto,
   ): Promise<VendorProductResponseDto> {
+    const {id} = vendor;
     const startTime = Date.now();
     try {
       const {
@@ -288,15 +293,15 @@ export class VendorProductService {
       const existingProduct = await this.prisma.product.findFirst({
         where: {
           id: BigInt(productId),
-          vendorId: BigInt(vendorId),
+          vendorId: BigInt(id),
         },
       });
 
       if (!existingProduct) {
         this.customLogger.logBusinessEvent(
           'product_update_failure',
-          { vendorId, productId, reason: 'product_not_found' },
-          vendorId,
+          { vendorId: id, productId, reason: 'product_not_found' },
+          id,
         );
         throw new NotFoundException('Product not found');
       }
@@ -305,7 +310,7 @@ export class VendorProductService {
       if (title && title !== existingProduct.name) {
         const nameConflict = await this.prisma.product.findFirst({
           where: {
-            vendorId: BigInt(vendorId),
+            vendorId: BigInt(id),
             name: title,
             id: { not: BigInt(productId) },
           },
@@ -314,11 +319,11 @@ export class VendorProductService {
         if (nameConflict) {
           this.customLogger.logBusinessEvent(
             'product_update_failure',
-            { vendorId, productId, reason: 'name_conflict' },
-            vendorId,
+            { vendorId: id, productId, reason: 'name_conflict' },
+            id,
           );
           throw new ConflictException(
-            `Product with name '${title}' already exists for vendor ${vendorId}`,
+            `Product with name '${title}' already exists for vendor ${id}`,
           );
         }
       }
@@ -341,8 +346,8 @@ export class VendorProductService {
 
       this.customLogger.logBusinessEvent(
         'product_updated',
-        { vendorId, productId, productTitle: updatedProduct.name },
-        vendorId,
+        { vendorId: id, productId, productTitle: updatedProduct.name },
+        id,
       );
 
       return this.mapProductToResponseDto(updatedProduct);
@@ -355,33 +360,34 @@ export class VendorProductService {
       }
       this.customLogger.logBusinessEvent(
         'product_update_error',
-        { vendorId, productId, error: error.message },
-        vendorId,
+        { vendorId: id, productId, error: error.message },
+        id,
       );
       this.logger.error(
-        `Product update failed for vendor ${vendorId}, product ${productId}:`,
+        `Product update failed for vendor ${id}, product ${productId}:`,
         error,
       );
       throw new BadRequestException('Product update failed');
     }
   }
 
-  async deleteProduct(vendorId: string, productId: string): Promise<any> {
+  async deleteProduct(vendor: Vendor, productId: string): Promise<any> {
+    const {id} = vendor;
     const startTime = Date.now();
     try {
       // Check if product exists and belongs to vendor
       const existingProduct = await this.prisma.product.findFirst({
         where: {
           id: BigInt(productId),
-          vendorId: BigInt(vendorId),
+          vendorId: BigInt(id),
         },
       });
 
       if (!existingProduct) {
         this.customLogger.logBusinessEvent(
           'product_deletion_failure',
-          { vendorId, productId, reason: 'product_not_found' },
-          vendorId,
+          { vendorId: id, productId, reason: 'product_not_found' },
+          id,
         );
         throw new NotFoundException('Product not found');
       }
@@ -394,8 +400,8 @@ export class VendorProductService {
 
       this.customLogger.logBusinessEvent(
         'product_deleted',
-        { vendorId, productId, productTitle: existingProduct.name },
-        vendorId,
+        { vendorId: id, productId, productTitle: existingProduct.name },
+        id,
       );
       return {
        message :"Deleted"
@@ -406,11 +412,11 @@ export class VendorProductService {
       }
       this.customLogger.logBusinessEvent(
         'product_deletion_error',
-        { vendorId, productId, error: error.message },
-        vendorId,
+        { vendorId: id, productId, error: error.message },
+        id,
       );
       this.logger.error(
-        `Product deletion failed for vendor ${vendorId}, product ${productId}:`,
+        `Product deletion failed for vendor ${id}, product ${productId}:`,
         error,
       );
       throw new BadRequestException('Product deletion failed');
@@ -418,10 +424,11 @@ export class VendorProductService {
   }
 
   async createProductVariant(
-    vendorId: string,
+    vendor: Vendor,
     productId: string,
     createProductVariantDto: CreateVendorProductVariantDto,
   ): Promise<VendorProductVariantResponseDto> {
+    const {id} = vendor;
     const startTime = Date.now();
     try {
       const { variant_sku, attributes, price_override } =
@@ -431,7 +438,7 @@ export class VendorProductService {
       const product = await this.prisma.product.findFirst({
         where: {
           id: BigInt(productId),
-          vendorId: BigInt(vendorId),
+          vendorId: BigInt(id),
         },
       });
 
@@ -468,8 +475,8 @@ export class VendorProductService {
 
       this.customLogger.logBusinessEvent(
         'product_variant_created',
-        { vendorId, productId, variantSku: variant_sku },
-        vendorId,
+        { vendorId: id, productId, variantSku: variant_sku },
+        id,
       );
 
       return this.mapVariantToResponseDto(updatedProduct, productId);
@@ -481,7 +488,7 @@ export class VendorProductService {
         throw error;
       }
       this.logger.error(
-        `Product variant creation failed for vendor ${vendorId}, product ${productId}:`,
+        `Product variant creation failed for vendor ${id}, product ${productId}:`,
         error,
       );
       throw new BadRequestException('Product variant creation failed');
@@ -489,10 +496,11 @@ export class VendorProductService {
   }
 
   async updateProductVariant(
-    vendorId: string,
+    vendor: Vendor,
     variantId: string,
     updateProductVariantDto: UpdateVendorProductVariantDto,
   ): Promise<VendorProductVariantResponseDto> {
+    const {id} = vendor;
     const startTime = Date.now();
     try {
       const { attributes, price_override, is_active } = updateProductVariantDto;
@@ -501,7 +509,7 @@ export class VendorProductService {
       const existingProduct = await this.prisma.product.findFirst({
         where: {
           id: BigInt(variantId),
-          vendorId: BigInt(vendorId),
+          vendorId: BigInt(id),
         },
       });
 
@@ -527,8 +535,8 @@ export class VendorProductService {
 
       this.customLogger.logBusinessEvent(
         'product_variant_updated',
-        { vendorId, variantId },
-        vendorId,
+        { vendorId: id, variantId },
+        id,
       );
 
       return this.mapVariantToResponseDto(updatedProduct, variantId);
@@ -537,7 +545,7 @@ export class VendorProductService {
         throw error;
       }
       this.logger.error(
-        `Product variant update failed for vendor ${vendorId}, variant ${variantId}:`,
+        `Product variant update failed for vendor ${id}, variant ${variantId}:`,
         error,
       );
       throw new BadRequestException('Product variant update failed');
@@ -545,16 +553,17 @@ export class VendorProductService {
   }
 
   async deleteProductVariant(
-    vendorId: string,
+    vendor: Vendor,
     variantId: string,
   ): Promise<void> {
+    const {id} = vendor;
     const startTime = Date.now();
     try {
       // Check if product exists and belongs to vendor
       const existingProduct = await this.prisma.product.findFirst({
         where: {
           id: BigInt(variantId),
-          vendorId: BigInt(vendorId),
+          vendorId: BigInt(id),
         },
       });
 
@@ -578,15 +587,15 @@ export class VendorProductService {
 
       this.customLogger.logBusinessEvent(
         'product_variant_deleted',
-        { vendorId, variantId },
-        vendorId,
+        { vendorId: id, variantId },
+        id,
       );
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
       this.logger.error(
-        `Product variant deletion failed for vendor ${vendorId}, variant ${variantId}:`,
+        `Product variant deletion failed for vendor ${id}, variant ${variantId}:`,
         error,
       );
       throw new BadRequestException('Product variant deletion failed');
@@ -594,9 +603,10 @@ export class VendorProductService {
   }
 
   async createProductMapping(
-    vendorId: string,
+    vendor: Vendor,
     createProductMappingDto: CreateVendorProductMappingDto,
   ): Promise<VendorProductMappingResponseDto> {
+    const {id} = vendor;
     const startTime = Date.now();
     try {
       const { store_id, product_variant_id, price, stock, area_pincodes } =
@@ -606,7 +616,7 @@ export class VendorProductService {
       const store = await this.prisma.vendorStore.findFirst({
         where: {
           id: BigInt(store_id),
-          vendorId: BigInt(vendorId),
+          vendorId: BigInt(id),
         },
       });
 
@@ -618,7 +628,7 @@ export class VendorProductService {
       const product = await this.prisma.product.findFirst({
         where: {
           id: BigInt(product_variant_id),
-          vendorId: BigInt(vendorId),
+          vendorId: BigInt(id),
         },
       });
 
@@ -655,8 +665,8 @@ export class VendorProductService {
 
       this.customLogger.logBusinessEvent(
         'product_mapping_created',
-        { vendorId, storeId: store_id, productId: product_variant_id },
-        vendorId,
+        { vendorId: id, storeId: store_id, productId: product_variant_id },
+        id,
       );
 
       return this.mapMappingToResponseDto(product, store_id);
@@ -668,7 +678,7 @@ export class VendorProductService {
         throw error;
       }
       this.logger.error(
-        `Product mapping creation failed for vendor ${vendorId}:`,
+        `Product mapping creation failed for vendor ${id}:`,
         error,
       );
       throw new BadRequestException('Product mapping creation failed');
@@ -676,10 +686,11 @@ export class VendorProductService {
   }
 
   async updateProductMapping(
-    vendorId: string,
+    vendor: Vendor,
     mappingId: string,
     updateProductMappingDto: UpdateVendorProductMappingDto,
   ): Promise<VendorProductMappingResponseDto> {
+    const {id} = vendor;
     const startTime = Date.now();
     try {
       const { price, stock, area_pincodes, is_active } =
@@ -690,7 +701,7 @@ export class VendorProductService {
         where: {
           id: BigInt(mappingId),
           product: {
-            vendorId: BigInt(vendorId),
+            vendorId: BigInt(id),
           },
         },
         include: {
@@ -716,8 +727,8 @@ export class VendorProductService {
 
       this.customLogger.logBusinessEvent(
         'product_mapping_updated',
-        { vendorId, mappingId },
-        vendorId,
+        { vendorId: id, mappingId },
+        id,
       );
 
       return this.mapMappingToResponseDto(existingMapping.product, mappingId);
@@ -726,7 +737,7 @@ export class VendorProductService {
         throw error;
       }
       this.logger.error(
-        `Product mapping update failed for vendor ${vendorId}, mapping ${mappingId}:`,
+        `Product mapping update failed for vendor ${id}, mapping ${mappingId}:`,
         error,
       );
       throw new BadRequestException('Product mapping update failed');
@@ -734,7 +745,7 @@ export class VendorProductService {
   }
 
   async getProductMappings(
-    vendorId: string,
+    vendor: Vendor,
     page: number = 1,
     limit: number = 10,
   ): Promise<{
@@ -743,6 +754,7 @@ export class VendorProductService {
     page: number;
     limit: number;
   }> {
+    const {id} = vendor;
     const startTime = Date.now();
     try {
       const skip = (page - 1) * limit;
@@ -752,7 +764,7 @@ export class VendorProductService {
         this.prisma.productStoreMapping.findMany({
           where: {
             product: {
-              vendorId: BigInt(vendorId),
+              vendorId: BigInt(id),
             },
           },
           include: {
@@ -766,7 +778,7 @@ export class VendorProductService {
         this.prisma.productStoreMapping.count({
           where: {
             product: {
-              vendorId: BigInt(vendorId),
+              vendorId: BigInt(id),
             },
           },
         }),
@@ -774,8 +786,8 @@ export class VendorProductService {
 
       this.customLogger.logBusinessEvent(
         'product_mappings_retrieved',
-        { vendorId, count: mappingsData.length, page, limit },
-        vendorId,
+        { vendorId: id, count: mappingsData.length, page, limit },
+        id,
       );
 
       const mappings: VendorProductMappingResponseDto[] = mappingsData.map((mapping) =>
@@ -790,7 +802,7 @@ export class VendorProductService {
       };
     } catch (error) {
       this.logger.error(
-        `Product mappings retrieval failed for vendor ${vendorId}:`,
+        `Product mappings retrieval failed for vendor ${id}:`,
         error,
       );
       throw new BadRequestException('Failed to retrieve product mappings');

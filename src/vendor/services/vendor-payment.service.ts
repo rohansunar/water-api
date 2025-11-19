@@ -8,6 +8,7 @@ import {
   PaymentResponseDto,
 } from '../dto/payment.dto';
 import { PaginationQueryDto, PaginatedResponseDto } from '../dto/vendor.dto';
+import { Vendor } from '../interfaces/vendor.interface';
 
 @Injectable()
 export class VendorPaymentService {
@@ -22,11 +23,12 @@ export class VendorPaymentService {
    * @returns A promise that resolves to a paginated response of PaymentResponseDto.
    */
   async getPayments(
-    vendorId: string,
+    vendor: Vendor,
     paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<PaymentResponseDto>> {
+    const {id} = vendor;
     const allPayments = Array.from(this.payments.values()).filter(
-      (payment) => payment.vendorId === vendorId,
+      (payment) => payment.vendorId === id,
     );
 
     const total = allPayments.length;
@@ -58,11 +60,12 @@ export class VendorPaymentService {
    * @returns A promise that resolves to the PaymentResponseDto.
    */
   async getPaymentById(
-    vendorId: string,
+    vendor: Vendor,
     paymentId: string,
   ): Promise<PaymentResponseDto> {
+    const {id} = vendor;
     const payment = this.payments.get(paymentId);
-    if (!payment || payment.vendorId !== vendorId) {
+    if (!payment || payment.vendorId !== id) {
       throw new NotFoundException('Payment not found');
     }
     return payment;

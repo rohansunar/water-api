@@ -249,11 +249,7 @@ export class VendorService {
   }
 
   // Vendor Dashboard Methods
-  async getVendorOrders(userId: string): Promise<OrderResponseDto[]> {
-    const vendor = await this.findByUserId(userId);
-    if (!vendor) {
-      throw new NotFoundException('Vendor profile not found');
-    }
+  async getVendorOrders(vendor: Vendor): Promise<OrderResponseDto[]> {
 
     // In a real implementation, this would fetch orders from OrderService
     // For now, return mock data
@@ -288,13 +284,9 @@ export class VendorService {
 
   async updateOrderStatus(
     orderId: string,
-    userId: string,
+    vendor: Vendor,
     updateOrderStatusDto: UpdateOrderStatusDto,
   ): Promise<OrderResponseDto> {
-    const vendor = await this.findByUserId(userId);
-    if (!vendor) {
-      throw new NotFoundException('Vendor profile not found');
-    }
 
     // In a real implementation, this would update the order through OrderService
     // For now, return mock updated order
@@ -1142,13 +1134,9 @@ export class VendorService {
 
   // Order Management Methods
   async getPendingOrders(
-    userId: string,
+    vendor: Vendor,
     paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
-    const vendor = await this.findByUserId(userId);
-    if (!vendor) {
-      throw new NotFoundException('Vendor profile not found');
-    }
 
     // In real implementation, fetch pending orders from database
     // For now, return mock pending orders
@@ -1184,13 +1172,9 @@ export class VendorService {
   }
 
   async getCompletedOrders(
-    userId: string,
+    vendor: Vendor,
     paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
-    const vendor = await this.findByUserId(userId);
-    if (!vendor) {
-      throw new NotFoundException('Vendor profile not found');
-    }
 
     // In real implementation, fetch completed orders from database
     // For now, return mock completed orders
@@ -1226,13 +1210,9 @@ export class VendorService {
   }
 
   async getCancelledOrders(
-    userId: string,
+    vendor: Vendor,
     paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
-    const vendor = await this.findByUserId(userId);
-    if (!vendor) {
-      throw new NotFoundException('Vendor profile not found');
-    }
 
     // In real implementation, fetch cancelled orders from database
     // For now, return empty array (no cancelled orders)
@@ -1258,13 +1238,9 @@ export class VendorService {
 
   async acceptOrder(
     orderId: string,
-    userId: string,
+    vendor: Vendor,
     acceptOrderDto: AcceptOrderDto,
   ): Promise<OrderSummaryDto> {
-    const vendor = await this.findByUserId(userId);
-    if (!vendor) {
-      throw new NotFoundException('Vendor profile not found');
-    }
 
     // In real implementation, update order status in database
     // For now, return mock accepted order
@@ -1285,13 +1261,9 @@ export class VendorService {
 
   async rejectOrder(
     orderId: string,
-    userId: string,
+    vendor: Vendor,
     rejectOrderDto: RejectOrderDto,
   ): Promise<{ message: string }> {
-    const vendor = await this.findByUserId(userId);
-    if (!vendor) {
-      throw new NotFoundException('Vendor profile not found');
-    }
 
     // In real implementation, update order status in database
     this.logger.log(
