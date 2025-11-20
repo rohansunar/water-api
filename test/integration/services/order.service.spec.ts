@@ -112,6 +112,7 @@ describe('OrderService - Conflict Scenarios', () => {
         depositAmount: 0,
       };
       productService.findById.mockResolvedValue(product as any);
+      productService.updateStock.mockResolvedValue(product as any);
       productService.updateStock.mockResolvedValue(undefined);
 
       // Change payment method to COD to avoid wallet balance check
@@ -120,15 +121,15 @@ describe('OrderService - Conflict Scenarios', () => {
         payment_method: PaymentMethod.COD,
       };
 
-      const result = await service.create(userId, createOrderDto);
+      const result = await service.create(userId, codCreateOrderDto);
 
       expect(result).toBeDefined();
       expect(result.userId).toBe(userId);
       expect(result.productId).toBe('product456');
       expect(result.quantity).toBe(3);
-      expect(result.status).toBe(OrderStatus.CONFIRMED);
-      expect(result.paymentStatus).toBe(PaymentStatus.COMPLETED);
-      expect(productService.updateStock).toHaveBeenCalledWith('product456', -3);
+      expect(result.status).toBe(OrderStatus.PENDING);
+      expect(result.paymentStatus).toBe(PaymentStatus.PENDING);
+      expect(productService.updateStock).toHaveBeenCalledWith('456', -3);
     });
 
     it('should handle stock conflict with exact available quantity', async () => {
@@ -173,6 +174,8 @@ describe('OrderService - Conflict Scenarios', () => {
 
       expect(result).toBeDefined();
       expect(result.quantity).toBe(5);
+      expect(result.status).toBe(OrderStatus.PENDING);
+      expect(result.paymentStatus).toBe(PaymentStatus.PENDING);
       expect(productService.updateStock).toHaveBeenCalledWith('456', -5);
     });
   });
@@ -476,6 +479,14 @@ describe('OrderService - Conflict Scenarios', () => {
         percentage: 10,
         ruleId: 'rule123',
         scope: 'vendor',
+      } as any);
+
+      // Mock product service for commission calculation
+      productService.findById.mockResolvedValue({
+        id: BigInt(123),
+        name: 'Test Product',
+        category: 'test',
+        vendorId: BigInt(789),
       } as any);
 
       // Mock user profile with monthly payment mode by overriding the method

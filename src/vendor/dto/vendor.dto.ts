@@ -533,6 +533,14 @@ export class StoreResponseDto {
 // Product DTOs
 export class CreateVendorProductDto {
   @ApiProperty({
+    description: 'Store ID where the product is available',
+    example: '123',
+  })
+  @IsString()
+  @IsNotEmpty()
+  storeId: string;
+
+  @ApiProperty({
     description: 'Product title/name',
     example: 'Premium Mineral Water 20L',
   })
@@ -661,46 +669,6 @@ export class UpdateVendorProductDto {
   is_active?: boolean;
 }
 
-export class CreateVendorProductMappingDto {
-  @ApiProperty({
-    description: 'Store ID where product is available',
-    example: '123',
-  })
-  @IsString()
-  @IsNotEmpty()
-  store_id: string;
-
-  @ApiProperty({
-    description: 'Product variant ID',
-    example: '456',
-  })
-  @IsString()
-  @IsNotEmpty()
-  product_variant_id: string;
-
-  @ApiProperty({
-    description: 'Price for this store',
-    example: 50.0,
-  })
-  @IsOptional()
-  price?: number;
-
-  @ApiProperty({
-    description: 'Stock quantity available at this store',
-    example: 100,
-  })
-  @IsOptional()
-  stock?: number;
-
-  @ApiProperty({
-    description: 'Area pincodes where this mapping is applicable',
-    example: ['110001', '110002', '110003'],
-  })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  area_pincodes?: string[];
-}
 
 export class UpdateVendorProductMappingDto {
   @ApiProperty({

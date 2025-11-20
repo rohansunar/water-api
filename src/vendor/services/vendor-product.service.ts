@@ -11,7 +11,6 @@ import { VendorService } from './vendor.service';
 import {
   CreateVendorProductDto,
   UpdateVendorProductDto,
-  CreateVendorProductMappingDto,
   UpdateVendorProductMappingDto,
   VendorProductResponseDto,
   VendorProductMappingResponseDto,
@@ -36,6 +35,7 @@ export class VendorProductService {
     const startTime = Date.now();
     try {
       const {
+        storeId,
         title,
         sku,
         description,
@@ -72,6 +72,19 @@ export class VendorProductService {
           id,
         );
         throw new BadRequestException('Vendor is not active');
+      }
+
+      // Check if store exists and belongs to vendor
+      const storeRecord = await this.prisma.vendorStore.findFirst({
+        where: { id: BigInt(storeId), vendorId: BigInt(id) },
+      });
+      if (!storeRecord || storeRecord.vendorId !== BigInt(id)) {
+        this.customLogger.logBusinessEvent(
+          'product_creation_failure',
+          { vendorId: id, storeId, reason: 'store_not_found_or_not_owned' },
+          id,
+        );
+        throw new NotFoundException('Store not found or does not belong to vendor');
       }
 
       // Check if product name already exists for this vendor
@@ -116,6 +129,17 @@ export class VendorProductService {
           },
           hasDeposit: attributes?.hasDeposit || false,
           depositAmount: attributes?.depositAmount || 0,
+        },
+      });
+
+      // Create product-store mapping
+      await this.prisma.productStoreMapping.create({
+        data: {
+          productId: product.id,
+          storeId: BigInt(storeId),
+          price: base_price,
+          stockQuantity: 0,
+          isAvailable: true,
         },
       });
 
@@ -419,88 +443,6 @@ export class VendorProductService {
 
 
 
-  async createProductMapping(
-    vendor: Vendor,
-    createProductMappingDto: CreateVendorProductMappingDto,
-  ): Promise<VendorProductMappingResponseDto> {
-    const { id } = vendor;
-    const startTime = Date.now();
-    try {
-      const { store_id, product_variant_id, price, stock, area_pincodes } =
-        createProductMappingDto;
-
-      // Check if store exists and belongs to vendor
-      const store = await this.prisma.vendorStore.findFirst({
-        where: {
-          id: BigInt(store_id),
-          vendorId: BigInt(id),
-        },
-      });
-
-      if (!store) {
-        throw new NotFoundException('Store not found');
-      }
-
-      // Check if product exists and belongs to vendor
-      const product = await this.prisma.product.findFirst({
-        where: {
-          id: BigInt(product_variant_id),
-          vendorId: BigInt(id),
-        },
-      });
-
-      if (!product) {
-        throw new NotFoundException('Product not found');
-      }
-
-      // Check if mapping already exists
-      const existingMapping = await this.prisma.productStoreMapping.findFirst({
-        where: {
-          productId: BigInt(product_variant_id),
-          storeId: BigInt(store_id),
-        },
-      });
-
-      if (existingMapping) {
-        throw new ConflictException(
-          `Product mapping already exists for product ${product_variant_id} in store ${store_id}`,
-        );
-      }
-
-      // Create product mapping using ProductStoreMapping table
-      const mapping = await this.prisma.productStoreMapping.create({
-        data: {
-          productId: BigInt(product_variant_id),
-          storeId: BigInt(store_id),
-          price: price || product.price,
-          stockQuantity: stock || 0,
-          reservedStock: 0,
-          isAvailable: true,
-          areaPincodes: area_pincodes || [],
-        },
-      });
-
-      this.customLogger.logBusinessEvent(
-        'product_mapping_created',
-        { vendorId: id, storeId: store_id, productId: product_variant_id },
-        id,
-      );
-
-      return this.mapMappingToResponseDto(product, store_id);
-    } catch (error) {
-      if (
-        error instanceof NotFoundException ||
-        error instanceof ConflictException
-      ) {
-        throw error;
-      }
-      this.logger.error(
-        `Product mapping creation failed for vendor ${id}:`,
-        error,
-      );
-      throw new BadRequestException('Product mapping creation failed');
-    }
-  }
 
   async updateProductMapping(
     vendor: Vendor,
@@ -561,74 +503,6 @@ export class VendorProductService {
     }
   }
 
-  async getProductMappings(
-    vendor: Vendor,
-    page: number = 1,
-    limit: number = 10,
-  ): Promise<{
-    mappings: VendorProductMappingResponseDto[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
-    const { id } = vendor;
-    const startTime = Date.now();
-    try {
-      const skip = (page - 1) * limit;
-
-      // Get product mappings with related data
-      const [mappingsData, total] = await Promise.all([
-        this.prisma.productStoreMapping.findMany({
-          where: {
-            product: {
-              vendorId: BigInt(id),
-            },
-          },
-          include: {
-            product: true,
-            store: true,
-          },
-          skip,
-          take: limit,
-          orderBy: { createdAt: 'desc' },
-        }),
-        this.prisma.productStoreMapping.count({
-          where: {
-            product: {
-              vendorId: BigInt(id),
-            },
-          },
-        }),
-      ]);
-
-      this.customLogger.logBusinessEvent(
-        'product_mappings_retrieved',
-        { vendorId: id, count: mappingsData.length, page, limit },
-        id,
-      );
-
-      const mappings: VendorProductMappingResponseDto[] = mappingsData.map(
-        (mapping) =>
-          this.mapMappingToResponseDto(
-            mapping.product,
-            mapping.storeId.toString(),
-          ),
-      );
-
-      return {
-        mappings,
-        total,
-        page,
-        limit,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Product mappings retrieval failed for vendor ${id}:`,
-        error,
-      );
-      throw new BadRequestException('Failed to retrieve product mappings');
-    }
-  }
 
   private mapProductToResponseDto(product: any): VendorProductResponseDto {
     return {

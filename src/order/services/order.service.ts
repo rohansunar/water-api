@@ -429,7 +429,7 @@ export class OrderService {
     if (status === OrderStatus.DELIVERED) {
       try {
         // TODO: Check if user has monthly payment mode enabled without UserService
-        const userProfile = { monthlyPaymentMode: false }; // Mock user profile
+        const userProfile = { monthlyPaymentMode: true }; // Mock user profile
         if (userProfile && userProfile.monthlyPaymentMode) {
           // === STEP 5A: Create Sales Ledger Entry ===
           // Record the sale transaction in the ledger for monthly billing

@@ -198,6 +198,145 @@
       ]
     },
     {
+      "name": "Vendor Authentication",
+      "description": "Vendor authentication endpoints using OTP-based login",
+      "item": [
+        {
+          "name": "Vendor Send OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vendors/auth/send-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "auth", "send-otp"]
+            },
+            "description": "Send OTP to vendor phone number for authentication",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has success message\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('success');",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "    pm.expect(jsonData).to.have.property('expiresIn');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Vendor Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\",\n  \"otp\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vendors/auth/verify-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "auth", "verify-otp"]
+            },
+            "description": "Verify OTP and authenticate vendor",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has JWT token\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('token');",
+                    "    pm.expect(jsonData).to.have.property('vendor');",
+                    "    pm.expect(jsonData).to.have.property('expiresIn');",
+                    "});",
+                    "",
+                    "if (pm.response.code === 200) {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.collectionVariables.set('vendorToken', jsonData.token);",
+                    "}"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Vendor Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\",\n  \"password\": \"securePassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vendors/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "auth", "login"]
+            },
+            "description": "Authenticate vendor with phone and password",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has token\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('token');",
+                    "    pm.expect(jsonData).to.have.property('vendor');",
+                    "    pm.expect(jsonData).to.have.property('expiresIn');",
+                    "});",
+                    "",
+                    "if (pm.response.code === 200) {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.collectionVariables.set('vendorToken', jsonData.token);",
+                    "}"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "Rider Authentication",
       "description": "Phase 2 Security Endpoints - Rider authentication and profile management",
       "item": [
@@ -2827,7 +2966,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Premium Mineral Water 20L\",\n  \"sku\": \"PW-20L-001\",\n  \"description\": \"Premium quality mineral water in 20L container\",\n  \"category\": \"water_jar\",\n  \"attributes\": {\n    \"size\": \"20L\",\n    \"type\": \"mineral\",\n    \"brand\": \"AquaPure\"\n  },\n  \"base_price\": 50.00,\n  \"unit\": \"liter\"\n}"
+              "raw": "{\n  \"storeId\": \"123\",\n  \"title\": \"Premium Mineral Water 20L\",\n  \"sku\": \"PW-20L-001\",\n  \"description\": \"Premium quality mineral water in 20L container\",\n  \"category\": \"water_jar\",\n  \"attributes\": {\n    \"size\": \"20L\",\n    \"type\": \"mineral\",\n    \"brand\": \"AquaPure\"\n  },\n  \"base_price\": 50.00,\n  \"unit\": \"liter\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/vendors/me/products",
@@ -3334,6 +3473,866 @@
                     "    pm.expect(jsonData).to.have.property('total');",
                     "    pm.expect(jsonData).to.have.property('page');",
                     "    pm.expect(jsonData).to.have.property('limit');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vendor Orders",
+      "description": "Vendor order management endpoints",
+      "item": [
+        {
+          "name": "Get Vendor Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/me/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "me", "orders"]
+            },
+            "description": "Get all orders for the authenticated vendor",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response is array of orders\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.be.an('array');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"confirmed\",\n  \"notes\": \"Order confirmed and ready for pickup\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vendors/me/orders/:orderId/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "me", "orders", ":orderId", "status"],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "order123"
+                }
+              ]
+            },
+            "description": "Update the status of a specific order",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has updated order\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('status');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Pending Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/me/orders/pending?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "me", "orders", "pending"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get pending orders for the vendor with pagination",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has paginated data\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('data');",
+                    "    pm.expect(jsonData).to.have.property('total');",
+                    "    pm.expect(jsonData).to.have.property('page');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Completed Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/me/orders/completed?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "me", "orders", "completed"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get completed orders for the vendor with pagination",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has paginated data\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('data');",
+                    "    pm.expect(jsonData).to.have.property('total');",
+                    "    pm.expect(jsonData).to.have.property('page');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Cancelled Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/me/orders/cancelled?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "me", "orders", "cancelled"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get cancelled orders for the vendor with pagination",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has paginated data\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('data');",
+                    "    pm.expect(jsonData).to.have.property('total');",
+                    "    pm.expect(jsonData).to.have.property('page');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Accept Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estimatedPreparationTime\": 30,\n  \"specialInstructions\": \"Handle with care\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vendors/me/orders/:orderId/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "me", "orders", ":orderId", "accept"],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "order123"
+                }
+              ]
+            },
+            "description": "Accept a pending order",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has order summary\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('status');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Reject Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Out of stock\",\n  \"alternativeSuggestion\": \"Try ordering tomorrow\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vendors/me/orders/:orderId/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "me", "orders", ":orderId", "reject"],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "order123"
+                }
+              ]
+            },
+            "description": "Reject a pending order with reason",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has success message\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vendor Payments",
+      "description": "Vendor payment management endpoints",
+      "item": [
+        {
+          "name": "Get Vendor Payments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/me/payments?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "me", "payments"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get all payments for the authenticated vendor with pagination",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has paginated data\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('data');",
+                    "    pm.expect(jsonData).to.have.property('total');",
+                    "    pm.expect(jsonData).to.have.property('page');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Payment by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/me/payments/:paymentId",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "me", "payments", ":paymentId"],
+              "variable": [
+                {
+                  "key": "paymentId",
+                  "value": "payment123"
+                }
+              ]
+            },
+            "description": "Get a specific payment by ID",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has payment details\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('amount');",
+                    "    pm.expect(jsonData).to.have.property('status');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vendor Analytics & Reports",
+      "description": "Vendor analytics, reporting, and inventory management endpoints",
+      "item": [
+        {
+          "name": "Get Sales Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/analytics/sales?period=monthly&startDate=2024-01-01&endDate=2024-01-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "analytics", "sales"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "monthly"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-01-31"
+                }
+              ]
+            },
+            "description": "Get sales analytics for the vendor",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has analytics data\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('totalSales');",
+                    "    pm.expect(jsonData).to.have.property('totalOrders');",
+                    "    pm.expect(jsonData).to.have.property('salesData');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Product Performance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/analytics/products?page=1&limit=10&sortBy=totalSales&sortOrder=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "analytics", "products"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "totalSales"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": "Get product performance analytics",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has paginated data\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('data');",
+                    "    pm.expect(jsonData).to.have.property('total');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Customer Insights",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/analytics/customers?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "analytics", "customers"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get customer insights and analytics",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has paginated data\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('data');",
+                    "    pm.expect(jsonData).to.have.property('total');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Daily Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/reports/daily?date=2024-01-15",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "reports", "daily"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2024-01-15"
+                }
+              ]
+            },
+            "description": "Get daily sales and performance report",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has daily report data\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('date');",
+                    "    pm.expect(jsonData).to.have.property('totalSales');",
+                    "    pm.expect(jsonData).to.have.property('totalOrders');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Monthly Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/reports/monthly?month=2024-01",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "reports", "monthly"],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "2024-01"
+                }
+              ]
+            },
+            "description": "Get monthly sales and performance report",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has monthly report data\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('month');",
+                    "    pm.expect(jsonData).to.have.property('totalSales');",
+                    "    pm.expect(jsonData).to.have.property('totalOrders');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vendor Inventory Management",
+      "description": "Vendor inventory tracking and management endpoints",
+      "item": [
+        {
+          "name": "Get Inventory Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/inventory?page=1&limit=10&sortBy=lastUpdated&sortOrder=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "inventory"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "lastUpdated"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": "Get inventory status for all products",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has paginated data\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('data');",
+                    "    pm.expect(jsonData).to.have.property('total');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update Inventory",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 150,\n  \"reason\": \"New stock received\",\n  \"reference\": \"PO-2024-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vendors/inventory/:productId",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "inventory", ":productId"],
+              "variable": [
+                {
+                  "key": "productId",
+                  "value": "product123"
+                }
+              ]
+            },
+            "description": "Update inventory quantity for a specific product",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has updated inventory\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('productId');",
+                    "    pm.expect(jsonData).to.have.property('currentStock');",
+                    "    pm.expect(jsonData).to.have.property('lastUpdated');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Adjust Inventory",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"product123\",\n  \"adjustmentQuantity\": 50,\n  \"adjustmentType\": \"stock_in\",\n  \"reason\": \"New delivery received\",\n  \"reference\": \"ADJ-2024-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vendors/inventory/adjustment",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "inventory", "adjustment"]
+            },
+            "description": "Adjust inventory with detailed tracking",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has adjustment result\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "    pm.expect(jsonData).to.have.property('newStock');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Low Stock Alerts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/inventory/alerts",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "inventory", "alerts"]
+            },
+            "description": "Get low stock alerts for products",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response is array of alerts\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.be.an('array');",
                     "});"
                   ]
                 }

@@ -88,6 +88,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
   describe('createProduct - Conflict Scenarios', () => {
     it('should throw ConflictException when product name already exists for vendor', async () => {
       const createProductDto = {
+        storeId: '789',
         title: 'Existing Product',
         sku: 'SKU123',
         description: 'Description',
@@ -101,6 +102,12 @@ describe('VendorProductService - Conflict Scenarios', () => {
       prismaService.vendor.findFirst.mockResolvedValueOnce({
         id: BigInt(123),
         isActive: true,
+      } as any);
+
+      // Mock store exists and belongs to vendor
+      prismaService.vendorStore.findFirst.mockResolvedValueOnce({
+        id: BigInt(789),
+        vendorId: BigInt(123),
       } as any);
 
       // Mock existing product with same name
@@ -126,6 +133,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
 
     it('should throw ConflictException when creating product with duplicate name (case sensitive)', async () => {
       const createProductDto = {
+        storeId: '789',
         title: 'existing product',
         sku: 'SKU123',
         description: 'Description',
@@ -141,6 +149,12 @@ describe('VendorProductService - Conflict Scenarios', () => {
         isActive: true,
       } as any);
 
+      // Mock store exists and belongs to vendor
+      prismaService.vendorStore.findFirst.mockResolvedValueOnce({
+        id: BigInt(789),
+        vendorId: BigInt(123),
+      } as any);
+
       // Mock existing product with different case
       prismaService.product.findFirst.mockResolvedValueOnce({
         id: BigInt(456),
@@ -152,6 +166,224 @@ describe('VendorProductService - Conflict Scenarios', () => {
       ).rejects.toThrow(ConflictException);
 
       expect(prismaService.product.create).not.toHaveBeenCalled();
+    });
+  
+    describe('createProduct - Store Validation', () => {
+      it('should throw BadRequestException when storeId is missing', async () => {
+        const invalidDto = {
+          title: 'Test Product',
+          sku: 'SKU123',
+          description: 'Description',
+          category: 'Category',
+          attributes: {},
+          base_price: 100,
+          unit: 'kg',
+        } as any; // Cast to bypass TypeScript check for testing
+
+        // Mock vendor exists and is active
+        prismaService.vendor.findFirst.mockResolvedValueOnce({
+          id: BigInt(123),
+          isActive: true,
+        } as any);
+
+        await expect(
+          service.createProduct(mockVendor, invalidDto),
+        ).rejects.toThrow(BadRequestException);
+      });
+  
+      it('should throw NotFoundException when store does not exist', async () => {
+        const createProductDto = {
+          storeId: '999',
+          title: 'Test Product',
+          sku: 'SKU123',
+          description: 'Description',
+          category: 'Category',
+          attributes: {},
+          base_price: 100,
+          unit: 'kg',
+        };
+  
+        // Mock vendor exists and is active
+        prismaService.vendor.findFirst.mockResolvedValueOnce({
+          id: BigInt(123),
+          isActive: true,
+        } as any);
+  
+        // Mock store not found
+        prismaService.vendorStore.findFirst.mockResolvedValueOnce(null);
+  
+        await expect(
+          service.createProduct(mockVendor, createProductDto),
+        ).rejects.toThrow(NotFoundException);
+  
+        expect(customLogger.logBusinessEvent).toHaveBeenCalledWith(
+          'product_creation_failure',
+          {
+            vendorId: mockVendor.id,
+            storeId: '999',
+            reason: 'store_not_found_or_not_owned',
+          },
+          mockVendor.id,
+        );
+      });
+  
+      it('should throw NotFoundException when store does not belong to vendor', async () => {
+        const createProductDto = {
+          storeId: '999',
+          title: 'Test Product',
+          sku: 'SKU123',
+          description: 'Description',
+          category: 'Category',
+          attributes: {},
+          base_price: 100,
+          unit: 'kg',
+        };
+  
+        // Mock vendor exists and is active
+        prismaService.vendor.findFirst.mockResolvedValueOnce({
+          id: BigInt(123),
+          isActive: true,
+        } as any);
+  
+        // Mock store exists but belongs to different vendor
+        prismaService.vendorStore.findFirst.mockResolvedValueOnce({
+          id: BigInt(999),
+          vendorId: BigInt(456), // Different vendor
+        } as any);
+  
+        await expect(
+          service.createProduct(mockVendor, createProductDto),
+        ).rejects.toThrow(NotFoundException);
+  
+        expect(customLogger.logBusinessEvent).toHaveBeenCalledWith(
+          'product_creation_failure',
+          {
+            vendorId: mockVendor.id,
+            storeId: '999',
+            reason: 'store_not_found_or_not_owned',
+          },
+          mockVendor.id,
+        );
+      });
+  
+      it('should successfully create product with valid storeId', async () => {
+        const createProductDto = {
+          storeId: '789',
+          title: 'New Product',
+          sku: 'SKU123',
+          description: 'Description',
+          category: 'Category',
+          attributes: { specifications: { brand: 'TestBrand' } },
+          base_price: 100,
+          unit: 'kg',
+        };
+  
+        // Mock vendor exists and is active
+        prismaService.vendor.findFirst.mockResolvedValueOnce({
+          id: BigInt(123),
+          isActive: true,
+        } as any);
+  
+        // Mock store exists and belongs to vendor
+        prismaService.vendorStore.findFirst.mockResolvedValueOnce({
+          id: BigInt(789),
+          vendorId: BigInt(123),
+        } as any);
+  
+        // Mock no existing product
+        prismaService.product.findFirst.mockResolvedValueOnce(null);
+  
+        // Mock product creation
+        const createdProduct = {
+          id: BigInt(999),
+          vendorId: BigInt(123),
+          name: 'New Product',
+          category: 'Category',
+          price: 100,
+          description: 'Description',
+          capacity: 'kg',
+          unit: 'kg',
+          stock: 0,
+          stockQuantity: 0,
+          isAvailable: true,
+          minOrderQuantity: 1,
+          maxOrderQuantity: 1000,
+          areaPincodes: [],
+          images: [],
+          specifications: { sku: 'SKU123', brand: 'TestBrand' },
+          hasDeposit: false,
+          depositAmount: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        prismaService.product.create.mockResolvedValue(createdProduct as any);
+  
+        // Mock product-store mapping creation
+        const createdMapping = {
+          id: BigInt(1000),
+          productId: BigInt(999),
+          storeId: BigInt(789),
+          price: 100,
+          stockQuantity: 0,
+          isAvailable: true,
+        };
+        prismaService.productStoreMapping.create.mockResolvedValue(createdMapping as any);
+  
+        const result = await service.createProduct(mockVendor, createProductDto);
+  
+        expect(result).toBeDefined();
+        expect(result.id).toBe('999');
+        expect(result.title).toBe('New Product');
+        expect(result.base_price).toBe(100);
+  
+        // Verify product creation was called with correct data
+        expect(prismaService.product.create).toHaveBeenCalledWith({
+          data: {
+            vendorId: BigInt(123),
+            name: 'New Product',
+            category: 'Category',
+            price: 100,
+            description: 'Description',
+            capacity: 'kg',
+            unit: 'kg',
+            stock: 0,
+            stockQuantity: 0,
+            isAvailable: true,
+            minOrderQuantity: 1,
+            maxOrderQuantity: 1000,
+            areaPincodes: [],
+            images: [],
+            specifications: {
+              sku: 'SKU123',
+              brand: 'TestBrand',
+            },
+            hasDeposit: false,
+            depositAmount: 0,
+          },
+        });
+  
+        // Verify product-store mapping creation
+        expect(prismaService.productStoreMapping.create).toHaveBeenCalledWith({
+          data: {
+            productId: BigInt(999),
+            storeId: BigInt(789),
+            price: 100,
+            stockQuantity: 0,
+            isAvailable: true,
+          },
+        });
+  
+        // Verify logging
+        expect(customLogger.logBusinessEvent).toHaveBeenCalledWith(
+          'product_created',
+          {
+            vendorId: mockVendor.id,
+            productId: '999',
+            productTitle: 'New Product',
+          },
+          mockVendor.id,
+        );
+      });
     });
   });
 
@@ -251,103 +483,11 @@ describe('VendorProductService - Conflict Scenarios', () => {
   });
 
 
-  describe('createProductMapping - Conflict Scenarios', () => {
-    it('should throw ConflictException when product mapping already exists', async () => {
-      const createMappingDto = {
-        store_id: '789',
-        product_variant_id: '456',
-        price: 150,
-        stock: 50,
-        area_pincodes: ['110001'],
-      };
-
-      // Mock store exists
-      prismaService.vendorStore.findFirst.mockResolvedValue({
-        id: BigInt(789),
-        vendorId: BigInt(123),
-      } as any);
-
-      // Mock product exists
-      prismaService.product.findFirst.mockResolvedValue({
-        id: BigInt(456),
-        vendorId: BigInt(123),
-        price: 100,
-      } as any);
-
-      // Mock existing mapping
-      prismaService.productStoreMapping.findFirst.mockResolvedValue({
-        id: BigInt(999),
-        productId: BigInt(456),
-        storeId: BigInt(789),
-      } as any);
-
-      await expect(
-        service.createProductMapping(mockVendor, createMappingDto),
-      ).rejects.toThrow(ConflictException);
-
-      expect(prismaService.productStoreMapping.create).not.toHaveBeenCalled();
-    });
-
-    it('should allow creating mapping when no existing mapping exists', async () => {
-      const createMappingDto = {
-        store_id: '789',
-        product_variant_id: '456',
-        price: 150,
-        stock: 50,
-        area_pincodes: ['110001'],
-      };
-
-      const product = {
-        id: BigInt(456),
-        vendorId: BigInt(123),
-        name: 'Test Product',
-        price: 100,
-      };
-
-      // Mock store exists
-      prismaService.vendorStore.findFirst.mockResolvedValue({
-        id: BigInt(789),
-        vendorId: BigInt(123),
-      } as any);
-
-      // Mock product exists
-      prismaService.product.findFirst.mockResolvedValue(product as any);
-
-      // Mock no existing mapping
-      prismaService.productStoreMapping.findFirst.mockResolvedValue(null);
-
-      // Mock create mapping
-      const createdMapping = {
-        id: BigInt(999),
-        productId: BigInt(456),
-        storeId: BigInt(789),
-        price: 150,
-        stockQuantity: 50,
-        reservedStock: 0,
-        isAvailable: true,
-        areaPincodes: ['110001'],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      prismaService.productStoreMapping.create.mockResolvedValue(
-        createdMapping as any,
-      );
-
-      const result = await service.createProductMapping(
-        mockVendor,
-        createMappingDto,
-      );
-
-      expect(result.product_id).toBe('456');
-      expect(result.store_id).toBe('789');
-      expect(result.price).toBe(150);
-      expect(result.stock).toBe(50);
-    });
-  });
 
   describe('Error Response Structure Verification', () => {
     it('should throw standard NestJS exceptions that get converted by filter', async () => {
       const createProductDto = {
+        storeId: '789',
         title: 'Test Product',
         sku: 'SKU123',
         description: 'Description',
@@ -367,6 +507,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
 
     it('should throw ConflictException with proper message', async () => {
       const createProductDto = {
+        storeId: '789',
         title: 'Existing Product',
         sku: 'SKU123',
         description: 'Description',
@@ -380,6 +521,12 @@ describe('VendorProductService - Conflict Scenarios', () => {
       prismaService.vendor.findFirst.mockResolvedValueOnce({
         id: BigInt(123),
         isActive: true,
+      } as any);
+
+      // Mock store exists and belongs to vendor
+      prismaService.vendorStore.findFirst.mockResolvedValueOnce({
+        id: BigInt(789),
+        vendorId: BigInt(123),
       } as any);
 
       // Mock existing product
@@ -400,47 +547,10 @@ describe('VendorProductService - Conflict Scenarios', () => {
   });
 
   describe('Backward Compatibility', () => {
-    it('should maintain existing error messages for ConflictException', async () => {
-      const createMappingDto = {
-        store_id: '789',
-        product_variant_id: '456',
-        price: 150,
-        stock: 50,
-        area_pincodes: ['110001'],
-      };
-
-      // Mock store exists
-      prismaService.vendorStore.findFirst.mockResolvedValue({
-        id: BigInt(789),
-        vendorId: BigInt(123),
-      } as any);
-
-      // Mock product exists
-      prismaService.product.findFirst.mockResolvedValue({
-        id: BigInt(456),
-        vendorId: BigInt(123),
-        price: 100,
-      } as any);
-
-      // Mock existing mapping
-      prismaService.productStoreMapping.findFirst.mockResolvedValue({
-        id: BigInt(999),
-        productId: BigInt(456),
-        storeId: BigInt(789),
-      } as any);
-
-      try {
-        await service.createProductMapping(mockVendor, createMappingDto);
-        fail('Expected ConflictException to be thrown');
-      } catch (error) {
-        expect(error).toBeInstanceOf(ConflictException);
-        expect(error.message).toContain('Product mapping already exists');
-        expect(error.message).toContain('store');
-      }
-    });
 
     it('should handle undefined optional fields gracefully', async () => {
       const createProductDto = {
+        storeId: '789',
         title: 'Test Product',
         sku: 'SKU123',
         description: 'Description',
@@ -454,6 +564,12 @@ describe('VendorProductService - Conflict Scenarios', () => {
       prismaService.vendor.findFirst.mockResolvedValueOnce({
         id: BigInt(123),
         isActive: true,
+      } as any);
+
+      // Mock store exists and belongs to vendor
+      prismaService.vendorStore.findFirst.mockResolvedValueOnce({
+        id: BigInt(789),
+        vendorId: BigInt(123),
       } as any);
 
       // Mock no existing product
@@ -483,6 +599,16 @@ describe('VendorProductService - Conflict Scenarios', () => {
         updatedAt: new Date(),
       };
       prismaService.product.create.mockResolvedValue(createdProduct as any);
+
+      // Mock product-store mapping creation
+      prismaService.productStoreMapping.create.mockResolvedValue({
+        id: BigInt(1000),
+        productId: BigInt(999),
+        storeId: BigInt(789),
+        price: 100,
+        stockQuantity: 0,
+        isAvailable: true,
+      } as any);
 
       const result = await service.createProduct(mockVendor, createProductDto);
 

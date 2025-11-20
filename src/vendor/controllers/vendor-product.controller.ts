@@ -23,7 +23,6 @@ import { VendorProductService } from '../services/vendor-product.service';
 import {
   CreateVendorProductDto,
   UpdateVendorProductDto,
-  CreateVendorProductMappingDto,
   UpdateVendorProductMappingDto,
   VendorProductResponseDto,
   VendorProductMappingResponseDto,
@@ -358,55 +357,6 @@ export class VendorProductController {
 
 
 
-  @Post('/mapping')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: 'Create product mapping',
-    description: 'Create a mapping for a product to a specific store',
-  })
-  @ApiBody({ type: CreateVendorProductMappingDto })
-  @ApiResponse({
-    status: 201,
-    description: 'Product mapping created successfully',
-    type: VendorProductMappingResponseDto,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Store or product not found',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 404 },
-        message: { type: 'string', example: 'Store not found' },
-        error: { type: 'string', example: 'Not Found' },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 409,
-    description: 'Product mapping already exists',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 409 },
-        message: {
-          type: 'string',
-          example: 'Product mapping already exists for this store',
-        },
-        error: { type: 'string', example: 'Conflict' },
-      },
-    },
-  })
-  async createProductMapping(
-    @Body() createProductMappingDto: CreateVendorProductMappingDto,
-    @CurrentVendor() vendor: Vendor,
-  ): Promise<VendorProductMappingResponseDto> {
-    this.logger.log(`Product mapping creation attempt for vendor: ${vendor.id}`);
-    return this.vendorProductService.createProductMapping(
-      vendor,
-      createProductMappingDto,
-    );
-  }
 
   @Put('/mapping/:id')
   @HttpCode(HttpStatus.OK)
@@ -447,64 +397,4 @@ export class VendorProductController {
     );
   }
 
-  @Get('/mapping')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Get product mappings',
-    description: 'Retrieve all product mappings for the authenticated vendor',
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Page number (default: 1)',
-    example: 1,
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Number of items per page (default: 10)',
-    example: 10,
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Product mappings retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        mappings: {
-          type: 'array',
-          items: {
-            $ref: '#/components/schemas/VendorProductMappingResponseDto',
-          },
-        },
-        total: { type: 'number', example: 25 },
-        page: { type: 'number', example: 1 },
-        limit: { type: 'number', example: 10 },
-      },
-    },
-  })
-  async getProductMappings(
-    @CurrentVendor() vendor: Vendor,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ): Promise<{
-    mappings: VendorProductMappingResponseDto[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
-
-    this.logger.log(
-      `Product mappings retrieval attempt for vendor: ${vendor.id}, page: ${pageNum}, limit: ${limitNum}`,
-    );
-    return this.vendorProductService.getProductMappings(
-      vendor,
-      pageNum,
-      limitNum,
-    );
-  }
 }
