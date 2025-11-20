@@ -1,0 +1,6 @@
+enum CommissionScope {
+  GLOBAL
+  CATEGORY
+  VENDOR
+  PRODUCT
+}

@@ -1,0 +1,26 @@
+model Customer {
+  id                 BigInt    @id @default(autoincrement())
+  uuid               String    @unique @default(uuid())
+  phone              String    @unique
+  email              String?   @unique
+  passwordHash       String?
+  name               String?
+  walletBalance      Decimal   @default(0) @db.Decimal(10, 2)
+  role               UserRole
+  loyaltyPoints      Int       @default(0)
+  preferences        Json?
+  isActive           Boolean   @default(true)
+  monthlyPaymentMode Boolean   @default(false)
+  isDeleted          Boolean   @default(false)
+  createdAt          DateTime  @default(now()) @db.Timestamptz
+  updatedAt          DateTime  @default(now()) @updatedAt @db.Timestamptz
+  lastActiveAt       DateTime? @db.Timestamptz
+
+  // Relations
+  addresses     CustomerAddress[]
+  orders        Order[]
+  subscriptions Subscription[]
+  deliveryTasks DeliveryTask[]
+
+  @@map("customers")
+}

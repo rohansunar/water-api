@@ -174,6 +174,7 @@ export class VendorProductController {
     page: number;
     limit: number;
   }> {
+    console.log(vendor)
     const { id, isActive } = vendor;
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;

@@ -1,0 +1,40 @@
+model Order {
+  id                   BigInt
+  orderUuid            String    @unique @default(uuid())
+  customerId           BigInt
+  vendorId             BigInt?
+  storeId              BigInt?
+  riderId              BigInt?
+  addressId            BigInt
+  orderNumber          String    @unique
+  status               String    @default("placed")
+  subtotal             Decimal   @db.Decimal(10, 2)
+  deliveryFee          Decimal   @default(0) @db.Decimal(8, 2)
+  taxAmount            Decimal   @default(0) @db.Decimal(8, 2)
+  totalAmount          Decimal   @db.Decimal(10, 2)
+  paymentMethod        String    @default("cash")
+  paymentStatus        String    @default("pending")
+  deliveryInstructions String?
+  scheduledDelivery    DateTime? @db.Timestamptz
+  deliveredAt          DateTime? @db.Timestamptz
+  subscriptionId       BigInt?
+  createdAt            DateTime  @default(now()) @db.Timestamptz
+  updatedAt            DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  customer         Customer          @relation(fields: [customerId], references: [id])
+  vendor           Vendor?           @relation(fields: [vendorId], references: [id])
+  store            VendorStore?      @relation(fields: [storeId], references: [id])
+  rider            Rider?            @relation(fields: [riderId], references: [id])
+  address          CustomerAddress   @relation(fields: [addressId], references: [id])
+  subscription     Subscription?     @relation(fields: [subscriptionId], references: [id])
+  items            OrderItem[]
+  payments         Payment[]
+  ledgerEntries    LedgerEntry[]
+  refunds          Refund[]
+  deliveryTask     DeliveryTask?
+  cashTransactions CashTransaction[]
+
+  @@id([id, createdAt])
+  @@map("orders")
+}

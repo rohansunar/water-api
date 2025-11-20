@@ -1,0 +1,8 @@
+enum TaskStatus {
+  ASSIGNED
+  ACCEPTED
+  PICKED_UP
+  DELIVERED
+  FAILED
+  CANCELLED
+}

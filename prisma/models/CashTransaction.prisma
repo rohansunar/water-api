@@ -1,0 +1,25 @@
+model CashTransaction {
+  id              BigInt    @id @default(autoincrement())
+  transactionUuid String    @unique @default(uuid())
+  orderId         BigInt?
+  orderCreatedAt  DateTime? @db.Timestamptz
+  riderId         BigInt?
+  vendorId        BigInt?
+  type            String // 'delivery_payment', 'rider_earning', 'refund', 'adjustment'
+  amount          Decimal   @db.Decimal(10, 2)
+  paymentMethod   String // 'cash', 'online', 'wallet'
+  status          String    @default("pending") // 'pending', 'completed', 'failed', 'cancelled'
+  reference       String? // Order number, transaction ID, etc.
+  notes           String?
+  processedBy     BigInt? // Admin or staff who processed
+  processedAt     DateTime? @db.Timestamptz
+  createdAt       DateTime  @default(now()) @db.Timestamptz
+  updatedAt       DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  order  Order?  @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt])
+  rider  Rider?  @relation(fields: [riderId], references: [id])
+  vendor Vendor? @relation(fields: [vendorId], references: [id])
+
+  @@map("cash_transactions")
+}

@@ -1,0 +1,14 @@
+model OutboxEvent {
+  id            BigInt    @id @default(autoincrement())
+  eventUuid     String    @unique @default(uuid())
+  eventType     String // 'order_placed', 'delivery_assigned', 'delivery_completed', etc.
+  aggregateId   String // ID of the aggregate that triggered the event
+  aggregateType String // 'order', 'delivery_task', 'rider', etc.
+  payload       Json // Event data
+  published     Boolean   @default(false)
+  publishedAt   DateTime? @db.Timestamptz
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  retryCount    Int       @default(0)
+
+  @@map("outbox_events")
+}

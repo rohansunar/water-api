@@ -1,0 +1,16 @@
+model CommissionRule {
+  id         BigInt          @id @default(autoincrement())
+  scope      CommissionScope
+  scopeId    String? // category name, vendor uuid, product uuid
+  percentage Decimal         @db.Decimal(5, 2)
+  priority   Int             @default(0) // higher = more specific
+  isActive   Boolean         @default(true)
+  createdBy  BigInt // admin id
+  createdAt  DateTime        @default(now()) @db.Timestamptz
+  updatedAt  DateTime        @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  admin Admin @relation(fields: [createdBy], references: [id])
+
+  @@map("commission_rules")
+}

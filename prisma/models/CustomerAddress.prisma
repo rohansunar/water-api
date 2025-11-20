@@ -1,0 +1,21 @@
+model CustomerAddress {
+  id         BigInt      @id @default(autoincrement())
+  customerId BigInt
+  type       AddressType
+  street     String
+  city       String?
+  state      String?
+  pincode    String
+  landmark   String?
+  latitude   Decimal?    @db.Decimal(10, 8)
+  longitude  Decimal?    @db.Decimal(11, 8)
+  isDefault  Boolean     @default(false)
+  createdAt  DateTime    @default(now()) @db.Timestamptz
+  updatedAt  DateTime    @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  Order    Order[]
+
+  @@map("customer_addresses")
+}

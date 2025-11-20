@@ -1,0 +1,6 @@
+enum ProductModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FLAGGED
+}

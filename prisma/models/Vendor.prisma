@@ -1,0 +1,32 @@
+model Vendor {
+  id            BigInt    @id @default(autoincrement())
+  phone         String?   @unique
+  email         String?   @unique
+  passwordHash  String?
+  name          String?
+  kycStatus     String    @default("pending")
+  gstin         String?
+  bankAccountId BigInt?
+  rating        Decimal?  @default(0) @db.Decimal(3, 2)
+  isVerified    Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  isDeleted     Boolean   @default(false)
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  updatedAt     DateTime  @default(now()) @updatedAt @db.Timestamptz
+  lastActiveAt  DateTime? @db.Timestamptz
+  metadata      Json?
+
+  // Relations
+  stores           VendorStore[]
+  addresses        VendorAddress[]
+  products         Product[]
+  orders           Order[]
+  subscriptions    Subscription[]
+  ledgerEntries    LedgerEntry[]
+  payouts          Payout[]
+  deliveryTasks    DeliveryTask[]
+  staff            VendorStaff[]
+  cashTransactions CashTransaction[]
+
+  @@map("vendors")
+}

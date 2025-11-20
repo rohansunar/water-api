@@ -1,0 +1,18 @@
+model OrderItem {
+  id              BigInt   @id @default(autoincrement())
+  orderId         BigInt
+  orderCreatedAt  DateTime @db.Timestamptz
+  productId       BigInt
+  quantity        Int
+  unitPrice       Decimal  @db.Decimal(10, 2)
+  totalPrice      Decimal? @db.Decimal(10, 2)
+  productSnapshot Json?
+
+  // Relations
+  order                 Order                @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt], onDelete: Cascade)
+  product               Product              @relation(fields: [productId], references: [id])
+  ProductStoreMapping   ProductStoreMapping? @relation(fields: [productStoreMappingId], references: [id])
+  productStoreMappingId BigInt?
+
+  @@map("order_items")
+}

@@ -235,8 +235,9 @@ export class VendorProfileDto {
   @ApiProperty({
     description: 'Business name',
     example: 'Fresh Water Solutions',
+    required: false,
   })
-  businessName: string;
+  businessName?: string;
 
   @ApiProperty({
     description: 'Vendor email',
@@ -282,7 +283,6 @@ export class VendorSendOtpDto {
   })
   @IsString()
   @IsNotEmpty()
-  @IsPhoneNumber('IN')
   phone: string;
 }
 
@@ -293,7 +293,6 @@ export class VendorVerifyOtpDto {
   })
   @IsString()
   @IsNotEmpty()
-  @IsPhoneNumber('IN')
   phone: string;
 
   @ApiProperty({
@@ -302,9 +301,6 @@ export class VendorVerifyOtpDto {
   })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(6)
-  @MinLength(6)
-  @Matches(/^\d{6}$/, { message: 'OTP must be exactly 6 digits' })
   otp: string;
 }
 
@@ -335,7 +331,6 @@ export class VendorLoginDto {
   })
   @IsString()
   @IsNotEmpty()
-  @IsPhoneNumber('IN')
   phone: string;
 
   @ApiProperty({

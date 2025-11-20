@@ -1,0 +1,20 @@
+model ProductStoreMapping {
+  id            BigInt   @id @default(autoincrement())
+  productId     BigInt
+  storeId       BigInt
+  price         Decimal? @db.Decimal(10, 2)
+  stockQuantity Int      @default(0)
+  reservedStock Int      @default(0)
+  isAvailable   Boolean  @default(true)
+  areaPincodes  String[] @default([])
+  createdAt     DateTime @default(now()) @db.Timestamptz
+  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  store      VendorStore @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@unique([productId, storeId])
+  @@map("product_store_mapping")
+}

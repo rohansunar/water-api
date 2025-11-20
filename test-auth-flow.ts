@@ -71,6 +71,9 @@ async function testVendorAuthenticationFlow() {
 
     console.log('✅ OTP Verification Response:', verifyOtpResponse.body);
 
+    // Assert that vendor name is not set for OTP-based creation
+    expect(verifyOtpResponse.body.vendor.businessName).toBeNull();
+
     // Extract JWT token
     const token = verifyOtpResponse.body.token;
     if (!token) {

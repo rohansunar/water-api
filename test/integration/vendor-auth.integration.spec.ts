@@ -27,6 +27,10 @@ describe('Vendor Authentication (Integration)', () => {
         },
       }),
     );
+
+    // Set test environment for OTP
+    process.env.OTP_TEST_MODE = 'true';
+
     await app.init();
 
     prismaService = app.get(PrismaService);
@@ -62,6 +66,117 @@ describe('Vendor Authentication (Integration)', () => {
 
   afterAll(async () => {
     await app.close();
+  });
+
+  describe('POST /vendors/auth/send-otp', () => {
+    it('should successfully send OTP for valid phone number', async () => {
+      const sendOtpDto = {
+        phone: '+919876543211',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/vendors/auth/send-otp')
+        .send(sendOtpDto)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('message');
+      expect(response.body).toHaveProperty('expiresIn', 30);
+      expect(response.body).toHaveProperty('otp'); // Available in test mode
+    });
+
+    it('should fail with missing phone field', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/vendors/auth/send-otp')
+        .send({})
+        .expect(400);
+
+      expect(response.body).toHaveProperty('statusCode', 400);
+      expect(response.body).toHaveProperty('error', 'Bad Request');
+    });
+  });
+
+  describe('POST /vendors/auth/verify-otp', () => {
+    let otp: string;
+
+    beforeEach(async () => {
+      // Send OTP first
+      const sendOtpDto = {
+        phone: '+919876543212',
+      };
+
+      const sendResponse = await request(app.getHttpServer())
+        .post('/vendors/auth/send-otp')
+        .send(sendOtpDto)
+        .expect(200);
+
+      otp = sendResponse.body.otp;
+    });
+
+    it('should successfully verify OTP and create vendor with name not set', async () => {
+      const verifyOtpDto = {
+        phone: '+919876543212',
+        otp,
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/vendors/auth/verify-otp')
+        .send(verifyOtpDto)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('token');
+      expect(response.body).toHaveProperty('vendor');
+      expect(response.body).toHaveProperty('expiresIn');
+      expect(typeof response.body.token).toBe('string');
+      expect(response.body.token.length).toBeGreaterThan(0);
+      expect(response.body.vendor).toHaveProperty('id');
+      expect(response.body.vendor).toHaveProperty('businessName', null); // Name not set during OTP creation
+      expect(response.body.vendor).toHaveProperty('phone', '+919876543212');
+      expect(response.body.expiresIn).toBe(36000);
+    });
+
+    it('should fail verification with invalid OTP', async () => {
+      const verifyOtpDto = {
+        phone: '+919876543212',
+        otp: 'invalid',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/vendors/auth/verify-otp')
+        .send(verifyOtpDto)
+        .expect(401);
+
+      expect(response.body).toHaveProperty('statusCode', 401);
+      expect(response.body).toHaveProperty('message', 'Invalid OTP');
+    });
+
+    it('should fail with missing phone field', async () => {
+      const verifyOtpDto = {
+        otp,
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/vendors/auth/verify-otp')
+        .send(verifyOtpDto)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('statusCode', 400);
+      expect(response.body).toHaveProperty('error', 'Bad Request');
+    });
+
+    it('should fail with missing otp field', async () => {
+      const verifyOtpDto = {
+        phone: '+919876543212',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/vendors/auth/verify-otp')
+        .send(verifyOtpDto)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('statusCode', 400);
+      expect(response.body).toHaveProperty('error', 'Bad Request');
+    });
   });
 
   describe('POST /vendors/auth/login', () => {

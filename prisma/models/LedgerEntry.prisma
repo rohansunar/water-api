@@ -1,0 +1,22 @@
+model LedgerEntry {
+  id             BigInt    @id @default(autoincrement())
+  vendorId       BigInt
+  userId         BigInt?
+  orderId        BigInt?
+  orderCreatedAt DateTime? @db.Timestamptz
+  type           String
+  amount         Decimal   @db.Decimal(10, 2)
+  balanceAfter   Decimal   @db.Decimal(10, 2)
+  status         String?
+  description    String?
+  referenceId    String?
+  metadata       Json?
+  createdAt      DateTime  @default(now()) @db.Timestamptz
+  updatedAt      DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+  order  Order? @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt])
+
+  @@map("ledger_entries")
+}

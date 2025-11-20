@@ -1,0 +1,20 @@
+model Payment {
+  id             BigInt    @id @default(autoincrement())
+  orderId        BigInt
+  orderCreatedAt DateTime  @db.Timestamptz
+  amount         Decimal   @db.Decimal(10, 2)
+  method         String
+  status         String
+  transactionId  String?
+  paymentGateway String?
+  metadata       Json?
+  completedAt    DateTime? @db.Timestamptz
+  failedAt       DateTime? @db.Timestamptz
+  failureReason  String?
+  createdAt      DateTime  @default(now()) @db.Timestamptz
+
+  // Relations
+  order Order @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt], onDelete: Cascade)
+
+  @@map("payments")
+}

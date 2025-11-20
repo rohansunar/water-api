@@ -1,0 +1,24 @@
+model Admin {
+  id           BigInt    @id @default(autoincrement())
+  uuid         String    @unique @default(uuid())
+  phone        String?   @unique
+  email        String?   @unique
+  passwordHash String?
+  name         String
+  roleLevel    String    @default("support")
+  permissions  Json?
+  isActive     Boolean   @default(true)
+  isDeleted    Boolean   @default(false)
+  createdAt    DateTime  @default(now()) @db.Timestamptz
+  updatedAt    DateTime  @default(now()) @updatedAt @db.Timestamptz
+  lastActiveAt DateTime? @db.Timestamptz
+
+  // Relations
+  commissionRules   CommissionRule[]
+  moderatedProducts Product[]
+  processedRefunds  Refund[]         @relation("RefundProcessor")
+  approvedRefunds   Refund[]         @relation("RefundApprover")
+  auditLogs         AuditLog[]
+
+  @@map("admins")
+}

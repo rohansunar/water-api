@@ -1,0 +1,27 @@
+model Rider {
+  id           BigInt    @id @default(autoincrement())
+  uuid         String    @unique @default(uuid())
+  phone        String?   @unique
+  email        String?   @unique
+  passwordHash String?
+  name         String
+  licenseNo    String?
+  vehicleType  String?
+  shift        Json?
+  status       String    @default("inactive")
+  rating       Decimal?  @default(0) @db.Decimal(3, 2)
+  isActive     Boolean   @default(true)
+  isDeleted    Boolean   @default(false)
+  createdAt    DateTime  @default(now()) @db.Timestamptz
+  updatedAt    DateTime  @default(now()) @updatedAt @db.Timestamptz
+  lastActiveAt DateTime? @db.Timestamptz
+  metadata     Json?
+
+  // Relations
+  orders           Order[]
+  deliveryTasks    DeliveryTask[]
+  deliveryEvents   DeliveryEvent[]
+  cashTransactions CashTransaction[]
+
+  @@map("riders")
+}

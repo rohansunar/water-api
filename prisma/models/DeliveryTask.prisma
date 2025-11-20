@@ -1,0 +1,27 @@
+model DeliveryTask {
+  id             BigInt    @id @default(autoincrement())
+  orderId        BigInt
+  orderCreatedAt DateTime  @db.Timestamptz
+  riderId        BigInt
+  status         String
+  assignedAt     DateTime?
+  pickedUpAt     DateTime?
+  deliveredAt    DateTime?
+  failedAt       DateTime?
+  failureReason  String?
+  location       Json?
+  metadata       Json?
+  createdAt      DateTime  @default(now()) @db.Timestamptz
+
+  // Relations
+  order         Order           @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt])
+  rider         Rider           @relation(fields: [riderId], references: [id])
+  Customer      Customer?       @relation(fields: [customerId], references: [id])
+  customerId    BigInt?
+  Vendor        Vendor?         @relation(fields: [vendorId], references: [id])
+  vendorId      BigInt?
+  DeliveryEvent DeliveryEvent[]
+
+  @@unique([orderId, orderCreatedAt])
+  @@map("delivery_tasks")
+}

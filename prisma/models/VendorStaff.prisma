@@ -1,0 +1,20 @@
+model VendorStaff {
+  id           BigInt    @id @default(autoincrement())
+  uuid         String    @unique @default(uuid())
+  vendorId     BigInt
+  name         String
+  phone        String?   @unique
+  email        String?   @unique
+  role         String // 'manager', 'staff', 'delivery_coordinator'
+  permissions  Json? // Specific permissions for this staff member
+  isActive     Boolean   @default(true)
+  isDeleted    Boolean   @default(false)
+  createdAt    DateTime  @default(now()) @db.Timestamptz
+  updatedAt    DateTime  @default(now()) @updatedAt @db.Timestamptz
+  lastActiveAt DateTime? @db.Timestamptz
+
+  // Relations
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("vendor_staff")
+}

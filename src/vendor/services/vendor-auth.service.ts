@@ -7,6 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../common/database/prisma.service';
+import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 import { OtpService } from '../../common/services/otp.service';
@@ -167,10 +168,9 @@ export class VendorAuthService {
         },
         create: {
           phone,
-          name: phone, // Use phone as default name for OTP-based registration
           isVerified: true,
           lastActiveAt: new Date(),
-        },
+        } as Prisma.VendorUncheckedCreateInput,
       });
       this.customLogger.logDatabaseOperation(
         'upsert',

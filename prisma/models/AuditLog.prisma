@@ -1,0 +1,18 @@
+model AuditLog {
+  id           BigInt   @id @default(autoincrement())
+  adminId      BigInt
+  action       String // e.g., 'user_status_updated', 'product_approved', 'refund_processed'
+  resourceType String // e.g., 'user', 'product', 'order', 'refund'
+  resourceId   String // ID of the affected resource
+  oldValues    Json? // Previous state (optional)
+  newValues    Json? // New state (optional)
+  metadata     Json? // Additional context
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now()) @db.Timestamptz
+
+  // Relations
+  admin Admin @relation(fields: [adminId], references: [id])
+
+  @@map("audit_logs")
+}

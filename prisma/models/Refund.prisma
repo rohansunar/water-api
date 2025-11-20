@@ -1,0 +1,24 @@
+model Refund {
+  id             BigInt       @id @default(autoincrement())
+  orderId        BigInt
+  orderCreatedAt DateTime     @db.Timestamptz
+  amount         Decimal      @db.Decimal(10, 2)
+  reason         String
+  status         RefundStatus @default(PENDING)
+  refundMethod   String?
+  transactionId  String?
+  processedBy    BigInt?
+  processedAt    DateTime?    @db.Timestamptz
+  approvedBy     BigInt?
+  approvedAt     DateTime?    @db.Timestamptz
+  notes          String?
+  createdAt      DateTime     @default(now()) @db.Timestamptz
+  updatedAt      DateTime     @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  order     Order  @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt])
+  processor Admin? @relation("RefundProcessor", fields: [processedBy], references: [id])
+  approver  Admin? @relation("RefundApprover", fields: [approvedBy], references: [id])
+
+  @@map("refunds")
+}

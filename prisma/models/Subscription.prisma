@@ -1,0 +1,27 @@
+model Subscription {
+  id                 BigInt    @id @default(autoincrement())
+  customerId         BigInt
+  productId          BigInt
+  quantity           Int
+  frequency          String
+  status             String
+  startDate          DateTime?
+  endDate            DateTime?
+  nextDeliveryDate   DateTime?
+  pausedAt           DateTime?
+  cancelledAt        DateTime?
+  cancellationReason String?
+  deliveryAddress    Json?
+  productSnapshot    Json?
+  metadata           Json?
+  createdAt          DateTime  @default(now()) @db.Timestamptz
+
+  // Relations
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id])
+  Vendor   Vendor?  @relation(fields: [vendorId], references: [id])
+  vendorId BigInt?
+  Order    Order[]
+
+  @@map("subscriptions")
+}

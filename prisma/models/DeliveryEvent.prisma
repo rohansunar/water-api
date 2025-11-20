@@ -1,0 +1,16 @@
+model DeliveryEvent {
+  id        BigInt   @id @default(autoincrement())
+  taskId    BigInt
+  eventType String // 'task_assigned', 'task_accepted', 'pickup_started', 'delivered', etc.
+  eventData Json? // Event-specific data
+  riderId   BigInt?
+  location  Json? // GPS coordinates at event time
+  metadata  Json? // Additional context
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  // Relations
+  task  DeliveryTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  rider Rider?       @relation(fields: [riderId], references: [id])
+
+  @@map("delivery_events")
+}
