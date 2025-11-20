@@ -661,59 +661,6 @@ export class UpdateVendorProductDto {
   is_active?: boolean;
 }
 
-export class CreateVendorProductVariantDto {
-  @ApiProperty({
-    description: 'Variant SKU',
-    example: 'PW-20L-MINERAL-001',
-  })
-  @IsString()
-  @IsNotEmpty()
-  variant_sku: string;
-
-  @ApiProperty({
-    description: 'Variant attributes that differ from base product',
-    example: { type: 'mineral', brand: 'AquaPure' },
-  })
-  @IsOptional()
-  @IsObject()
-  attributes?: Record<string, any>;
-
-  @ApiProperty({
-    description: 'Price override for this variant',
-    example: 55.0,
-  })
-  @IsOptional()
-  price_override?: number;
-}
-
-export class UpdateVendorProductVariantDto {
-  @ApiProperty({
-    description: 'Variant attributes that differ from base product',
-    example: { type: 'mineral', brand: 'AquaPure' },
-    required: false,
-  })
-  @IsOptional()
-  @IsObject()
-  attributes?: Record<string, any>;
-
-  @ApiProperty({
-    description: 'Price override for this variant',
-    example: 55.0,
-    required: false,
-  })
-  @IsOptional()
-  price_override?: number;
-
-  @ApiProperty({
-    description: 'Variant active status',
-    example: true,
-    required: false,
-  })
-  @IsOptional()
-  @IsBoolean()
-  is_active?: boolean;
-}
-
 export class CreateVendorProductMappingDto {
   @ApiProperty({
     description: 'Store ID where product is available',

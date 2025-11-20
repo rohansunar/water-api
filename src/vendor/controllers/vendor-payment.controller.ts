@@ -71,15 +71,14 @@ export class VendorPaymentController {
     @CurrentVendor() vendor: Vendor,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<PaymentResponseDto>> {
-    const { id } = vendor;
     try {
-      this.logger.log(`Getting payments for vendor: ${id}`);
+      this.logger.log(`Getting payments for vendor: ${vendor.id}`);
       return await this.vendorPaymentService.getPayments(
         vendor,
         paginationQuery,
       );
     } catch (error) {
-      this.logger.error(`Error getting payments for vendor ${id}:`, error);
+      this.logger.error(`Error getting payments for vendor ${vendor.id}:`, error);
       throw error;
     }
   }
@@ -110,13 +109,12 @@ export class VendorPaymentController {
     @Param('id') paymentId: string,
     @CurrentVendor() vendor: Vendor,
   ): Promise<PaymentResponseDto> {
-    const { id } = vendor;
     try {
-      this.logger.log(`Getting payment ${paymentId} for vendor: ${id}`);
+      this.logger.log(`Getting payment ${paymentId} for vendor: ${vendor.id}`);
       return await this.vendorPaymentService.getPaymentById(vendor, paymentId);
     } catch (error) {
       this.logger.error(
-        `Error getting payment ${paymentId} for vendor ${id}:`,
+        `Error getting payment ${paymentId} for vendor ${vendor.id}:`,
         error,
       );
       throw error;

@@ -92,9 +92,8 @@ export class VendorStoreController {
     @Body() createStoreDto: CreateStoreDto,
     @CurrentVendor() vendor: Vendor,
   ): Promise<StoreResponseDto> {
-    const { id } = vendor;
     this.logger.log(
-      `Store creation attempt for vendor: ${id}, store name: ${createStoreDto.name}`,
+      `Store creation attempt for vendor: ${vendor.id}, store name: ${createStoreDto.name}`,
     );
     return this.vendorStoreService.createStore(vendor, createStoreDto);
   }
@@ -166,14 +165,13 @@ export class VendorStoreController {
     page: number;
     limit: number;
   }> {
-    const { id } = vendor;
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
     const isActiveBool =
       isActive !== undefined ? isActive === 'true' : undefined;
 
     this.logger.log(
-      `Stores retrieval attempt for vendor: ${id}, page: ${pageNum}, limit: ${limitNum}`,
+      `Stores retrieval attempt for vendor: ${vendor.id}, page: ${pageNum}, limit: ${limitNum}`,
     );
     return this.vendorStoreService.getStores(
       vendor,
@@ -223,9 +221,8 @@ export class VendorStoreController {
     @Param('id') storeId: string,
     @CurrentVendor() vendor: Vendor,
   ): Promise<StoreResponseDto> {
-    const { id } = vendor;
     this.logger.log(
-      `Store retrieval attempt for vendor: ${id}, store ID: ${storeId}`,
+      `Store retrieval attempt for vendor: ${vendor.id}, store ID: ${storeId}`,
     );
     return this.vendorStoreService.getStoreById(vendor, storeId);
   }
@@ -286,9 +283,8 @@ export class VendorStoreController {
     @Body() updateStoreDto: UpdateStoreDto,
     @CurrentVendor() vendor: Vendor,
   ): Promise<StoreResponseDto> {
-    const { id } = vendor;
     this.logger.log(
-      `Store update attempt for vendor: ${id}, store ID: ${storeId}`,
+      `Store update attempt for vendor: ${vendor.id}, store ID: ${storeId}`,
     );
     return this.vendorStoreService.updateStore(vendor, storeId, updateStoreDto);
   }
@@ -331,9 +327,8 @@ export class VendorStoreController {
     @Param('id') storeId: string,
     @CurrentVendor() vendor: Vendor,
   ): Promise<void> {
-    const { id } = vendor;
     this.logger.log(
-      `Store deletion attempt for vendor: ${id}, store ID: ${storeId}`,
+      `Store deletion attempt for vendor: ${vendor.id}, store ID: ${storeId}`,
     );
     await this.vendorStoreService.deleteStore(vendor, storeId);
   }

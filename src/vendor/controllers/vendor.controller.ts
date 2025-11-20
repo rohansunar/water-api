@@ -44,89 +44,89 @@ export class VendorController {
   // Analytics & Reports Endpoints
   @Get('analytics/sales')
   async getSalesAnalytics(
-    @CurrentVendor() user: User,
+    @CurrentVendor() vendor: User,
     @Query() analyticsQuery: SalesAnalyticsDto,
   ): Promise<SalesAnalyticsResponseDto> {
-    this.logger.log(`Getting sales analytics for vendor user: ${user.id}`);
-    return this.vendorService.getSalesAnalytics(user.id, analyticsQuery);
+    this.logger.log(`Getting sales analytics for vendor user: ${vendor.id}`);
+    return this.vendorService.getSalesAnalytics(vendor.id, analyticsQuery);
   }
 
   @Get('analytics/products')
   async getProductPerformance(
-    @CurrentVendor() user: User,
+    @CurrentVendor() vendor: User,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<ProductPerformanceDto>> {
-    this.logger.log(`Getting product performance for vendor user: ${user.id}`);
-    return this.vendorService.getProductPerformance(user.id, paginationQuery);
+    this.logger.log(`Getting product performance for vendor user: ${vendor.id}`);
+    return this.vendorService.getProductPerformance(vendor.id, paginationQuery);
   }
 
   @Get('analytics/customers')
   async getCustomerInsights(
-    @CurrentVendor() user: User,
+    @CurrentVendor() vendor: User,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<CustomerInsightsDto>> {
-    this.logger.log(`Getting customer insights for vendor user: ${user.id}`);
-    return this.vendorService.getCustomerInsights(user.id, paginationQuery);
+    this.logger.log(`Getting customer insights for vendor user: ${vendor.id}`);
+    return this.vendorService.getCustomerInsights(vendor.id, paginationQuery);
   }
 
   @Get('reports/daily')
   async getDailyReport(
-    @CurrentVendor() user: User,
+    @CurrentVendor() vendor: User,
     @Query('date') date?: string,
   ): Promise<DailyReportDto> {
-    this.logger.log(`Getting daily report for vendor user: ${user.id}`);
-    return this.vendorService.getDailyReport(user.id, date);
+    this.logger.log(`Getting daily report for vendor user: ${vendor.id}`);
+    return this.vendorService.getDailyReport(vendor.id, date);
   }
 
   @Get('reports/monthly')
   async getMonthlyReport(
-    @CurrentVendor() user: User,
+    @CurrentVendor() vendor: User,
     @Query('month') month?: string,
   ): Promise<MonthlyReportDto> {
-    this.logger.log(`Getting monthly report for vendor user: ${user.id}`);
-    return this.vendorService.getMonthlyReport(user.id, month);
+    this.logger.log(`Getting monthly report for vendor user: ${vendor.id}`);
+    return this.vendorService.getMonthlyReport(vendor.id, month);
   }
 
   // Inventory Management Endpoints
   @Get('inventory')
   async getInventoryStatus(
-    @CurrentVendor() user: User,
+    @CurrentVendor() vendor: User,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<InventoryStatusDto>> {
-    this.logger.log(`Getting inventory status for vendor user: ${user.id}`);
-    return this.vendorService.getInventoryStatus(user.id, paginationQuery);
+    this.logger.log(`Getting inventory status for vendor user: ${vendor.id}`);
+    return this.vendorService.getInventoryStatus(vendor.id, paginationQuery);
   }
 
   @Put('inventory/:productId')
   async updateInventory(
     @Param('productId') productId: string,
-    @CurrentVendor() user: User,
+    @CurrentVendor() vendor: User,
     @Body() updateInventoryDto: UpdateInventoryDto,
   ): Promise<InventoryStatusDto> {
     this.logger.log(
-      `Updating inventory for product ${productId} by vendor user: ${user.id}`,
+      `Updating inventory for product ${productId} by vendor user: ${vendor.id}`,
     );
     return this.vendorService.updateInventory(
       productId,
-      user.id,
+      vendor.id,
       updateInventoryDto,
     );
   }
 
   @Post('inventory/adjustment')
   async adjustInventory(
-    @CurrentVendor() user: User,
+    @CurrentVendor() vendor: User,
     @Body() adjustmentDto: InventoryAdjustmentDto,
   ): Promise<{ message: string; newStock: number }> {
-    this.logger.log(`Adjusting inventory for vendor user: ${user.id}`);
-    return this.vendorService.adjustInventory(user.id, adjustmentDto);
+    this.logger.log(`Adjusting inventory for vendor user: ${vendor.id}`);
+    return this.vendorService.adjustInventory(vendor.id, adjustmentDto);
   }
 
   @Get('inventory/alerts')
   async getLowStockAlerts(
-    @CurrentVendor() user: User,
+    @CurrentVendor() vendor: User,
   ): Promise<LowStockAlertDto[]> {
-    this.logger.log(`Getting low stock alerts for vendor user: ${user.id}`);
-    return this.vendorService.getLowStockAlerts(user.id);
+    this.logger.log(`Getting low stock alerts for vendor user: ${vendor.id}`);
+    return this.vendorService.getLowStockAlerts(vendor.id);
   }
 }

@@ -11,12 +11,9 @@ import { VendorService } from './vendor.service';
 import {
   CreateVendorProductDto,
   UpdateVendorProductDto,
-  CreateVendorProductVariantDto,
-  UpdateVendorProductVariantDto,
   CreateVendorProductMappingDto,
   UpdateVendorProductMappingDto,
   VendorProductResponseDto,
-  VendorProductVariantResponseDto,
   VendorProductMappingResponseDto,
 } from '../dto/vendor.dto';
 import { Vendor } from '../interfaces/vendor.interface';
@@ -419,184 +416,8 @@ export class VendorProductService {
     }
   }
 
-  async createProductVariant(
-    vendor: Vendor,
-    productId: string,
-    createProductVariantDto: CreateVendorProductVariantDto,
-  ): Promise<VendorProductVariantResponseDto> {
-    const { id } = vendor;
-    const startTime = Date.now();
-    try {
-      const { variant_sku, attributes, price_override } =
-        createProductVariantDto;
 
-      // Check if product exists and belongs to vendor
-      const product = await this.prisma.product.findFirst({
-        where: {
-          id: BigInt(productId),
-          vendorId: BigInt(id),
-        },
-      });
 
-      if (!product) {
-        throw new NotFoundException('Product not found');
-      }
-
-      // Check if variant SKU already exists in specifications
-      if (
-        product.specifications &&
-        (product.specifications as any).sku === variant_sku
-      ) {
-        throw new ConflictException(
-          `Product variant with SKU '${variant_sku}' already exists for product ${productId}`,
-        );
-      }
-
-      // Update product with variant information
-      const updatedSpecifications = {
-        ...((product.specifications as any) || {}),
-        sku: variant_sku,
-        ...attributes,
-      };
-
-      const updateData: any = {
-        specifications: updatedSpecifications,
-      };
-
-      if (price_override !== undefined) {
-        updateData.price = price_override;
-      }
-
-      const updatedProduct = await this.prisma.product.update({
-        where: { id: BigInt(productId) },
-        data: updateData,
-      });
-
-      this.customLogger.logBusinessEvent(
-        'product_variant_created',
-        { vendorId: id, productId, variantSku: variant_sku },
-        id,
-      );
-
-      return this.mapVariantToResponseDto(updatedProduct, productId);
-    } catch (error) {
-      if (
-        error instanceof NotFoundException ||
-        error instanceof ConflictException
-      ) {
-        throw error;
-      }
-      this.logger.error(
-        `Product variant creation failed for vendor ${id}, product ${productId}:`,
-        error,
-      );
-      throw new BadRequestException('Product variant creation failed');
-    }
-  }
-
-  async updateProductVariant(
-    vendor: Vendor,
-    variantId: string,
-    updateProductVariantDto: UpdateVendorProductVariantDto,
-  ): Promise<VendorProductVariantResponseDto> {
-    const { id } = vendor;
-    const startTime = Date.now();
-    try {
-      const { attributes, price_override, is_active } = updateProductVariantDto;
-
-      // Check if product exists and belongs to vendor
-      const existingProduct = await this.prisma.product.findFirst({
-        where: {
-          id: BigInt(variantId),
-          vendorId: BigInt(id),
-        },
-      });
-
-      if (!existingProduct) {
-        throw new NotFoundException('Product variant not found');
-      }
-
-      // Update variant
-      const updateData: any = {};
-      if (price_override !== undefined) updateData.price = price_override;
-      if (attributes) {
-        updateData.specifications = {
-          ...((existingProduct.specifications as any) || {}),
-          ...attributes,
-        };
-      }
-      if (is_active !== undefined) updateData.isActive = is_active;
-
-      const updatedProduct = await this.prisma.product.update({
-        where: { id: BigInt(variantId) },
-        data: updateData,
-      });
-
-      this.customLogger.logBusinessEvent(
-        'product_variant_updated',
-        { vendorId: id, variantId },
-        id,
-      );
-
-      return this.mapVariantToResponseDto(updatedProduct, variantId);
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(
-        `Product variant update failed for vendor ${id}, variant ${variantId}:`,
-        error,
-      );
-      throw new BadRequestException('Product variant update failed');
-    }
-  }
-
-  async deleteProductVariant(vendor: Vendor, variantId: string): Promise<void> {
-    const { id } = vendor;
-    const startTime = Date.now();
-    try {
-      // Check if product exists and belongs to vendor
-      const existingProduct = await this.prisma.product.findFirst({
-        where: {
-          id: BigInt(variantId),
-          vendorId: BigInt(id),
-        },
-      });
-
-      if (!existingProduct) {
-        throw new NotFoundException('Product variant not found');
-      }
-
-      // Reset variant-specific data
-      const currentSpecs = (existingProduct.specifications as any) || {};
-      const updatedSpecs = { ...currentSpecs };
-      delete updatedSpecs.sku;
-
-      await this.prisma.product.update({
-        where: { id: BigInt(variantId) },
-        data: {
-          specifications: updatedSpecs,
-          price: existingProduct.price, // Keep original price
-          isActive: false,
-        },
-      });
-
-      this.customLogger.logBusinessEvent(
-        'product_variant_deleted',
-        { vendorId: id, variantId },
-        id,
-      );
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(
-        `Product variant deletion failed for vendor ${id}, variant ${variantId}:`,
-        error,
-      );
-      throw new BadRequestException('Product variant deletion failed');
-    }
-  }
 
   async createProductMapping(
     vendor: Vendor,
@@ -833,22 +654,6 @@ export class VendorProductService {
     };
   }
 
-  private mapVariantToResponseDto(
-    product: any,
-    productId: string,
-  ): VendorProductVariantResponseDto {
-    return {
-      id: product.id.toString(),
-      product_id: productId,
-      variant_sku:
-        product.specifications?.sku || `VARIANT-${product.id.toString()}`,
-      attributes: product.specifications || {},
-      price_override: product.price,
-      is_active: product.isActive,
-      created_at: product.createdAt,
-      updated_at: product.updatedAt,
-    };
-  }
 
   private mapMappingToResponseDto(
     product: any,

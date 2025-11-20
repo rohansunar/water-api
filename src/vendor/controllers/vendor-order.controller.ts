@@ -65,12 +65,11 @@ export class VendorOrderController {
   async getVendorOrders(
     @CurrentVendor() vendor: Vendor,
   ): Promise<OrderResponseDto[]> {
-    const { id } = vendor;
     try {
-      this.logger.log(`Getting orders for vendor: ${id}`);
+      this.logger.log(`Getting orders for vendor: ${vendor.id}`);
       return await this.vendorOrderService.getVendorOrders(vendor);
     } catch (error) {
-      this.logger.error(`Error getting orders for vendor ${id}:`, error);
+      this.logger.error(`Error getting orders for vendor ${vendor.id}:`, error);
       throw error;
     }
   }
@@ -112,9 +111,8 @@ export class VendorOrderController {
     @CurrentVendor() vendor: Vendor,
     @Body() updateOrderStatusDto: UpdateOrderStatusDto,
   ): Promise<OrderResponseDto> {
-    const { id } = vendor;
     try {
-      this.logger.log(`Updating order ${orderId} status for vendor: ${id}`);
+      this.logger.log(`Updating order ${orderId} status for vendor: ${vendor.id}`);
       return await this.vendorOrderService.updateOrderStatus(
         orderId,
         vendor,
@@ -122,7 +120,7 @@ export class VendorOrderController {
       );
     } catch (error) {
       this.logger.error(
-        `Error updating order ${orderId} status for vendor ${id}:`,
+        `Error updating order ${orderId} status for vendor ${vendor.id}:`,
         error,
       );
       throw error;
@@ -176,16 +174,15 @@ export class VendorOrderController {
     @CurrentVendor() vendor: Vendor,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
-    const { id } = vendor;
     try {
-      this.logger.log(`Getting pending orders for vendor: ${id}`);
+      this.logger.log(`Getting pending orders for vendor: ${vendor.id}`);
       return await this.vendorOrderService.getPendingOrders(
         vendor,
         paginationQuery,
       );
     } catch (error) {
       this.logger.error(
-        `Error getting pending orders for vendor ${id}:`,
+        `Error getting pending orders for vendor ${vendor.id}:`,
         error,
       );
       throw error;
@@ -239,16 +236,15 @@ export class VendorOrderController {
     @CurrentVendor() vendor: Vendor,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
-    const { id } = vendor;
     try {
-      this.logger.log(`Getting completed orders for vendor: ${id}`);
+      this.logger.log(`Getting completed orders for vendor: ${vendor.id}`);
       return await this.vendorOrderService.getCompletedOrders(
         vendor,
         paginationQuery,
       );
     } catch (error) {
       this.logger.error(
-        `Error getting completed orders for vendor ${id}:`,
+        `Error getting completed orders for vendor ${vendor.id}:`,
         error,
       );
       throw error;
@@ -302,16 +298,15 @@ export class VendorOrderController {
     @CurrentVendor() vendor: Vendor,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<OrderSummaryDto>> {
-    const { id } = vendor;
     try {
-      this.logger.log(`Getting cancelled orders for vendor: ${id}`);
+      this.logger.log(`Getting cancelled orders for vendor: ${vendor.id}`);
       return await this.vendorOrderService.getCancelledOrders(
         vendor,
         paginationQuery,
       );
     } catch (error) {
       this.logger.error(
-        `Error getting cancelled orders for vendor ${id}:`,
+        `Error getting cancelled orders for vendor ${vendor.id}:`,
         error,
       );
       throw error;
@@ -350,9 +345,8 @@ export class VendorOrderController {
     @CurrentVendor() vendor: Vendor,
     @Body() acceptOrderDto: AcceptOrderDto,
   ): Promise<OrderSummaryDto> {
-    const { id } = vendor;
     try {
-      this.logger.log(`Accepting order ${orderId} for vendor: ${id}`);
+      this.logger.log(`Accepting order ${orderId} for vendor: ${vendor.id}`);
       return await this.vendorOrderService.acceptOrder(
         orderId,
         vendor,
@@ -360,7 +354,7 @@ export class VendorOrderController {
       );
     } catch (error) {
       this.logger.error(
-        `Error accepting order ${orderId} for vendor ${id}:`,
+        `Error accepting order ${orderId} for vendor ${vendor.id}:`,
         error,
       );
       throw error;
@@ -404,9 +398,8 @@ export class VendorOrderController {
     @CurrentVendor() vendor: Vendor,
     @Body() rejectOrderDto: RejectOrderDto,
   ): Promise<{ message: string }> {
-    const { id } = vendor;
     try {
-      this.logger.log(`Rejecting order ${orderId} for vendor: ${id}`);
+      this.logger.log(`Rejecting order ${orderId} for vendor: ${vendor.id}`);
       return await this.vendorOrderService.rejectOrder(
         orderId,
         vendor,
@@ -414,7 +407,7 @@ export class VendorOrderController {
       );
     } catch (error) {
       this.logger.error(
-        `Error rejecting order ${orderId} for vendor ${id}:`,
+        `Error rejecting order ${orderId} for vendor ${vendor.id}:`,
         error,
       );
       throw error;
