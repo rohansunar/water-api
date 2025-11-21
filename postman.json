@@ -5635,6 +5635,118 @@
           }
         },
         {
+          "name": "Create Store Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Main Store\",\n  \"line1\": \"123 Main Street\",\n  \"line2\": \"Near Central Mall\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"country\": \"India\",\n  \"pincode\": \"400001\",\n  \"latitude\": 19.0760,\n  \"longitude\": 72.8777,\n  \"isDefault\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vendors/me/stores/:storeId/addresses",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "me", "stores", ":storeId", "addresses"],
+              "variable": [
+                {
+                  "key": "storeId",
+                  "value": "store123"
+                }
+              ]
+            },
+            "description": "Create a new address for a specific store",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 201\", function () {",
+                    "    pm.response.to.have.status(201);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has address fields\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('storeId');",
+                    "    pm.expect(jsonData).to.have.property('label');",
+                    "    pm.expect(jsonData).to.have.property('line1');",
+                    "    pm.expect(jsonData).to.have.property('city');",
+                    "    pm.expect(jsonData).to.have.property('pincode');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update Store Address",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Updated Main Store\",\n  \"line1\": \"456 Updated Street\",\n  \"line2\": \"Near New Mall\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"country\": \"India\",\n  \"pincode\": \"400002\",\n  \"latitude\": 19.0761,\n  \"longitude\": 72.8778,\n  \"isDefault\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vendors/me/stores/:storeId/addresses/:addressId",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "me", "stores", ":storeId", "addresses", ":addressId"],
+              "variable": [
+                {
+                  "key": "storeId",
+                  "value": "store123"
+                },
+                {
+                  "key": "addressId",
+                  "value": "address123"
+                }
+              ]
+            },
+            "description": "Update an existing store address",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has updated address\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('storeId');",
+                    "    pm.expect(jsonData).to.have.property('label');",
+                    "    pm.expect(jsonData).to.have.property('line1');",
+                    "    pm.expect(jsonData).to.have.property('city');",
+                    "    pm.expect(jsonData).to.have.property('pincode');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
           "name": "Complaint Management",
           "description": "Customer complaint management endpoints",
           "item": [

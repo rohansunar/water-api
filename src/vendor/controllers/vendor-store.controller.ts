@@ -24,6 +24,9 @@ import {
   CreateStoreDto,
   UpdateStoreDto,
   StoreResponseDto,
+  CreateStoreAddressDto,
+  UpdateStoreAddressDto,
+  StoreAddressResponseDto,
 } from '../dto/vendor.dto';
 import { VendorJwtAuthGuard } from '../guards/vendor-jwt-auth.guard';
 import { CurrentVendor } from '../decorators/current-vendor.decorator';
@@ -331,5 +334,96 @@ export class VendorStoreController {
       `Store deletion attempt for vendor: ${vendor.id}, store ID: ${storeId}`,
     );
     await this.vendorStoreService.deleteStore(vendor, storeId);
+  }
+
+  @Post(':storeId/addresses')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Create a store address',
+    description: 'Create a new address for the specified store',
+  })
+  @ApiBody({ type: CreateStoreAddressDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Store address created successfully',
+    type: StoreAddressResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input data',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'string', example: 'Validation failed' },
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Store not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string', example: 'Store not found' },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  async createStoreAddress(
+    @Param('storeId') storeId: string,
+    @Body() createStoreAddressDto: CreateStoreAddressDto,
+    @CurrentVendor() vendor: Vendor,
+  ): Promise<StoreAddressResponseDto> {
+    this.logger.log(`Creating store address for store ${storeId} by vendor user: ${vendor.id}`);
+    return this.vendorStoreService.createStoreAddress(vendor, storeId, createStoreAddressDto);
+  }
+
+  @Put(':storeId/addresses/:addressId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update a store address',
+    description: 'Update an existing address for the specified store',
+  })
+  @ApiBody({ type: UpdateStoreAddressDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Store address updated successfully',
+    type: StoreAddressResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Store address not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string', example: 'Store address not found' },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input data',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'string', example: 'Store address update failed' },
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
+  })
+  async updateStoreAddress(
+    @Param('storeId') storeId: string,
+    @Param('addressId') addressId: string,
+    @Body() updateStoreAddressDto: UpdateStoreAddressDto,
+    @CurrentVendor() vendor: Vendor,
+  ): Promise<StoreAddressResponseDto> {
+    this.logger.log(`Updating store address ${addressId} for store ${storeId} by vendor user: ${vendor.id}`);
+    return this.vendorStoreService.updateStoreAddress(vendor, storeId, addressId, updateStoreAddressDto);
   }
 }

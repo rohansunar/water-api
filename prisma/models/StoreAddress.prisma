@@ -1,0 +1,19 @@
+model StoreAddress {
+  id        BigInt   @id @default(autoincrement())
+  storeId   BigInt
+  label     String   @default("Store")
+  line1     String
+  line2     String?
+  city      String
+  state     String?
+  country   String   @default("India")
+  pincode   String
+  latitude  Decimal? @db.Decimal(10, 8)
+  longitude Decimal? @db.Decimal(11, 8)
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz
+  // Relations
+  store     store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  @@map("store_addresses")
+}

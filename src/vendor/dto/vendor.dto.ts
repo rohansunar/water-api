@@ -1756,3 +1756,267 @@ export class PaginatedResponseDto<T> {
   })
   hasPrev: boolean;
 }
+
+// Store Address DTOs
+export class CreateStoreAddressDto {
+  @ApiProperty({
+    description: 'Address label',
+    example: 'Main Store',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  label?: string;
+
+  @ApiProperty({
+    description: 'Address line 1',
+    example: '123 Main Street',
+  })
+  @IsString()
+  @IsNotEmpty()
+  line1: string;
+
+  @ApiProperty({
+    description: 'Address line 2',
+    example: 'Near Central Park',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  line2?: string;
+
+  @ApiProperty({
+    description: 'City',
+    example: 'Mumbai',
+  })
+  @IsString()
+  @IsNotEmpty()
+  city: string;
+
+  @ApiProperty({
+    description: 'State',
+    example: 'Maharashtra',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @ApiProperty({
+    description: 'Country',
+    example: 'India',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @ApiProperty({
+    description: 'Pincode',
+    example: '400001',
+  })
+  @IsString()
+  @IsNotEmpty()
+  pincode: string;
+
+  @ApiProperty({
+    description: 'Latitude coordinate',
+    example: 19.0760,
+    required: false,
+  })
+  @IsOptional()
+  latitude?: number;
+
+  @ApiProperty({
+    description: 'Longitude coordinate',
+    example: 72.8777,
+    required: false,
+  })
+  @IsOptional()
+  longitude?: number;
+
+  @ApiProperty({
+    description: 'Whether this is the default address',
+    example: false,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isDefault?: boolean;
+}
+
+export class UpdateStoreAddressDto {
+  @ApiProperty({
+    description: 'Address label',
+    example: 'Main Store',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  label?: string;
+
+  @ApiProperty({
+    description: 'Address line 1',
+    example: '123 Main Street',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  line1?: string;
+
+  @ApiProperty({
+    description: 'Address line 2',
+    example: 'Near Central Park',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  line2?: string;
+
+  @ApiProperty({
+    description: 'City',
+    example: 'Mumbai',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiProperty({
+    description: 'State',
+    example: 'Maharashtra',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @ApiProperty({
+    description: 'Country',
+    example: 'India',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @ApiProperty({
+    description: 'Pincode',
+    example: '400001',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  pincode?: string;
+
+  @ApiProperty({
+    description: 'Latitude coordinate',
+    example: 19.0760,
+    required: false,
+  })
+  @IsOptional()
+  latitude?: number;
+
+  @ApiProperty({
+    description: 'Longitude coordinate',
+    example: 72.8777,
+    required: false,
+  })
+  @IsOptional()
+  longitude?: number;
+
+  @ApiProperty({
+    description: 'Whether this is the default address',
+    example: false,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isDefault?: boolean;
+}
+
+export class StoreAddressResponseDto {
+  @ApiProperty({
+    description: 'Store address unique identifier',
+    example: '123',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'Store unique identifier',
+    example: '456',
+  })
+  storeId: string;
+
+  @ApiProperty({
+    description: 'Address label',
+    example: 'Main Store',
+  })
+  label: string;
+
+  @ApiProperty({
+    description: 'Address line 1',
+    example: '123 Main Street',
+  })
+  line1: string;
+
+  @ApiProperty({
+    description: 'Address line 2',
+    example: 'Near Central Park',
+  })
+  line2?: string;
+
+  @ApiProperty({
+    description: 'City',
+    example: 'Mumbai',
+  })
+  city: string;
+
+  @ApiProperty({
+    description: 'State',
+    example: 'Maharashtra',
+  })
+  state?: string;
+
+  @ApiProperty({
+    description: 'Country',
+    example: 'India',
+  })
+  country: string;
+
+  @ApiProperty({
+    description: 'Pincode',
+    example: '400001',
+  })
+  pincode: string;
+
+  @ApiProperty({
+    description: 'Latitude coordinate',
+    example: 19.0760,
+  })
+  latitude?: number;
+
+  @ApiProperty({
+    description: 'Longitude coordinate',
+    example: 72.8777,
+  })
+  longitude?: number;
+
+  @ApiProperty({
+    description: 'Whether this is the default address',
+    example: false,
+  })
+  isDefault: boolean;
+
+  @ApiProperty({
+    description: 'Address creation timestamp',
+    example: '2024-01-15T10:30:00Z',
+  })
+  createdAt: Date;
+
+  @ApiProperty({
+    description: 'Address last update timestamp',
+    example: '2024-01-15T10:30:00Z',
+  })
+  updatedAt: Date;
+}

@@ -350,6 +350,199 @@ export class VendorStoreService {
     }
   }
 
+  async createStoreAddress(
+    vendor: Vendor,
+    storeId: string,
+    createStoreAddressDto: any,
+  ): Promise<any> {
+    const { id } = vendor;
+    const startTime = Date.now();
+    try {
+      // Verify the store belongs to this vendor
+      const store = await this.prisma.store.findFirst({
+        where: {
+          id: BigInt(storeId),
+          vendorId: BigInt(id),
+        },
+      });
+
+      if (!store) {
+        this.customLogger.logBusinessEvent(
+          'store_address_creation_failure',
+          { vendorId: id, storeId, reason: 'store_not_found' },
+          id,
+        );
+        throw new NotFoundException('Store not found or does not belong to this vendor');
+      }
+
+      // If this address is set as default, unset other default addresses for this store
+      if (createStoreAddressDto.isDefault) {
+        await this.prisma.storeAddress.updateMany({
+          where: {
+            storeId: BigInt(storeId),
+            isDefault: true,
+          },
+          data: {
+            isDefault: false,
+          },
+        });
+      }
+
+      const storeAddress = await this.prisma.storeAddress.create({
+        data: {
+          storeId: BigInt(storeId),
+          label: createStoreAddressDto.label || 'Store',
+          line1: createStoreAddressDto.line1,
+          line2: createStoreAddressDto.line2,
+          city: createStoreAddressDto.city,
+          state: createStoreAddressDto.state,
+          country: createStoreAddressDto.country || 'India',
+          pincode: createStoreAddressDto.pincode,
+          latitude: createStoreAddressDto.latitude,
+          longitude: createStoreAddressDto.longitude,
+          isDefault: createStoreAddressDto.isDefault || false,
+        },
+      });
+
+      this.customLogger.logBusinessEvent(
+        'store_address_created',
+        { vendorId: id, storeId, addressId: storeAddress.id },
+        id,
+      );
+
+      return {
+        id: storeAddress.id.toString(),
+        storeId: storeAddress.storeId.toString(),
+        label: storeAddress.label,
+        line1: storeAddress.line1,
+        line2: storeAddress.line2,
+        city: storeAddress.city,
+        state: storeAddress.state,
+        country: storeAddress.country,
+        pincode: storeAddress.pincode,
+        latitude: storeAddress.latitude ? Number(storeAddress.latitude) : undefined,
+        longitude: storeAddress.longitude ? Number(storeAddress.longitude) : undefined,
+        isDefault: storeAddress.isDefault,
+        createdAt: storeAddress.createdAt,
+        updatedAt: storeAddress.updatedAt,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.customLogger.logBusinessEvent(
+        'store_address_creation_error',
+        { vendorId: id, storeId, error: error.message },
+        id,
+      );
+      this.logger.error(`Store address creation failed for vendor ${id}, store ${storeId}:`, error);
+      throw new BadRequestException('Failed to create store address');
+    }
+  }
+
+  async updateStoreAddress(
+    vendor: Vendor,
+    storeId: string,
+    addressId: string,
+    updateStoreAddressDto: any,
+  ): Promise<any> {
+    const { id } = vendor;
+    const startTime = Date.now();
+    try {
+      // Verify the store address belongs to this vendor's store
+      const existingAddress = await this.prisma.storeAddress.findFirst({
+        where: {
+          id: BigInt(addressId),
+          storeId: BigInt(storeId),
+          store: {
+            vendorId: BigInt(id),
+          },
+        },
+      });
+
+      if (!existingAddress) {
+        this.customLogger.logBusinessEvent(
+          'store_address_update_failure',
+          { vendorId: id, storeId, addressId, reason: 'address_not_found' },
+          id,
+        );
+        throw new NotFoundException('Store address not found or does not belong to this vendor');
+      }
+
+      // If this address is being set as default, unset other default addresses for this store
+      if (updateStoreAddressDto.isDefault) {
+        await this.prisma.storeAddress.updateMany({
+          where: {
+            storeId: BigInt(storeId),
+            isDefault: true,
+            id: {
+              not: BigInt(addressId),
+            },
+          },
+          data: {
+            isDefault: false,
+          },
+        });
+      }
+
+      const updateData: any = {
+        updatedAt: new Date(),
+      };
+
+      if (updateStoreAddressDto.label !== undefined) updateData.label = updateStoreAddressDto.label;
+      if (updateStoreAddressDto.line1 !== undefined) updateData.line1 = updateStoreAddressDto.line1;
+      if (updateStoreAddressDto.line2 !== undefined) updateData.line2 = updateStoreAddressDto.line2;
+      if (updateStoreAddressDto.city !== undefined) updateData.city = updateStoreAddressDto.city;
+      if (updateStoreAddressDto.state !== undefined) updateData.state = updateStoreAddressDto.state;
+      if (updateStoreAddressDto.country !== undefined) updateData.country = updateStoreAddressDto.country;
+      if (updateStoreAddressDto.pincode !== undefined) updateData.pincode = updateStoreAddressDto.pincode;
+      if (updateStoreAddressDto.latitude !== undefined) updateData.latitude = updateStoreAddressDto.latitude;
+      if (updateStoreAddressDto.longitude !== undefined) updateData.longitude = updateStoreAddressDto.longitude;
+      if (updateStoreAddressDto.isDefault !== undefined) updateData.isDefault = updateStoreAddressDto.isDefault;
+
+      const updatedAddress = await this.prisma.storeAddress.update({
+        where: {
+          id: BigInt(addressId),
+        },
+        data: updateData,
+      });
+
+      this.customLogger.logBusinessEvent(
+        'store_address_updated',
+        { vendorId: id, storeId, addressId },
+        id,
+      );
+
+      return {
+        id: updatedAddress.id.toString(),
+        storeId: updatedAddress.storeId.toString(),
+        label: updatedAddress.label,
+        line1: updatedAddress.line1,
+        line2: updatedAddress.line2,
+        city: updatedAddress.city,
+        state: updatedAddress.state,
+        country: updatedAddress.country,
+        pincode: updatedAddress.pincode,
+        latitude: updatedAddress.latitude ? Number(updatedAddress.latitude) : undefined,
+        longitude: updatedAddress.longitude ? Number(updatedAddress.longitude) : undefined,
+        isDefault: updatedAddress.isDefault,
+        createdAt: updatedAddress.createdAt,
+        updatedAt: updatedAddress.updatedAt,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.customLogger.logBusinessEvent(
+        'store_address_update_error',
+        { vendorId: id, storeId, addressId, error: error.message },
+        id,
+      );
+      this.logger.error(`Store address update failed for vendor ${id}, store ${storeId}, address ${addressId}:`, error);
+      throw new BadRequestException('Failed to update store address');
+    }
+  }
+
   private mapToResponseDto(store: any): StoreResponseDto {
     return {
       id: store.id.toString(),
