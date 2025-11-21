@@ -18,7 +18,7 @@ export class DatabaseIndexStrategy {
       // Apply indexes for each collection
       await this.applyUserIndexes(connection);
       await this.applyAddressIndexes(connection);
-      await this.applyVendorStoreIndexes(connection);
+      await this.applyStoreIndexes(connection);
       await this.applyVendorAreaIndexes(connection);
       await this.applyProductIndexes(connection);
       await this.applyOrderIndexes(connection);
@@ -319,7 +319,7 @@ export class DatabaseIndexStrategy {
   /**
    * Apply remaining collection indexes
    */
-  private static async applyVendorStoreIndexes(
+  private static async applyStoreIndexes(
     connection: Connection,
   ): Promise<void> {
     const collection = connection.collection('vendor_stores');

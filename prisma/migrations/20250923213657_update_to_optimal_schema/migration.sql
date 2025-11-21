@@ -83,7 +83,7 @@ CREATE TABLE "public"."admins" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."vendor_stores" (
+CREATE TABLE "public"."stores" (
     "id" BIGSERIAL NOT NULL,
     "vendorId" BIGINT NOT NULL,
     "name" TEXT NOT NULL,
@@ -93,7 +93,7 @@ CREATE TABLE "public"."vendor_stores" (
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "vendor_stores_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "stores_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -325,10 +325,10 @@ CREATE UNIQUE INDEX "orders_orderUuid_key" ON "public"."orders"("orderUuid");
 CREATE UNIQUE INDEX "orders_orderNumber_key" ON "public"."orders"("orderNumber");
 
 -- AddForeignKey
-ALTER TABLE "public"."vendor_stores" ADD CONSTRAINT "vendor_stores_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "public"."vendors"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."stores" ADD CONSTRAINT "stores_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "public"."vendors"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."vendor_stores" ADD CONSTRAINT "vendor_stores_addressId_fkey" FOREIGN KEY ("addressId") REFERENCES "public"."vendor_addresses"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."stores" ADD CONSTRAINT "stores_addressId_fkey" FOREIGN KEY ("addressId") REFERENCES "public"."vendor_addresses"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."customer_addresses" ADD CONSTRAINT "customer_addresses_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "public"."customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -343,7 +343,7 @@ ALTER TABLE "public"."products" ADD CONSTRAINT "products_vendorId_fkey" FOREIGN 
 ALTER TABLE "public"."product_store_mapping" ADD CONSTRAINT "product_store_mapping_productId_fkey" FOREIGN KEY ("productId") REFERENCES "public"."products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."product_store_mapping" ADD CONSTRAINT "product_store_mapping_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "public"."vendor_stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."product_store_mapping" ADD CONSTRAINT "product_store_mapping_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "public"."customers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -352,7 +352,7 @@ ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_customerId_fkey" FOREIGN KE
 ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "public"."vendors"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "public"."vendor_stores"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "public"."stores"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_agentId_fkey" FOREIGN KEY ("agentId") REFERENCES "public"."agents"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -376,7 +376,7 @@ ALTER TABLE "public"."subscriptions" ADD CONSTRAINT "subscriptions_customerId_fk
 ALTER TABLE "public"."subscriptions" ADD CONSTRAINT "subscriptions_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "public"."vendors"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."subscriptions" ADD CONSTRAINT "subscriptions_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "public"."vendor_stores"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."subscriptions" ADD CONSTRAINT "subscriptions_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "public"."stores"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."subscriptions" ADD CONSTRAINT "subscriptions_addressId_fkey" FOREIGN KEY ("addressId") REFERENCES "public"."customer_addresses"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

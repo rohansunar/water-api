@@ -1,1 +1,640 @@
+generator client {
+  provider = "prisma-client-js"
+}
 
+datasource db {
+  provider = "postgresql" // or whatever
+  url      = env("DATABASE_URL")
+}
+
+
+enum AddressType {
+  HOME
+  OFFICE
+  OTHER
+}
+
+model Admin {
+  id           BigInt    @id @default(autoincrement())
+  uuid         String    @unique @default(uuid())
+  phone        String?   @unique
+  email        String?   @unique
+  passwordHash String?
+  name         String
+  roleLevel    String    @default("support")
+  permissions  Json?
+  isActive     Boolean   @default(true)
+  isDeleted    Boolean   @default(false)
+  createdAt    DateTime  @default(now()) @db.Timestamptz
+  updatedAt    DateTime  @default(now()) @updatedAt @db.Timestamptz
+  lastActiveAt DateTime? @db.Timestamptz
+
+  // Relations
+  commissionRules   CommissionRule[]
+  moderatedProducts Product[]
+  processedRefunds  Refund[]         @relation("RefundProcessor")
+  approvedRefunds   Refund[]         @relation("RefundApprover")
+  auditLogs         AuditLog[]
+
+  @@map("admins")
+}
+
+model AuditLog {
+  id           BigInt   @id @default(autoincrement())
+  adminId      BigInt
+  action       String // e.g., 'user_status_updated', 'product_approved', 'refund_processed'
+  resourceType String // e.g., 'user', 'product', 'order', 'refund'
+  resourceId   String // ID of the affected resource
+  oldValues    Json? // Previous state (optional)
+  newValues    Json? // New state (optional)
+  metadata     Json? // Additional context
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now()) @db.Timestamptz
+
+  // Relations
+  admin Admin @relation(fields: [adminId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model CashTransaction {
+  id              BigInt    @id @default(autoincrement())
+  transactionUuid String    @unique @default(uuid())
+  orderId         BigInt?
+  orderCreatedAt  DateTime? @db.Timestamptz
+  riderId         BigInt?
+  vendorId        BigInt?
+  type            String // 'delivery_payment', 'rider_earning', 'refund', 'adjustment'
+  amount          Decimal   @db.Decimal(10, 2)
+  paymentMethod   String // 'cash', 'online', 'wallet'
+  status          String    @default("pending") // 'pending', 'completed', 'failed', 'cancelled'
+  reference       String? // Order number, transaction ID, etc.
+  notes           String?
+  processedBy     BigInt? // Admin or staff who processed
+  processedAt     DateTime? @db.Timestamptz
+  createdAt       DateTime  @default(now()) @db.Timestamptz
+  updatedAt       DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  order  Order?  @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt])
+  rider  Rider?  @relation(fields: [riderId], references: [id])
+  vendor Vendor? @relation(fields: [vendorId], references: [id])
+
+  @@map("cash_transactions")
+}
+
+model CommissionRule {
+  id         BigInt          @id @default(autoincrement())
+  scope      CommissionScope
+  scopeId    String? // category name, vendor uuid, product uuid
+  percentage Decimal         @db.Decimal(5, 2)
+  priority   Int             @default(0) // higher = more specific
+  isActive   Boolean         @default(true)
+  createdBy  BigInt // admin id
+  createdAt  DateTime        @default(now()) @db.Timestamptz
+  updatedAt  DateTime        @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  admin Admin @relation(fields: [createdBy], references: [id])
+
+  @@map("commission_rules")
+}
+
+enum CommissionScope {
+  GLOBAL
+  CATEGORY
+  VENDOR
+  PRODUCT
+}
+
+model Customer {
+  id                 BigInt    @id @default(autoincrement())
+  uuid               String    @unique @default(uuid())
+  phone              String    @unique
+  email              String?   @unique
+  passwordHash       String?
+  name               String?
+  walletBalance      Decimal   @default(0) @db.Decimal(10, 2)
+  role               UserRole
+  loyaltyPoints      Int       @default(0)
+  preferences        Json?
+  isActive           Boolean   @default(true)
+  monthlyPaymentMode Boolean   @default(false)
+  isDeleted          Boolean   @default(false)
+  createdAt          DateTime  @default(now()) @db.Timestamptz
+  updatedAt          DateTime  @default(now()) @updatedAt @db.Timestamptz
+  lastActiveAt       DateTime? @db.Timestamptz
+
+  // Relations
+  addresses     CustomerAddress[]
+  orders        Order[]
+  subscriptions Subscription[]
+  deliveryTasks DeliveryTask[]
+
+  @@map("customers")
+}
+
+model CustomerAddress {
+  id         BigInt      @id @default(autoincrement())
+  customerId BigInt
+  type       AddressType
+  street     String
+  city       String?
+  state      String?
+  pincode    String
+  landmark   String?
+  latitude   Decimal?    @db.Decimal(10, 8)
+  longitude  Decimal?    @db.Decimal(11, 8)
+  isDefault  Boolean     @default(false)
+  createdAt  DateTime    @default(now()) @db.Timestamptz
+  updatedAt  DateTime    @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  Order    Order[]
+
+  @@map("customer_addresses")
+}
+
+model DeliveryEvent {
+  id        BigInt   @id @default(autoincrement())
+  taskId    BigInt
+  eventType String // 'task_assigned', 'task_accepted', 'pickup_started', 'delivered', etc.
+  eventData Json? // Event-specific data
+  riderId   BigInt?
+  location  Json? // GPS coordinates at event time
+  metadata  Json? // Additional context
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  // Relations
+  task  DeliveryTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  rider Rider?       @relation(fields: [riderId], references: [id])
+
+  @@map("delivery_events")
+}
+
+model DeliveryTask {
+  id             BigInt    @id @default(autoincrement())
+  orderId        BigInt
+  orderCreatedAt DateTime  @db.Timestamptz
+  riderId        BigInt
+  status         String
+  assignedAt     DateTime?
+  pickedUpAt     DateTime?
+  deliveredAt    DateTime?
+  failedAt       DateTime?
+  failureReason  String?
+  location       Json?
+  metadata       Json?
+  createdAt      DateTime  @default(now()) @db.Timestamptz
+
+  // Relations
+  order         Order           @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt])
+  rider         Rider           @relation(fields: [riderId], references: [id])
+  Customer      Customer?       @relation(fields: [customerId], references: [id])
+  customerId    BigInt?
+  Vendor        Vendor?         @relation(fields: [vendorId], references: [id])
+  vendorId      BigInt?
+  DeliveryEvent DeliveryEvent[]
+
+  @@unique([orderId, orderCreatedAt])
+  @@map("delivery_tasks")
+}
+
+model LedgerEntry {
+  id             BigInt    @id @default(autoincrement())
+  vendorId       BigInt
+  userId         BigInt?
+  orderId        BigInt?
+  orderCreatedAt DateTime? @db.Timestamptz
+  type           String
+  amount         Decimal   @db.Decimal(10, 2)
+  balanceAfter   Decimal   @db.Decimal(10, 2)
+  status         String?
+  description    String?
+  referenceId    String?
+  metadata       Json?
+  createdAt      DateTime  @default(now()) @db.Timestamptz
+  updatedAt      DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+  order  Order? @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt])
+
+  @@map("ledger_entries")
+}
+
+model Order {
+  id                   BigInt
+  orderUuid            String    @unique @default(uuid())
+  customerId           BigInt
+  vendorId             BigInt?
+  storeId              BigInt?
+  riderId              BigInt?
+  addressId            BigInt
+  orderNumber          String    @unique
+  status               String    @default("placed")
+  subtotal             Decimal   @db.Decimal(10, 2)
+  deliveryFee          Decimal   @default(0) @db.Decimal(8, 2)
+  taxAmount            Decimal   @default(0) @db.Decimal(8, 2)
+  totalAmount          Decimal   @db.Decimal(10, 2)
+  paymentMethod        String    @default("cash")
+  paymentStatus        String    @default("pending")
+  deliveryInstructions String?
+  scheduledDelivery    DateTime? @db.Timestamptz
+  deliveredAt          DateTime? @db.Timestamptz
+  subscriptionId       BigInt?
+  createdAt            DateTime  @default(now()) @db.Timestamptz
+  updatedAt            DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  customer         Customer          @relation(fields: [customerId], references: [id])
+  vendor           Vendor?           @relation(fields: [vendorId], references: [id])
+  store            store?      @relation(fields: [storeId], references: [id])
+  rider            Rider?            @relation(fields: [riderId], references: [id])
+  address          CustomerAddress   @relation(fields: [addressId], references: [id])
+  subscription     Subscription?     @relation(fields: [subscriptionId], references: [id])
+  items            OrderItem[]
+  payments         Payment[]
+  ledgerEntries    LedgerEntry[]
+  refunds          Refund[]
+  deliveryTask     DeliveryTask?
+  cashTransactions CashTransaction[]
+
+  @@id([id, createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id              BigInt   @id @default(autoincrement())
+  orderId         BigInt
+  orderCreatedAt  DateTime @db.Timestamptz
+  productId       BigInt
+  quantity        Int
+  unitPrice       Decimal  @db.Decimal(10, 2)
+  totalPrice      Decimal? @db.Decimal(10, 2)
+  productSnapshot Json?
+
+  // Relations
+  order                 Order                @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt], onDelete: Cascade)
+  product               Product              @relation(fields: [productId], references: [id])
+  ProductStoreMapping   ProductStoreMapping? @relation(fields: [productStoreMappingId], references: [id])
+  productStoreMappingId BigInt?
+
+  @@map("order_items")
+}
+
+model OtpCode {
+  id        BigInt    @id @default(autoincrement())
+  phone     String
+  code      String // Hashed OTP code
+  purpose   String // 'rider_login', 'delivery_verification', 'password_reset'
+  expiresAt DateTime  @db.Timestamptz
+  attempts  Int       @default(0)
+  isUsed    Boolean   @default(false)
+  createdAt DateTime  @default(now()) @db.Timestamptz
+  usedAt    DateTime? @db.Timestamptz
+
+  @@unique([phone, purpose])
+  @@index([phone, purpose, isUsed, expiresAt])
+  @@map("otp_codes")
+}
+
+model OutboxEvent {
+  id            BigInt    @id @default(autoincrement())
+  eventUuid     String    @unique @default(uuid())
+  eventType     String // 'order_placed', 'delivery_assigned', 'delivery_completed', etc.
+  aggregateId   String // ID of the aggregate that triggered the event
+  aggregateType String // 'order', 'delivery_task', 'rider', etc.
+  payload       Json // Event data
+  published     Boolean   @default(false)
+  publishedAt   DateTime? @db.Timestamptz
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  retryCount    Int       @default(0)
+
+  @@map("outbox_events")
+}
+
+model Payment {
+  id             BigInt    @id @default(autoincrement())
+  orderId        BigInt
+  orderCreatedAt DateTime  @db.Timestamptz
+  amount         Decimal   @db.Decimal(10, 2)
+  method         String
+  status         String
+  transactionId  String?
+  paymentGateway String?
+  metadata       Json?
+  completedAt    DateTime? @db.Timestamptz
+  failedAt       DateTime? @db.Timestamptz
+  failureReason  String?
+  createdAt      DateTime  @default(now()) @db.Timestamptz
+
+  // Relations
+  order Order @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Payout {
+  id            BigInt    @id @default(autoincrement())
+  vendorId      BigInt
+  amount        Decimal   @db.Decimal(10, 2)
+  status        String    @default("pending")
+  method        String?
+  transactionId String?
+  payoutDetails Json?
+  completedAt   DateTime? @db.Timestamptz
+  failureReason String?
+  metadata      Json?
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  updatedAt     DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+
+  @@map("payouts")
+}
+
+model Product {
+  id               BigInt   @id @default(autoincrement())
+  vendorId         BigInt
+  name             String
+  category         String
+  subcategory      String?
+  price            Decimal  @db.Decimal(10, 2)
+  description      String?
+  capacity         String
+  unit             String
+  stock            Int      @default(0)
+  isAvailable      Boolean  @default(true)
+  stockQuantity    Int      @default(0)
+  isActive         Boolean  @default(false)
+  minOrderQuantity Int      @default(1)
+  maxOrderQuantity Int      @default(1000)
+  areaPincodes     String[]
+  images           String[]
+  specifications   Json?
+  hasDeposit       Boolean  @default(false)
+  depositAmount    Decimal  @default(0) @db.Decimal(10, 2)
+  createdAt        DateTime @default(now()) @db.Timestamptz
+  updatedAt        DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Moderation fields
+  moderationStatus ProductModerationStatus @default(PENDING)
+  flaggedReason    String?
+  moderatedBy      BigInt?
+  moderatedAt      DateTime?               @db.Timestamptz
+  autoFlagged      Boolean                 @default(false)
+  complianceIssues Json?
+
+  // Relations
+  vendor        Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  storeMappings ProductStoreMapping[]
+  moderator     Admin?                @relation(fields: [moderatedBy], references: [id])
+  OrderItem     OrderItem[]
+  Subscription  Subscription[]
+
+  @@map("products")
+}
+
+enum ProductModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FLAGGED
+}
+
+model ProductStoreMapping {
+  id            BigInt   @id @default(autoincrement())
+  productId     BigInt
+  storeId       BigInt
+  price         Decimal? @db.Decimal(10, 2)
+  stockQuantity Int      @default(0)
+  reservedStock Int      @default(0)
+  isAvailable   Boolean  @default(true)
+  areaPincodes  String[] @default([])
+  createdAt     DateTime @default(now()) @db.Timestamptz
+  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  store      store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@unique([productId, storeId])
+  @@map("product_store_mapping")
+}
+
+model Refund {
+  id             BigInt       @id @default(autoincrement())
+  orderId        BigInt
+  orderCreatedAt DateTime     @db.Timestamptz
+  amount         Decimal      @db.Decimal(10, 2)
+  reason         String
+  status         RefundStatus @default(PENDING)
+  refundMethod   String?
+  transactionId  String?
+  processedBy    BigInt?
+  processedAt    DateTime?    @db.Timestamptz
+  approvedBy     BigInt?
+  approvedAt     DateTime?    @db.Timestamptz
+  notes          String?
+  createdAt      DateTime     @default(now()) @db.Timestamptz
+  updatedAt      DateTime     @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  order     Order  @relation(fields: [orderId, orderCreatedAt], references: [id, createdAt])
+  processor Admin? @relation("RefundProcessor", fields: [processedBy], references: [id])
+  approver  Admin? @relation("RefundApprover", fields: [approvedBy], references: [id])
+
+  @@map("refunds")
+}
+
+enum RefundStatus {
+  PENDING
+  APPROVED
+  PROCESSING
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
+model Rider {
+  id           BigInt    @id @default(autoincrement())
+  uuid         String    @unique @default(uuid())
+  phone        String?   @unique
+  email        String?   @unique
+  passwordHash String?
+  name         String
+  licenseNo    String?
+  vehicleType  String?
+  shift        Json?
+  status       String    @default("inactive")
+  rating       Decimal?  @default(0) @db.Decimal(3, 2)
+  isActive     Boolean   @default(true)
+  isDeleted    Boolean   @default(false)
+  createdAt    DateTime  @default(now()) @db.Timestamptz
+  updatedAt    DateTime  @default(now()) @updatedAt @db.Timestamptz
+  lastActiveAt DateTime? @db.Timestamptz
+  metadata     Json?
+
+  // Relations
+  orders           Order[]
+  deliveryTasks    DeliveryTask[]
+  deliveryEvents   DeliveryEvent[]
+  cashTransactions CashTransaction[]
+
+  @@map("riders")
+}
+
+model store {
+  id               BigInt   @id @default(autoincrement())
+  vendorId         BigInt
+  vendorAddressId  BigInt?
+  name             String
+  address          String?
+  phone            String?
+  activeHours      Json?
+  rating           Decimal  @default(4.0) @db.Decimal(3, 2)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now()) @db.Timestamptz
+  updatedAt        DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  vendor              Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  vendorAddress       VendorAddress?        @relation("VendorAddressToStore", fields: [vendorAddressId], references: [id])
+  ProductStoreMapping ProductStoreMapping[]
+  orders              Order[]
+
+  @@map("stores")
+}
+
+model Subscription {
+  id                 BigInt    @id @default(autoincrement())
+  customerId         BigInt
+  productId          BigInt
+  quantity           Int
+  frequency          String
+  status             String
+  startDate          DateTime?
+  endDate            DateTime?
+  nextDeliveryDate   DateTime?
+  pausedAt           DateTime?
+  cancelledAt        DateTime?
+  cancellationReason String?
+  deliveryAddress    Json?
+  productSnapshot    Json?
+  metadata           Json?
+  createdAt          DateTime  @default(now()) @db.Timestamptz
+
+  // Relations
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id])
+  Vendor   Vendor?  @relation(fields: [vendorId], references: [id])
+  vendorId BigInt?
+  Order    Order[]
+
+  @@map("subscriptions")
+}
+
+enum TaskPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  ASSIGNED
+  ACCEPTED
+  PICKED_UP
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+enum UserRole {
+  CUSTOMER
+  VENDOR
+  DELIVERY_RIDER
+  ADMIN
+}
+
+model Vendor {
+  id            BigInt    @id @default(autoincrement())
+  phone         String?   @unique
+  email         String?   @unique
+  passwordHash  String?
+  name          String?
+  kycStatus     String    @default("pending")
+  gstin         String?
+  bankAccountId BigInt?
+  rating        Decimal?  @default(0) @db.Decimal(3, 2)
+  isVerified    Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  isDeleted     Boolean   @default(false)
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  updatedAt     DateTime  @default(now()) @updatedAt @db.Timestamptz
+  lastActiveAt  DateTime? @db.Timestamptz
+  metadata      Json?
+
+  // Relations
+  stores           store[]
+  addresses        VendorAddress[]
+  products         Product[]
+  orders           Order[]
+  subscriptions    Subscription[]
+  ledgerEntries    LedgerEntry[]
+  payouts          Payout[]
+  deliveryTasks    DeliveryTask[]
+  staff            VendorStaff[]
+  cashTransactions CashTransaction[]
+
+  @@map("vendors")
+}
+
+model VendorAddress {
+  id        BigInt   @id @default(autoincrement())
+  vendorId  BigInt
+  label     String   @default("Store")
+  line1     String
+  line2     String?
+  city      String
+  state     String?
+  country   String   @default("India")
+  pincode   String
+  latitude  Decimal? @db.Decimal(10, 8)
+  longitude Decimal? @db.Decimal(11, 8)
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  vendor Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  stores store[]       @relation("VendorAddressToStore")
+
+  @@map("vendor_addresses")
+}
+
+model VendorStaff {
+  id           BigInt    @id @default(autoincrement())
+  uuid         String    @unique @default(uuid())
+  vendorId     BigInt
+  name         String
+  phone        String?   @unique
+  email        String?   @unique
+  role         String // 'manager', 'staff', 'delivery_coordinator'
+  permissions  Json? // Specific permissions for this staff member
+  isActive     Boolean   @default(true)
+  isDeleted    Boolean   @default(false)
+  createdAt    DateTime  @default(now()) @db.Timestamptz
+  updatedAt    DateTime  @default(now()) @updatedAt @db.Timestamptz
+  lastActiveAt DateTime? @db.Timestamptz
+
+  // Relations
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("vendor_staff")
+}

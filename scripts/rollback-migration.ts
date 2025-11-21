@@ -268,7 +268,7 @@ class DatabaseRollback {
     let errors = 0;
 
     const collectionsToRemove = [
-      'vendor_stores',
+      'stores',
       'vendor_areas',
       'order_items',
       'delivery_tasks',

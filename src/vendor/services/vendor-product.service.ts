@@ -75,7 +75,7 @@ export class VendorProductService {
       }
 
       // Check if store exists and belongs to vendor
-      const storeRecord = await this.prisma.vendorStore.findFirst({
+      const storeRecord = await this.prisma.store.findFirst({
         where: { id: BigInt(storeId), vendorId: BigInt(id) },
       });
       if (!storeRecord || storeRecord.vendorId !== BigInt(id)) {

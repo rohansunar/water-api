@@ -52,7 +52,7 @@ export class VendorStoreService {
       }
 
       // Check if store name already exists for this vendor
-      const existingStore = await this.prisma.vendorStore.findFirst({
+      const existingStore = await this.prisma.store.findFirst({
         where: {
           vendorId: BigInt(id),
           name,
@@ -71,7 +71,7 @@ export class VendorStoreService {
       }
 
       // Create store
-      const store = await this.prisma.vendorStore.create({
+      const store = await this.prisma.store.create({
         data: {
           vendorId: BigInt(id),
           name,
@@ -125,7 +125,7 @@ export class VendorStoreService {
 
       // Get stores with pagination
       const [stores, total] = await Promise.all([
-        this.prisma.vendorStore.findMany({
+        this.prisma.store.findMany({
           where: {
             vendorId: BigInt(id),
             ...(isActive !== undefined && { isActive }),
@@ -134,7 +134,7 @@ export class VendorStoreService {
           take: limit,
           orderBy: { createdAt: 'desc' },
         }),
-        this.prisma.vendorStore.count({
+        this.prisma.store.count({
           where: {
             vendorId: BigInt(id),
             ...(isActive !== undefined && { isActive }),
@@ -172,7 +172,7 @@ export class VendorStoreService {
     const { id } = vendor;
     const startTime = Date.now();
     try {
-      const store = await this.prisma.vendorStore.findFirst({
+      const store = await this.prisma.store.findFirst({
         where: {
           id: BigInt(storeId),
           vendorId: BigInt(id),
@@ -223,7 +223,7 @@ export class VendorStoreService {
       const { name, address, phone, active_hours, is_active } = updateStoreDto;
 
       // Check if store exists and belongs to vendor
-      const existingStore = await this.prisma.vendorStore.findFirst({
+      const existingStore = await this.prisma.store.findFirst({
         where: {
           id: BigInt(storeId),
           vendorId: BigInt(id),
@@ -241,7 +241,7 @@ export class VendorStoreService {
 
       // Check if new name conflicts with existing stores
       if (name && name !== existingStore.name) {
-        const nameConflict = await this.prisma.vendorStore.findFirst({
+        const nameConflict = await this.prisma.store.findFirst({
           where: {
             vendorId: BigInt(id),
             name,
@@ -269,7 +269,7 @@ export class VendorStoreService {
       if (active_hours !== undefined) updateData.activeHours = active_hours;
       if (is_active !== undefined) updateData.isActive = is_active;
 
-      const updatedStore = await this.prisma.vendorStore.update({
+      const updatedStore = await this.prisma.store.update({
         where: { id: BigInt(storeId) },
         data: updateData,
       });
@@ -306,7 +306,7 @@ export class VendorStoreService {
     const startTime = Date.now();
     try {
       // Check if store exists and belongs to vendor
-      const existingStore = await this.prisma.vendorStore.findFirst({
+      const existingStore = await this.prisma.store.findFirst({
         where: {
           id: BigInt(storeId),
           vendorId: BigInt(id),
@@ -323,7 +323,7 @@ export class VendorStoreService {
       }
 
       // Soft delete by setting isActive to false
-      await this.prisma.vendorStore.update({
+      await this.prisma.store.update({
         where: { id: BigInt(storeId) },
         data: { isActive: false },
       });

@@ -32,7 +32,7 @@ jest.mock('../../../src/common/database/prisma.service', () => ({
       count: jest.fn(),
       findMany: jest.fn(),
     },
-    vendorStore: { findFirst: jest.fn() },
+    store: { findFirst: jest.fn() },
   })),
 }));
 
@@ -105,7 +105,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
       } as any);
 
       // Mock store exists and belongs to vendor
-      prismaService.vendorStore.findFirst.mockResolvedValueOnce({
+      prismaService.store.findFirst.mockResolvedValueOnce({
         id: BigInt(789),
         vendorId: BigInt(123),
       } as any);
@@ -150,7 +150,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
       } as any);
 
       // Mock store exists and belongs to vendor
-      prismaService.vendorStore.findFirst.mockResolvedValueOnce({
+      prismaService.store.findFirst.mockResolvedValueOnce({
         id: BigInt(789),
         vendorId: BigInt(123),
       } as any);
@@ -210,7 +210,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
         } as any);
   
         // Mock store not found
-        prismaService.vendorStore.findFirst.mockResolvedValueOnce(null);
+        prismaService.store.findFirst.mockResolvedValueOnce(null);
   
         await expect(
           service.createProduct(mockVendor, createProductDto),
@@ -246,7 +246,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
         } as any);
   
         // Mock store exists but belongs to different vendor
-        prismaService.vendorStore.findFirst.mockResolvedValueOnce({
+        prismaService.store.findFirst.mockResolvedValueOnce({
           id: BigInt(999),
           vendorId: BigInt(456), // Different vendor
         } as any);
@@ -285,7 +285,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
         } as any);
   
         // Mock store exists and belongs to vendor
-        prismaService.vendorStore.findFirst.mockResolvedValueOnce({
+        prismaService.store.findFirst.mockResolvedValueOnce({
           id: BigInt(789),
           vendorId: BigInt(123),
         } as any);
@@ -524,7 +524,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
       } as any);
 
       // Mock store exists and belongs to vendor
-      prismaService.vendorStore.findFirst.mockResolvedValueOnce({
+      prismaService.store.findFirst.mockResolvedValueOnce({
         id: BigInt(789),
         vendorId: BigInt(123),
       } as any);
@@ -567,7 +567,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
       } as any);
 
       // Mock store exists and belongs to vendor
-      prismaService.vendorStore.findFirst.mockResolvedValueOnce({
+      prismaService.store.findFirst.mockResolvedValueOnce({
         id: BigInt(789),
         vendorId: BigInt(123),
       } as any);

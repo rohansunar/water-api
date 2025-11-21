@@ -13,10 +13,9 @@ model VendorAddress {
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now()) @db.Timestamptz
   updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz
+// Relations
+vendor Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
-  // Relations
-  vendor Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  stores VendorStore[]
 
-  @@map("vendor_addresses")
+@@map("vendor_addresses")
 }

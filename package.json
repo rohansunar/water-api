@@ -28,7 +28,10 @@
     "test:coverage": "jest --coverage --coverageReporters=text --coverageReporters=html --coverageReporters=lcov",
     "test:coverage:report": "jest --coverage --coverageReporters=json-summary --coverageReporters=text-summary",
     "test:ci": "jest --runInBand --coverage --coverageReporters=json --coverageReporters=lcov --watchAll=false",
-    "prisma:studio": "prisma studio",
+    "prisma:build": "node scripts/build-prisma-schema.js",
+    "prisma:migrate": "npm run prisma:build && npx prisma migrate dev",
+    "pstudio": "npm run prisma:build && npx prisma studio",
+    "prisma:generate": "npm run prisma:build && npx prisma generate",
     "seed:admin": "node -r tsconfig-paths/register -r ts-node/register scripts/seed-admin-users.ts",
     "test:setup": "npm run prisma:generate && npm run seed:admin",
     "test:clean": "rm -rf coverage test-results"

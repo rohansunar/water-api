@@ -1,0 +1,19 @@
+model store {
+  id               BigInt   @id @default(autoincrement())
+  vendorId         BigInt
+  name             String
+  address          String?
+  phone            String?
+  activeHours      Json?
+  rating           Decimal  @default(4.0) @db.Decimal(3, 2)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now()) @db.Timestamptz
+  updatedAt        DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  vendor              Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  ProductStoreMapping ProductStoreMapping[]
+  orders              Order[]
+
+  @@map("stores")
+}

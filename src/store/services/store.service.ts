@@ -11,7 +11,7 @@ export class StoreService {
 
   async getStoreDetails(storeId: string): Promise<any> {
     try {
-      const store = await this.prisma.vendorStore.findUnique({
+      const store = await this.prisma.store.findUnique({
         where: { id: BigInt(storeId) },
         include: {
           vendor: true, // Include vendor relation for vendor_id

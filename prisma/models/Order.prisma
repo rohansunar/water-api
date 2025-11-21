@@ -24,7 +24,7 @@ model Order {
   // Relations
   customer         Customer          @relation(fields: [customerId], references: [id])
   vendor           Vendor?           @relation(fields: [vendorId], references: [id])
-  store            VendorStore?      @relation(fields: [storeId], references: [id])
+  store            store?      @relation(fields: [storeId], references: [id])
   rider            Rider?            @relation(fields: [riderId], references: [id])
   address          CustomerAddress   @relation(fields: [addressId], references: [id])
   subscription     Subscription?     @relation(fields: [subscriptionId], references: [id])

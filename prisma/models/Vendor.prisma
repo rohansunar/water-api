@@ -17,7 +17,7 @@ model Vendor {
   metadata      Json?
 
   // Relations
-  stores           VendorStore[]
+  stores           store[]
   addresses        VendorAddress[]
   products         Product[]
   orders           Order[]

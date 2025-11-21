@@ -31,7 +31,7 @@ jest.mock('../../../src/common/database/prisma.service', () => ({
       updateMany: jest.fn(),
       count: jest.fn(),
     },
-    vendorStore: {
+    store: {
       findFirst: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
@@ -634,7 +634,7 @@ describe('VendorService', () => {
         updatedAt: new Date(),
       };
 
-      prismaService.vendorStore.findFirst.mockResolvedValue(prismaStore);
+      prismaService.store.findFirst.mockResolvedValue(prismaStore);
 
       const result = await service.getStoreDetails(userId);
 
@@ -659,7 +659,7 @@ describe('VendorService', () => {
         isActive: true,
       };
       prismaService.vendor.findFirst.mockResolvedValue(prismaVendor);
-      prismaService.vendorStore.findFirst.mockResolvedValue(null);
+      prismaService.store.findFirst.mockResolvedValue(null);
 
       await expect(service.getStoreDetails('user-123')).rejects.toThrow(NotFoundException);
     });

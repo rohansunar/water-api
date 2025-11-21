@@ -201,7 +201,7 @@ export class VendorService {
       });
 
       // Also update ProductStoreMapping if stores exist
-      const stores = await this.prisma.vendorStore.findMany({
+      const stores = await this.prisma.store.findMany({
         where: { vendorId: BigInt(vendorId) },
       });
 
@@ -540,7 +540,7 @@ export class VendorService {
     }
 
     try {
-      const store = await this.prisma.vendorStore.findFirst({
+      const store = await this.prisma.store.findFirst({
         where: { vendorId: BigInt(vendor.id) },
       });
 
@@ -585,7 +585,7 @@ export class VendorService {
     }
 
     try {
-      const store = await this.prisma.vendorStore.findFirst({
+      const store = await this.prisma.store.findFirst({
         where: { vendorId: BigInt(vendor.id) },
       });
 
@@ -608,7 +608,7 @@ export class VendorService {
       if (updateStoreDto.is_active !== undefined)
         updateData.isActive = updateStoreDto.is_active;
 
-      const updatedStore = await this.prisma.vendorStore.update({
+      const updatedStore = await this.prisma.store.update({
         where: { id: store.id },
         data: updateData,
       });
@@ -649,7 +649,7 @@ export class VendorService {
     }
 
     try {
-      const store = await this.prisma.vendorStore.findFirst({
+      const store = await this.prisma.store.findFirst({
         where: { vendorId: BigInt(vendor.id) },
       });
 
@@ -679,7 +679,7 @@ export class VendorService {
       }
 
       // Update the store
-      await this.prisma.vendorStore.update({
+      await this.prisma.store.update({
         where: { id: store.id },
         data: {
           activeHours: currentHours,
@@ -725,7 +725,7 @@ export class VendorService {
     }
 
     try {
-      const store = await this.prisma.vendorStore.findFirst({
+      const store = await this.prisma.store.findFirst({
         where: { vendorId: BigInt(vendor.id) },
       });
 
@@ -767,7 +767,7 @@ export class VendorService {
       }
 
       // Update the store
-      await this.prisma.vendorStore.update({
+      await this.prisma.store.update({
         where: { id: store.id },
         data: {
           activeHours: currentHours,
@@ -812,7 +812,7 @@ export class VendorService {
     }
 
     try {
-      const store = await this.prisma.vendorStore.findFirst({
+      const store = await this.prisma.store.findFirst({
         where: { vendorId: BigInt(vendor.id) },
       });
 
@@ -836,7 +836,7 @@ export class VendorService {
       delete currentHours[hoursId];
 
       // Update the store
-      await this.prisma.vendorStore.update({
+      await this.prisma.store.update({
         where: { id: store.id },
         data: {
           activeHours: currentHours,
@@ -870,7 +870,7 @@ export class VendorService {
     }
 
     try {
-      const store = await this.prisma.vendorStore.findFirst({
+      const store = await this.prisma.store.findFirst({
         where: { vendorId: BigInt(vendor.id) },
       });
 
@@ -881,7 +881,7 @@ export class VendorService {
       // Map status to isActive
       const isActive = updateStoreStatusDto.status === 'open';
 
-      await this.prisma.vendorStore.update({
+      await this.prisma.store.update({
         where: { id: store.id },
         data: {
           isActive,
