@@ -64,6 +64,14 @@ async function bootstrap() {
     },
   });
 
+  // Multipart support for file uploads
+  await app.register(import('@fastify/multipart'),{
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+      files: 10, // max 10 files
+    },
+  });
+
   // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({

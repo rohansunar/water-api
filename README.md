@@ -1,6 +1,6 @@
 # Water Jar Delivery API 💧
 
-A comprehensive backend API for water jar delivery platform built with NestJS, TypeScript, and MongoDB. This API provides complete functionality for on-demand and subscription-based water jar delivery services.
+A comprehensive backend API for water jar delivery platform built with NestJS, TypeScript, and PostgreSQL. This API provides complete functionality for on-demand and subscription-based water jar delivery services with Supabase Storage integration.
 
 ## 🚀 Features
 
@@ -21,11 +21,20 @@ A comprehensive backend API for water jar delivery platform built with NestJS, T
 - **Request Tracing** for debugging
 - **Performance Monitoring** with slow query detection
 
+### Storage Features
+- **Supabase Storage** with 50MB file size limit
+- **Public/Private Access Control** for uploaded files
+- **Signed URLs** for secure temporary access
+- **Automatic Content-Type Detection**
+- **CDN Integration** for global content delivery
+- **Real-time File Synchronization**
+
 ## 🛠️ Technology Stack
 
 - **Framework**: NestJS 10.x
 - **Language**: TypeScript 5.x
-- **Database**: MongoDB with Mongoose ODM
+- **Database**: PostgreSQL with Prisma ORM
+- **Storage**: Supabase Storage (replaces AWS S3)
 - **Authentication**: JWT with phone-based OTP
 - **Validation**: class-validator & class-transformer
 - **Testing**: Jest with Supertest
@@ -35,7 +44,8 @@ A comprehensive backend API for water jar delivery platform built with NestJS, T
 ## 📋 Prerequisites
 
 - Node.js (v18 or higher)
-- MongoDB (v5.0 or higher)
+- PostgreSQL (v13 or higher)
+- Supabase account and project
 - npm or yarn package manager
 
 ## 🚀 Quick Start
@@ -45,22 +55,59 @@ A comprehensive backend API for water jar delivery platform built with NestJS, T
 npm install
 ```
 
-### 2. Environment Configuration
+### 2. Supabase Setup
+1. Create a new project at [supabase.com](https://supabase.com)
+2. Go to Settings > API to get your project URL and anon key
+3. Create a storage bucket named 'images' in the Storage section
+
+### 4. Database Setup
+```bash
+# Install PostgreSQL (Ubuntu/Debian)
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+
+# Create database
+sudo -u postgres createdb water_jar_db
+
+# Create user (optional)
+sudo -u postgres createuser --interactive --pwprompt water_user
+```
+
+### 5. Environment Configuration
 Create a `.env` file in the root directory:
 ```env
 # Database
-MONGODB_URI=mongodb://localhost:27017/water-jar-delivery
+DATABASE_URL=postgresql://username:password@localhost:5432/water_jar_db
 
 # JWT Configuration
 JWT_SECRET=your-super-secret-jwt-key
+JWT_ADMIN_SECRET=your-admin-jwt-secret-key
 JWT_EXPIRES_IN=7d
+
+# Supabase Storage Configuration
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_STORAGE_BUCKET=images
+SUPABASE_PUBLIC_ACCESS=true
 
 # Application
 PORT=3000
 NODE_ENV=development
 ```
 
-### 3. Run the Application
+### 6. Database Migration
+```bash
+# Generate Prisma client
+npx prisma generate
+
+# Run migrations
+npx prisma migrate deploy
+
+# Seed initial data
+npm run seed:admin
+```
+
+### 7. Run the Application
 ```bash
 # Development mode
 npm run start:dev

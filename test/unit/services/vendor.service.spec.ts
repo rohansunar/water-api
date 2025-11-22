@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { VendorService } from '../../../src/vendor/services/vendor.service';
 import { PrismaService } from '../../../src/common/database/prisma.service';
 import { Vendor } from '../../../src/vendor/interfaces/vendor.interface';
-import { ProductCategory, ProductSize } from '../../../src/product/interfaces/product.interface';
+import {
+  ProductCategory,
+  ProductSize,
+} from '../../../src/product/interfaces/product.interface';
 
 // Mock PrismaService methods
 jest.mock('../../../src/common/database/prisma.service', () => ({
@@ -80,10 +80,7 @@ describe('VendorService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        VendorService,
-        PrismaService,
-      ],
+      providers: [VendorService, PrismaService],
     }).compile();
 
     service = module.get<VendorService>(VendorService);
@@ -135,7 +132,9 @@ describe('VendorService', () => {
     });
 
     it('should return null on database error', async () => {
-      prismaService.vendor.findUnique.mockRejectedValue(new Error('Database error'));
+      prismaService.vendor.findUnique.mockRejectedValue(
+        new Error('Database error'),
+      );
 
       const result = await service.findById('123');
 
@@ -200,7 +199,9 @@ describe('VendorService', () => {
     });
 
     it('should return null on database error', async () => {
-      prismaService.vendor.findFirst.mockRejectedValue(new Error('Database error'));
+      prismaService.vendor.findFirst.mockRejectedValue(
+        new Error('Database error'),
+      );
 
       const result = await service.findByUserId('user-123');
 
@@ -233,7 +234,7 @@ describe('VendorService', () => {
 
       prismaService.vendor.findMany.mockResolvedValue(prismaVendors);
 
-      const result = await service.findByLocation(28.6139, 77.2090);
+      const result = await service.findByLocation(28.6139, 77.209);
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('123');
@@ -243,15 +244,17 @@ describe('VendorService', () => {
     it('should return empty array when no vendors found', async () => {
       prismaService.vendor.findMany.mockResolvedValue([]);
 
-      const result = await service.findByLocation(28.6139, 77.2090);
+      const result = await service.findByLocation(28.6139, 77.209);
 
       expect(result).toEqual([]);
     });
 
     it('should return empty array on database error', async () => {
-      prismaService.vendor.findMany.mockRejectedValue(new Error('Database error'));
+      prismaService.vendor.findMany.mockRejectedValue(
+        new Error('Database error'),
+      );
 
-      const result = await service.findByLocation(28.6139, 77.2090);
+      const result = await service.findByLocation(28.6139, 77.209);
 
       expect(result).toEqual([]);
     });
@@ -298,7 +301,9 @@ describe('VendorService', () => {
     });
 
     it('should throw error on database failure', async () => {
-      prismaService.vendor.findMany.mockRejectedValue(new Error('Database error'));
+      prismaService.vendor.findMany.mockRejectedValue(
+        new Error('Database error'),
+      );
 
       await expect(service.getAllVendors()).rejects.toThrow('Database error');
     });
@@ -348,9 +353,13 @@ describe('VendorService', () => {
     });
 
     it('should throw error on database failure', async () => {
-      prismaService.vendor.create.mockRejectedValue(new Error('Database error'));
+      prismaService.vendor.create.mockRejectedValue(
+        new Error('Database error'),
+      );
 
-      await expect(service.create('user-123', 'Test Vendor')).rejects.toThrow('Database error');
+      await expect(service.create('user-123', 'Test Vendor')).rejects.toThrow(
+        'Database error',
+      );
     });
   });
 
@@ -414,7 +423,9 @@ describe('VendorService', () => {
     it('should throw NotFoundException when vendor not found', async () => {
       prismaService.vendor.findFirst.mockResolvedValue(null);
 
-      await expect(service.getVendorProducts('nonexistent')).rejects.toThrow(NotFoundException);
+      await expect(service.getVendorProducts('nonexistent')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException on database error', async () => {
@@ -425,9 +436,13 @@ describe('VendorService', () => {
         isActive: true,
       };
       prismaService.vendor.findFirst.mockResolvedValue(prismaVendor);
-      prismaService.product.findMany.mockRejectedValue(new Error('Database error'));
+      prismaService.product.findMany.mockRejectedValue(
+        new Error('Database error'),
+      );
 
-      await expect(service.getVendorProducts('user-123')).rejects.toThrow(BadRequestException);
+      await expect(service.getVendorProducts('user-123')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -506,7 +521,9 @@ describe('VendorService', () => {
 
       prismaService.vendor.findFirst.mockResolvedValue(null);
 
-      await expect(service.createProduct('nonexistent', createProductDto)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.createProduct('nonexistent', createProductDto),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException on database error', async () => {
@@ -529,9 +546,13 @@ describe('VendorService', () => {
         isActive: true,
       };
       prismaService.vendor.findFirst.mockResolvedValue(prismaVendor);
-      prismaService.product.create.mockRejectedValue(new Error('Database error'));
+      prismaService.product.create.mockRejectedValue(
+        new Error('Database error'),
+      );
 
-      await expect(service.createProduct('user-123', createProductDto)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createProduct('user-123', createProductDto),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -562,7 +583,11 @@ describe('VendorService', () => {
 
       prismaService.product.update.mockResolvedValue(updatedProduct);
 
-      const result = await service.updateProductStock(productId, userId, quantity);
+      const result = await service.updateProductStock(
+        productId,
+        userId,
+        quantity,
+      );
 
       expect(result).toBeDefined();
       expect(result.id).toBe('456');
@@ -589,7 +614,9 @@ describe('VendorService', () => {
     it('should throw NotFoundException when vendor not found', async () => {
       prismaService.vendor.findFirst.mockResolvedValue(null);
 
-      await expect(service.updateProductStock('456', 'nonexistent', 50)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.updateProductStock('456', 'nonexistent', 50),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw NotFoundException when product not found', async () => {
@@ -602,7 +629,9 @@ describe('VendorService', () => {
       prismaService.vendor.findFirst.mockResolvedValue(prismaVendor);
       prismaService.product.update.mockRejectedValue({ code: 'P2025' });
 
-      await expect(service.updateProductStock('999', 'user-123', 50)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.updateProductStock('999', 'user-123', 50),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -648,7 +677,9 @@ describe('VendorService', () => {
     it('should throw NotFoundException when vendor not found', async () => {
       prismaService.vendor.findFirst.mockResolvedValue(null);
 
-      await expect(service.getStoreDetails('nonexistent')).rejects.toThrow(NotFoundException);
+      await expect(service.getStoreDetails('nonexistent')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw NotFoundException when store not found', async () => {
@@ -661,7 +692,9 @@ describe('VendorService', () => {
       prismaService.vendor.findFirst.mockResolvedValue(prismaVendor);
       prismaService.store.findFirst.mockResolvedValue(null);
 
-      await expect(service.getStoreDetails('user-123')).rejects.toThrow(NotFoundException);
+      await expect(service.getStoreDetails('user-123')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -688,7 +721,7 @@ describe('VendorService', () => {
             state: 'Test State',
             pincode: '110001',
             latitude: 28.6139,
-            longitude: 77.2090,
+            longitude: 77.209,
           },
           items: [
             {
@@ -714,9 +747,13 @@ describe('VendorService', () => {
     });
 
     it('should throw BadRequestException on database error', async () => {
-      prismaService.order.findMany.mockRejectedValue(new Error('Database error'));
+      prismaService.order.findMany.mockRejectedValue(
+        new Error('Database error'),
+      );
 
-      await expect(service.getVendorOrders(mockVendor)).rejects.toThrow(BadRequestException);
+      await expect(service.getVendorOrders(mockVendor)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -759,7 +796,11 @@ describe('VendorService', () => {
 
       prismaService.order.update.mockResolvedValue(updatedOrder);
 
-      const result = await service.updateOrderStatus(orderId, mockVendor, updateOrderStatusDto);
+      const result = await service.updateOrderStatus(
+        orderId,
+        mockVendor,
+        updateOrderStatusDto,
+      );
 
       expect(result).toBeDefined();
       expect(result.id).toBe(orderId);
@@ -771,7 +812,13 @@ describe('VendorService', () => {
 
       prismaService.order.findFirst.mockResolvedValue(null);
 
-      await expect(service.updateOrderStatus('nonexistent', mockVendor, updateOrderStatusDto)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.updateOrderStatus(
+          'nonexistent',
+          mockVendor,
+          updateOrderStatusDto,
+        ),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException on database error', async () => {
@@ -787,7 +834,13 @@ describe('VendorService', () => {
       prismaService.order.findFirst.mockResolvedValue(existingOrder);
       prismaService.order.update.mockRejectedValue(new Error('Database error'));
 
-      await expect(service.updateOrderStatus('order-123', mockVendor, updateOrderStatusDto)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.updateOrderStatus(
+          'order-123',
+          mockVendor,
+          updateOrderStatusDto,
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

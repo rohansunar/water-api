@@ -112,7 +112,9 @@ export class VendorOrderController {
     @Body() updateOrderStatusDto: UpdateOrderStatusDto,
   ): Promise<OrderResponseDto> {
     try {
-      this.logger.log(`Updating order ${orderId} status for vendor: ${vendor.id}`);
+      this.logger.log(
+        `Updating order ${orderId} status for vendor: ${vendor.id}`,
+      );
       return await this.vendorOrderService.updateOrderStatus(
         orderId,
         vendor,

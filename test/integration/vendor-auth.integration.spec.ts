@@ -201,10 +201,7 @@ describe('Vendor Authentication (Integration)', () => {
         'businessName',
         'Test Vendor',
       );
-      expect(response.body.vendor).toHaveProperty(
-        'phone',
-        '+919876543210',
-      );
+      expect(response.body.vendor).toHaveProperty('phone', '+919876543210');
       expect(response.body.expiresIn).toBe(36000);
     });
 

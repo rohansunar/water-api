@@ -8,6 +8,8 @@ import { VendorProductService } from './services/vendor-product.service';
 import { VendorAuthModule } from './vendor-auth.module';
 import { VendorOrderModule } from './vendor-order.module';
 import { VendorPaymentModule } from './vendor-payment.module';
+import { S3Service } from '../common/services/s3.service';
+import { ImageProcessingService } from '../common/services/image-processing.service';
 
 @Module({
   imports: [VendorAuthModule, VendorOrderModule, VendorPaymentModule],
@@ -16,7 +18,19 @@ import { VendorPaymentModule } from './vendor-payment.module';
     VendorStoreController,
     VendorProductController,
   ],
-  providers: [VendorService, VendorStoreService, VendorProductService],
-  exports: [VendorService, VendorStoreService, VendorProductService],
+  providers: [
+    VendorService,
+    VendorStoreService,
+    VendorProductService,
+    S3Service,
+    ImageProcessingService,
+  ],
+  exports: [
+    VendorService,
+    VendorStoreService,
+    VendorProductService,
+    S3Service,
+    ImageProcessingService,
+  ],
 })
 export class VendorModule {}

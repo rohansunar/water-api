@@ -48,7 +48,8 @@ describe('Store Address Management (Integration)', () => {
     });
 
     // Create a test vendor
-    const hashedPassword = await vendorAuthService.hashPassword('testPassword123');
+    const hashedPassword =
+      await vendorAuthService.hashPassword('testPassword123');
     testVendor = await prismaService.vendor.create({
       data: {
         phone: '+919876543210',
@@ -104,7 +105,7 @@ describe('Store Address Management (Integration)', () => {
         city: 'Mumbai',
         state: 'Maharashtra',
         pincode: '400001',
-        latitude: 19.0760,
+        latitude: 19.076,
         longitude: 72.8777,
         isDefault: true,
       };
@@ -124,7 +125,7 @@ describe('Store Address Management (Integration)', () => {
       expect(response.body).toHaveProperty('state', 'Maharashtra');
       expect(response.body).toHaveProperty('country', 'India');
       expect(response.body).toHaveProperty('pincode', '400001');
-      expect(response.body).toHaveProperty('latitude', 19.0760);
+      expect(response.body).toHaveProperty('latitude', 19.076);
       expect(response.body).toHaveProperty('longitude', 72.8777);
       expect(response.body).toHaveProperty('isDefault', true);
       expect(response.body).toHaveProperty('createdAt');
@@ -252,7 +253,10 @@ describe('Store Address Management (Integration)', () => {
         .expect(404);
 
       expect(response.body).toHaveProperty('statusCode', 404);
-      expect(response.body).toHaveProperty('message', 'Store not found or does not belong to this vendor');
+      expect(response.body).toHaveProperty(
+        'message',
+        'Store not found or does not belong to this vendor',
+      );
     });
 
     it('should fail with store belonging to different vendor', async () => {
@@ -289,7 +293,10 @@ describe('Store Address Management (Integration)', () => {
         .expect(404);
 
       expect(response.body).toHaveProperty('statusCode', 404);
-      expect(response.body).toHaveProperty('message', 'Store not found or does not belong to this vendor');
+      expect(response.body).toHaveProperty(
+        'message',
+        'Store not found or does not belong to this vendor',
+      );
     });
 
     it('should fail without authentication', async () => {
@@ -351,7 +358,7 @@ describe('Store Address Management (Integration)', () => {
         city: 'Delhi',
         pincode: '110001',
         latitude: 28.6139,
-        longitude: 77.2090,
+        longitude: 77.209,
         isDefault: true,
       };
 
@@ -368,7 +375,7 @@ describe('Store Address Management (Integration)', () => {
       expect(response.body).toHaveProperty('city', 'Delhi');
       expect(response.body).toHaveProperty('pincode', '110001');
       expect(response.body).toHaveProperty('latitude', 28.6139);
-      expect(response.body).toHaveProperty('longitude', 77.2090);
+      expect(response.body).toHaveProperty('longitude', 77.209);
       expect(response.body).toHaveProperty('isDefault', true);
     });
 
@@ -434,7 +441,10 @@ describe('Store Address Management (Integration)', () => {
         .expect(404);
 
       expect(response.body).toHaveProperty('statusCode', 404);
-      expect(response.body).toHaveProperty('message', 'Store address not found or does not belong to this vendor');
+      expect(response.body).toHaveProperty(
+        'message',
+        'Store address not found or does not belong to this vendor',
+      );
     });
 
     it('should fail with address belonging to different store', async () => {
@@ -469,7 +479,10 @@ describe('Store Address Management (Integration)', () => {
         .expect(404);
 
       expect(response.body).toHaveProperty('statusCode', 404);
-      expect(response.body).toHaveProperty('message', 'Store address not found or does not belong to this vendor');
+      expect(response.body).toHaveProperty(
+        'message',
+        'Store address not found or does not belong to this vendor',
+      );
     });
 
     it('should fail with invalid store ID', async () => {
@@ -484,7 +497,10 @@ describe('Store Address Management (Integration)', () => {
         .expect(404);
 
       expect(response.body).toHaveProperty('statusCode', 404);
-      expect(response.body).toHaveProperty('message', 'Store address not found or does not belong to this vendor');
+      expect(response.body).toHaveProperty(
+        'message',
+        'Store address not found or does not belong to this vendor',
+      );
     });
 
     it('should fail without authentication', async () => {

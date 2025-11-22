@@ -858,7 +858,15 @@ export class CreateRiderDto {
     example: {
       startTime: '09:00',
       endTime: '18:00',
-      days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+      days: [
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+        'sunday'
+      ],
     },
     required: false,
   })
@@ -935,7 +943,15 @@ export class UpdateRiderDto {
     example: {
       startTime: '09:00',
       endTime: '18:00',
-      days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday','saturday'],
+      days: [
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+        'sunday'
+      ],
     },
     required: false,
   })

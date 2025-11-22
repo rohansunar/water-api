@@ -2106,28 +2106,30 @@ export class VendorService {
         }),
       ]);
 
-      const inventoryData: InventoryStatusDto[] = storeMappings.map((mapping) => {
-        const product = mapping.product;
-        const specs = product.specifications as any;
-        // Get lowStockThreshold from product specifications or use default
-        const lowStockThreshold = specs?.lowStockThreshold || 20;
+      const inventoryData: InventoryStatusDto[] = storeMappings.map(
+        (mapping) => {
+          const product = mapping.product;
+          const specs = product.specifications as any;
+          // Get lowStockThreshold from product specifications or use default
+          const lowStockThreshold = specs?.lowStockThreshold || 20;
 
-        const currentStock = mapping.stockQuantity;
-        const reservedStock = mapping.reservedStock;
-        const availableStock = currentStock - reservedStock;
-        const isLowStock = availableStock <= lowStockThreshold;
+          const currentStock = mapping.stockQuantity;
+          const reservedStock = mapping.reservedStock;
+          const availableStock = currentStock - reservedStock;
+          const isLowStock = availableStock <= lowStockThreshold;
 
-        return {
-          productId: product.id.toString(),
-          productName: product.name,
-          currentStock,
-          reservedStock,
-          availableStock,
-          lowStockThreshold,
-          isLowStock,
-          lastUpdated: mapping.updatedAt,
-        };
-      });
+          return {
+            productId: product.id.toString(),
+            productName: product.name,
+            currentStock,
+            reservedStock,
+            availableStock,
+            lowStockThreshold,
+            isLowStock,
+            lastUpdated: mapping.updatedAt,
+          };
+        },
+      );
 
       const totalPages = Math.ceil(total / limit);
       const hasNext = page < totalPages;
@@ -2234,7 +2236,10 @@ export class VendorService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Error updating inventory for product ${productId}:`, error);
+      this.logger.error(
+        `Error updating inventory for product ${productId}:`,
+        error,
+      );
       throw new BadRequestException('Failed to update inventory');
     }
   }
@@ -2267,7 +2272,10 @@ export class VendorService {
 
       // Calculate new stock quantity
       const currentStock = storeMapping.stockQuantity;
-      const newStock = Math.max(0, currentStock + adjustmentDto.adjustmentQuantity);
+      const newStock = Math.max(
+        0,
+        currentStock + adjustmentDto.adjustmentQuantity,
+      );
 
       // Update the stock quantity
       await this.prisma.productStoreMapping.update({

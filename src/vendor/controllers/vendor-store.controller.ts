@@ -377,8 +377,14 @@ export class VendorStoreController {
     @Body() createStoreAddressDto: CreateStoreAddressDto,
     @CurrentVendor() vendor: Vendor,
   ): Promise<StoreAddressResponseDto> {
-    this.logger.log(`Creating store address for store ${storeId} by vendor user: ${vendor.id}`);
-    return this.vendorStoreService.createStoreAddress(vendor, storeId, createStoreAddressDto);
+    this.logger.log(
+      `Creating store address for store ${storeId} by vendor user: ${vendor.id}`,
+    );
+    return this.vendorStoreService.createStoreAddress(
+      vendor,
+      storeId,
+      createStoreAddressDto,
+    );
   }
 
   @Put(':storeId/addresses/:addressId')
@@ -423,7 +429,14 @@ export class VendorStoreController {
     @Body() updateStoreAddressDto: UpdateStoreAddressDto,
     @CurrentVendor() vendor: Vendor,
   ): Promise<StoreAddressResponseDto> {
-    this.logger.log(`Updating store address ${addressId} for store ${storeId} by vendor user: ${vendor.id}`);
-    return this.vendorStoreService.updateStoreAddress(vendor, storeId, addressId, updateStoreAddressDto);
+    this.logger.log(
+      `Updating store address ${addressId} for store ${storeId} by vendor user: ${vendor.id}`,
+    );
+    return this.vendorStoreService.updateStoreAddress(
+      vendor,
+      storeId,
+      addressId,
+      updateStoreAddressDto,
+    );
   }
 }

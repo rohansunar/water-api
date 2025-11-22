@@ -56,7 +56,9 @@ export class VendorController {
     @CurrentVendor() vendor: User,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<ProductPerformanceDto>> {
-    this.logger.log(`Getting product performance for vendor user: ${vendor.id}`);
+    this.logger.log(
+      `Getting product performance for vendor user: ${vendor.id}`,
+    );
     return this.vendorService.getProductPerformance(vendor.id, paginationQuery);
   }
 

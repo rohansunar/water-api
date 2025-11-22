@@ -78,7 +78,10 @@ export class VendorPaymentController {
         paginationQuery,
       );
     } catch (error) {
-      this.logger.error(`Error getting payments for vendor ${vendor.id}:`, error);
+      this.logger.error(
+        `Error getting payments for vendor ${vendor.id}:`,
+        error,
+      );
       throw error;
     }
   }

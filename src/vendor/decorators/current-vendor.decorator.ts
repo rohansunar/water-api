@@ -5,5 +5,5 @@ export const CurrentVendor = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): Vendor => {
     const request = ctx.switchToHttp().getRequest();
     return request.user;
-  },  
+  },
 );

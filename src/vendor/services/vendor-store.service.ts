@@ -372,7 +372,9 @@ export class VendorStoreService {
           { vendorId: id, storeId, reason: 'store_not_found' },
           id,
         );
-        throw new NotFoundException('Store not found or does not belong to this vendor');
+        throw new NotFoundException(
+          'Store not found or does not belong to this vendor',
+        );
       }
 
       // If this address is set as default, unset other default addresses for this store
@@ -420,8 +422,12 @@ export class VendorStoreService {
         state: storeAddress.state,
         country: storeAddress.country,
         pincode: storeAddress.pincode,
-        latitude: storeAddress.latitude ? Number(storeAddress.latitude) : undefined,
-        longitude: storeAddress.longitude ? Number(storeAddress.longitude) : undefined,
+        latitude: storeAddress.latitude
+          ? Number(storeAddress.latitude)
+          : undefined,
+        longitude: storeAddress.longitude
+          ? Number(storeAddress.longitude)
+          : undefined,
         isDefault: storeAddress.isDefault,
         createdAt: storeAddress.createdAt,
         updatedAt: storeAddress.updatedAt,
@@ -435,7 +441,10 @@ export class VendorStoreService {
         { vendorId: id, storeId, error: error.message },
         id,
       );
-      this.logger.error(`Store address creation failed for vendor ${id}, store ${storeId}:`, error);
+      this.logger.error(
+        `Store address creation failed for vendor ${id}, store ${storeId}:`,
+        error,
+      );
       throw new BadRequestException('Failed to create store address');
     }
   }
@@ -466,7 +475,9 @@ export class VendorStoreService {
           { vendorId: id, storeId, addressId, reason: 'address_not_found' },
           id,
         );
-        throw new NotFoundException('Store address not found or does not belong to this vendor');
+        throw new NotFoundException(
+          'Store address not found or does not belong to this vendor',
+        );
       }
 
       // If this address is being set as default, unset other default addresses for this store
@@ -489,16 +500,26 @@ export class VendorStoreService {
         updatedAt: new Date(),
       };
 
-      if (updateStoreAddressDto.label !== undefined) updateData.label = updateStoreAddressDto.label;
-      if (updateStoreAddressDto.line1 !== undefined) updateData.line1 = updateStoreAddressDto.line1;
-      if (updateStoreAddressDto.line2 !== undefined) updateData.line2 = updateStoreAddressDto.line2;
-      if (updateStoreAddressDto.city !== undefined) updateData.city = updateStoreAddressDto.city;
-      if (updateStoreAddressDto.state !== undefined) updateData.state = updateStoreAddressDto.state;
-      if (updateStoreAddressDto.country !== undefined) updateData.country = updateStoreAddressDto.country;
-      if (updateStoreAddressDto.pincode !== undefined) updateData.pincode = updateStoreAddressDto.pincode;
-      if (updateStoreAddressDto.latitude !== undefined) updateData.latitude = updateStoreAddressDto.latitude;
-      if (updateStoreAddressDto.longitude !== undefined) updateData.longitude = updateStoreAddressDto.longitude;
-      if (updateStoreAddressDto.isDefault !== undefined) updateData.isDefault = updateStoreAddressDto.isDefault;
+      if (updateStoreAddressDto.label !== undefined)
+        updateData.label = updateStoreAddressDto.label;
+      if (updateStoreAddressDto.line1 !== undefined)
+        updateData.line1 = updateStoreAddressDto.line1;
+      if (updateStoreAddressDto.line2 !== undefined)
+        updateData.line2 = updateStoreAddressDto.line2;
+      if (updateStoreAddressDto.city !== undefined)
+        updateData.city = updateStoreAddressDto.city;
+      if (updateStoreAddressDto.state !== undefined)
+        updateData.state = updateStoreAddressDto.state;
+      if (updateStoreAddressDto.country !== undefined)
+        updateData.country = updateStoreAddressDto.country;
+      if (updateStoreAddressDto.pincode !== undefined)
+        updateData.pincode = updateStoreAddressDto.pincode;
+      if (updateStoreAddressDto.latitude !== undefined)
+        updateData.latitude = updateStoreAddressDto.latitude;
+      if (updateStoreAddressDto.longitude !== undefined)
+        updateData.longitude = updateStoreAddressDto.longitude;
+      if (updateStoreAddressDto.isDefault !== undefined)
+        updateData.isDefault = updateStoreAddressDto.isDefault;
 
       const updatedAddress = await this.prisma.storeAddress.update({
         where: {
@@ -523,8 +544,12 @@ export class VendorStoreService {
         state: updatedAddress.state,
         country: updatedAddress.country,
         pincode: updatedAddress.pincode,
-        latitude: updatedAddress.latitude ? Number(updatedAddress.latitude) : undefined,
-        longitude: updatedAddress.longitude ? Number(updatedAddress.longitude) : undefined,
+        latitude: updatedAddress.latitude
+          ? Number(updatedAddress.latitude)
+          : undefined,
+        longitude: updatedAddress.longitude
+          ? Number(updatedAddress.longitude)
+          : undefined,
         isDefault: updatedAddress.isDefault,
         createdAt: updatedAddress.createdAt,
         updatedAt: updatedAddress.updatedAt,
@@ -538,7 +563,10 @@ export class VendorStoreService {
         { vendorId: id, storeId, addressId, error: error.message },
         id,
       );
-      this.logger.error(`Store address update failed for vendor ${id}, store ${storeId}, address ${addressId}:`, error);
+      this.logger.error(
+        `Store address update failed for vendor ${id}, store ${storeId}, address ${addressId}:`,
+        error,
+      );
       throw new BadRequestException('Failed to update store address');
     }
   }
