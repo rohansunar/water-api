@@ -545,7 +545,8 @@ export class VendorProductController {
    * Delete a specific image from a product.
    *
    * This endpoint removes a single image from a product's image collection.
-   * The image is identified by its S3 key or URL identifier.
+   * The image is identified by its S3 key or URL identifier and is permanently
+   * deleted from both the database and storage.
    *
    * Access control:
    * - Only the vendor who owns the product can delete its images
@@ -554,19 +555,28 @@ export class VendorProductController {
    * Deletion process:
    * 1. Validate product ownership and existence
    * 2. Verify the image exists in the product's image array
-   * 3. Remove the image URL from the product's images array
-   * 4. Update the product record in the database
-   * 5. Optional: Delete the file from S3 storage (marked as TODO for future implementation)
+   * 3. Extract the storage key from the image URL
+   * 4. Remove the image URL from the product's images array
+   * 5. Update the product record in the database
+   * 6. Delete the image file from Supabase Storage
+   *
+   * Storage deletion:
+   * - Images are permanently removed from Supabase Storage after database update
+   * - Storage deletion failures are logged but don't prevent the operation
+   * - Prevents orphaned files while maintaining data integrity
    *
    * Security considerations:
    * - Image IDs are validated to prevent unauthorized deletions
    * - Only images belonging to the vendor's products can be deleted
-   * - Database transaction ensures consistency between product record and storage
+   * - Database update occurs before storage deletion to ensure consistency
+   * - Comprehensive logging tracks all deletion attempts and outcomes
    *
    * Error handling:
    * - Product not found returns 404 Not Found
    * - Image not found in product returns 404 Not Found
    * - Database update failures are logged and return 400 Bad Request
+   * - Storage deletion failures are logged as warnings but don't fail the operation
+   * - Invalid URL formats are handled gracefully with appropriate logging
    *
    * @param productId - The unique identifier of the product
    * @param deleteImageDto - DTO containing the image ID to delete

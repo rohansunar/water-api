@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../../common/database/prisma.service';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 import { ImageProcessingService } from '../../common/services/image-processing.service';
+import { S3Service } from '../../common/services/s3.service';
 import { VendorService } from './vendor.service';
 import {
   CreateVendorProductDto,
@@ -29,6 +30,7 @@ export class VendorProductService {
     private readonly prisma: PrismaService,
     private readonly customLogger: CustomLoggerService,
     private readonly imageProcessingService: ImageProcessingService,
+    private readonly s3Service: S3Service,
     private readonly vendorService: VendorService,
   ) {}
 
@@ -819,11 +821,42 @@ export class VendorProductService {
   }
 
   /**
+   * Extract the S3 key from a Supabase Storage URL.
+   *
+   * This utility method parses Supabase Storage public URLs to extract the storage key.
+   * The URL format is: https://{project}.supabase.co/storage/v1/object/public/{bucket}/{key}
+   *
+   * @param url - The full Supabase Storage URL
+   * @returns string - The extracted storage key (e.g., 'products/123/image.webp')
+   * @throws Error - When URL format is invalid
+   */
+  private extractS3KeyFromUrl(url: string): string {
+    try {
+      const urlParts = url.split('/storage/v1/object/public/');
+      if (urlParts.length !== 2) {
+        throw new Error('Invalid Supabase Storage URL format');
+      }
+
+      const bucketAndKey = urlParts[1];
+      const bucketEndIndex = bucketAndKey.indexOf('/');
+      if (bucketEndIndex === -1) {
+        throw new Error('Invalid Supabase Storage URL format - missing bucket separator');
+      }
+
+      // Extract everything after the bucket name
+      return bucketAndKey.substring(bucketEndIndex + 1);
+    } catch (error) {
+      this.logger.error(`Failed to extract S3 key from URL ${url}:`, error);
+      throw new Error(`Invalid image URL format: ${url}`);
+    }
+  }
+
+  /**
    * Delete a specific image from a vendor's product.
    *
    * This method removes a single image from the product's image collection.
-   * The image is identified by its S3 key or URL identifier and removed from
-   * the product's image array in the database.
+   * The image is identified by its S3 key or URL identifier, removed from
+   * the product's image array in the database, and deleted from storage.
    *
    * Access Control:
    * - Validates that the vendor owns the product
@@ -832,31 +865,33 @@ export class VendorProductService {
    * Deletion Process:
    * 1. Validate product ownership and existence
    * 2. Locate the image in the product's image array using the imageId
-   * 3. Remove the image URL from the array
+   * 3. Extract the S3 key from the image URL for storage deletion
    * 4. Update the product record with the modified image array
-   * 5. Log the successful deletion with audit trail
+   * 5. Delete the image file from Supabase Storage
+   * 6. Log the successful deletion with audit trail
    *
    * Image Identification:
    * - Images are found by checking if the imageId is contained in the URL
    * - This allows flexible identification (full URL, S3 key, or partial identifier)
    * - Prevents deletion of images not belonging to the product
    *
+   * Storage Deletion:
+   * - Images are permanently deleted from Supabase Storage after database update
+   * - Storage deletion failures are logged but don't fail the operation
+   * - Prevents orphaned files while maintaining data integrity
+   *
    * Security Considerations:
    * - Image ownership validated at product level
-   * - No direct S3 deletion to prevent unauthorized file access
-   * - Database transaction ensures consistency
-   * - Audit logging tracks all deletion attempts
+   * - Storage deletion is performed after database consistency is ensured
+   * - Audit logging tracks all deletion attempts and outcomes
+   * - Graceful handling of storage deletion failures
    *
    * Error Handling and Rollback:
    * - Product not found: Returns 404 Not Found
    * - Image not found: Returns 404 Not Found with specific message
    * - Database failures: Logged and converted to 400 Bad Request
-   * - No partial state - either image is fully removed or operation fails
-   *
-   * Future Enhancement (marked as TODO):
-   * - S3 file deletion: Currently images remain in S3 for backup/recovery
-   * - Could be implemented with S3Service.deleteFile() for storage optimization
-   * - Would require careful error handling to avoid orphaned database records
+   * - Storage deletion failures: Logged as warnings, operation continues
+   * - No partial state - database is updated first, storage cleanup follows
    *
    * @param vendor - The authenticated vendor object
    * @param productId - The unique identifier of the product
@@ -898,12 +933,63 @@ export class VendorProductService {
         (_, index) => index !== imageIndex,
       );
 
+      // Extract S3 key from the image URL for storage deletion
+      const imageUrl = currentImages[imageIndex];
+      let s3Key: string | null = null;
+
+      try {
+        s3Key = this.extractS3KeyFromUrl(imageUrl);
+      } catch (error) {
+        this.customLogger.logBusinessEvent(
+          'product_image_deletion_warning',
+          {
+            vendorId: id,
+            productId,
+            imageId,
+            warning: 'Failed to extract S3 key from URL, skipping storage deletion',
+            error: error.message,
+          },
+          id,
+        );
+        this.logger.warn(`Failed to extract S3 key from URL ${imageUrl}, proceeding with database deletion only:`, error);
+      }
+
+      // Update the product record first to maintain data integrity
       await this.prisma.product.update({
         where: { id: BigInt(productId) },
         data: { images: updatedImages },
       });
 
-      // TODO: Delete from S3 if needed (optional cleanup)
+      // Attempt to delete from storage after database update
+      if (s3Key) {
+        try {
+          await this.s3Service.deleteFile(s3Key);
+          this.customLogger.logBusinessEvent(
+            'product_image_storage_deleted',
+            {
+              vendorId: id,
+              productId,
+              imageId,
+              s3Key,
+            },
+            id,
+          );
+        } catch (storageError) {
+          // Log storage deletion failure but don't fail the operation
+          this.customLogger.logBusinessEvent(
+            'product_image_storage_deletion_failed',
+            {
+              vendorId: id,
+              productId,
+              imageId,
+              s3Key,
+              error: storageError.message,
+            },
+            id,
+          );
+          this.logger.warn(`Failed to delete image from storage ${s3Key}, but database updated successfully:`, storageError);
+        }
+      }
 
       this.customLogger.logBusinessEvent(
         'product_image_deleted',
@@ -912,6 +998,7 @@ export class VendorProductService {
           productId,
           imageId,
           remainingImages: updatedImages.length,
+          storageDeleted: s3Key !== null,
         },
         id,
       );

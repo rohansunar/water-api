@@ -9,6 +9,7 @@ import { PrismaService } from '../../../src/common/database/prisma.service';
 import { CustomLoggerService } from '../../../src/common/logger/logger.service';
 import { VendorService } from '../../../src/vendor/services/vendor.service';
 import { ImageProcessingService } from '../../../src/common/services/image-processing.service';
+import { S3Service } from '../../../src/common/services/s3.service';
 import {
   BusinessException,
   ConflictException as CustomConflictException,
@@ -43,6 +44,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
   let customLogger: jest.Mocked<CustomLoggerService>;
   let vendorService: jest.Mocked<VendorService>;
   let imageProcessingService: jest.Mocked<any>;
+  let s3Service: jest.Mocked<S3Service>;
 
   const mockVendor: Vendor = {
     id: '123',
@@ -70,6 +72,10 @@ describe('VendorProductService - Conflict Scenarios', () => {
       processAndUploadMultipleImages: jest.fn(),
     };
 
+    const mockS3Service = {
+      deleteFile: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         VendorProductService,
@@ -86,6 +92,10 @@ describe('VendorProductService - Conflict Scenarios', () => {
           provide: ImageProcessingService,
           useValue: mockImageProcessingService,
         },
+        {
+          provide: S3Service,
+          useValue: mockS3Service,
+        },
       ],
     }).compile();
 
@@ -94,6 +104,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
     customLogger = module.get(CustomLoggerService);
     vendorService = module.get(VendorService);
     imageProcessingService = module.get(ImageProcessingService);
+    s3Service = module.get(S3Service);
   });
 
   describe('createProduct - Conflict Scenarios', () => {
@@ -772,7 +783,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
     });
 
     describe('deleteProductImage', () => {
-      it('should successfully delete a product image', async () => {
+      it('should successfully delete a product image and remove from storage', async () => {
         const productId = '456';
         const imageId = 'image1.webp'; // Use part of the URL that would match
         const mockProduct = {
@@ -793,6 +804,9 @@ describe('VendorProductService - Conflict Scenarios', () => {
           images: [mockProduct.images[1]], // Remove first image
         } as any);
 
+        // Mock S3 deletion success
+        s3Service.deleteFile.mockResolvedValueOnce(undefined);
+
         const result = await service.deleteProductImage(mockVendor, productId, imageId);
 
         expect(result.message).toBe('Image deleted successfully');
@@ -801,6 +815,67 @@ describe('VendorProductService - Conflict Scenarios', () => {
           where: { id: BigInt(456) },
           data: { images: [mockProduct.images[1]] },
         });
+        expect(s3Service.deleteFile).toHaveBeenCalledWith('products/456/image1.webp');
+      });
+
+      it('should delete image from database even if storage deletion fails', async () => {
+        const productId = '456';
+        const imageId = 'image1.webp';
+        const mockProduct = {
+          id: BigInt(456),
+          vendorId: BigInt(123),
+          images: [
+            'https://project-ref.supabase.co/storage/v1/object/public/images/products/456/image1.webp',
+          ],
+        };
+
+        // Mock product exists and belongs to vendor
+        prismaService.product.findFirst.mockResolvedValueOnce(mockProduct as any);
+
+        // Mock product update
+        prismaService.product.update.mockResolvedValueOnce({
+          ...mockProduct,
+          images: [],
+        } as any);
+
+        // Mock S3 deletion failure
+        s3Service.deleteFile.mockRejectedValueOnce(new Error('Storage deletion failed'));
+
+        const result = await service.deleteProductImage(mockVendor, productId, imageId);
+
+        expect(result.message).toBe('Image deleted successfully');
+        expect(result.remainingImages).toBe(0);
+        expect(prismaService.product.update).toHaveBeenCalled();
+        expect(s3Service.deleteFile).toHaveBeenCalledWith('products/456/image1.webp');
+        // Should not throw error despite S3 failure
+      });
+
+      it('should handle invalid URL format gracefully', async () => {
+        const productId = '456';
+        const imageId = 'invalid';
+        const mockProduct = {
+          id: BigInt(456),
+          vendorId: BigInt(123),
+          images: [
+            'invalid-url-format', // Invalid URL that can't be parsed
+          ],
+        };
+
+        // Mock product exists and belongs to vendor
+        prismaService.product.findFirst.mockResolvedValueOnce(mockProduct as any);
+
+        // Mock product update
+        prismaService.product.update.mockResolvedValueOnce({
+          ...mockProduct,
+          images: [],
+        } as any);
+
+        const result = await service.deleteProductImage(mockVendor, productId, imageId);
+
+        expect(result.message).toBe('Image deleted successfully');
+        expect(result.remainingImages).toBe(0);
+        expect(prismaService.product.update).toHaveBeenCalled();
+        expect(s3Service.deleteFile).not.toHaveBeenCalled(); // Should not attempt S3 deletion
       });
 
       it('should throw NotFoundException when image not found', async () => {
