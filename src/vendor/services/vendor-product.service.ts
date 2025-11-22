@@ -17,7 +17,6 @@ import {
   VendorProductResponseDto,
   VendorProductMappingResponseDto,
   UploadProductImagesResponseDto,
-  ProductImagesResponseDto,
   ProductImageResponseDto,
 } from '../dto/vendor.dto';
 import { Vendor } from '../interfaces/vendor.interface';
@@ -25,6 +24,10 @@ import { Vendor } from '../interfaces/vendor.interface';
 @Injectable()
 export class VendorProductService {
   private readonly logger = new Logger(VendorProductService.name);
+
+  private readonly DEFAULT_PAGE_LIMIT = 10;
+  private readonly DEFAULT_PAGE = 1;
+  private readonly MAX_PRODUCT_IMAGES = 10;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -179,8 +182,8 @@ export class VendorProductService {
 
   async getProducts(
     vendor: Vendor,
-    page: number = 1,
-    limit: number = 10,
+    page: number = this.DEFAULT_PAGE,
+    limit: number = this.DEFAULT_PAGE_LIMIT,
     category?: string,
     isActive?: boolean,
   ): Promise<{
@@ -578,7 +581,7 @@ export class VendorProductService {
 
       // Check current image count
       const currentImageCount = product.images?.length || 0;
-      const maxImages = 10;
+      const maxImages = this.MAX_PRODUCT_IMAGES;
 
       if (currentImageCount >= maxImages) {
         throw new BadRequestException(
@@ -720,105 +723,6 @@ export class VendorProductService {
     }
   }
 
-  /**
-   * Retrieve all images associated with a vendor's product.
-   *
-   * This method fetches the complete list of product images from the database,
-   * including metadata reconstruction for images that were processed and stored.
-   * Since detailed metadata isn't stored in the database, some fields are
-   * standardized based on the processing configuration.
-   *
-   * Access Control:
-   * - Validates that the vendor owns the product before returning images
-   * - Ensures only authorized vendors can access their product images
-   *
-   * Image Metadata Reconstruction:
-   * - ID: Generated sequentially as 'image_{index}' for frontend identification
-   * - URL: Direct S3 URL stored in the database
-   * - Filename: Standardized as 'product-image-{n}.webp' (processed format)
-   * - Size: Not stored in DB, set to 0 (could be enhanced to store this)
-   * - Dimensions: Standardized to processed dimensions (800x600)
-   * - Upload timestamp: Uses product updatedAt as approximation
-   *
-   * Response Structure:
-   * - productId: The product identifier
-   * - totalImages: Current number of images
-   * - maxImages: Maximum allowed images (10)
-   * - images: Array of image objects with metadata
-   *
-   * Security Considerations:
-   * - URLs are publicly accessible S3 URLs
-   * - No sensitive file system paths exposed
-   * - Access validated at product ownership level
-   *
-   * Error Handling:
-   * - Product not found: Returns 404 with appropriate logging
-   * - Database errors: Logged and converted to 400 Bad Request
-   * - Business events logged for audit trail
-   *
-   * @param vendor - The authenticated vendor object
-   * @param productId - The unique identifier of the product
-   * @returns Promise<ProductImagesResponseDto> - Complete image list with metadata
-   * @throws NotFoundException - When product doesn't exist or vendor doesn't own it
-   * @throws BadRequestException - When database operations fail
-   */
-  async getProductImages(
-    vendor: Vendor,
-    productId: string,
-  ): Promise<ProductImagesResponseDto> {
-    const { id } = vendor;
-
-    try {
-      const product = await this.prisma.product.findFirst({
-        where: {
-          id: BigInt(productId),
-          vendorId: BigInt(id),
-        },
-      });
-
-      if (!product) {
-        this.customLogger.logBusinessEvent(
-          'product_images_retrieval_failure',
-          { vendorId: id, productId, reason: 'product_not_found' },
-          id,
-        );
-        throw new NotFoundException('Product not found');
-      }
-
-      const images: ProductImageResponseDto[] = (product.images || []).map(
-        (url, index) => ({
-          id: `image_${index}`,
-          url,
-          filename: `product-image-${index + 1}.webp`,
-          size: 0, // Size not stored in DB
-          width: 800,
-          height: 600,
-          uploadedAt: product.updatedAt,
-        }),
-      );
-
-      return {
-        productId,
-        totalImages: images.length,
-        maxImages: 10,
-        images,
-      };
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.customLogger.logBusinessEvent(
-        'product_images_retrieval_error',
-        { vendorId: id, productId, error: error.message },
-        id,
-      );
-      this.logger.error(
-        `Product images retrieval failed for vendor ${id}, product ${productId}:`,
-        error,
-      );
-      throw new BadRequestException('Failed to retrieve product images');
-    }
-  }
 
   /**
    * Extract the S3 key from a Supabase Storage URL.
@@ -1048,7 +952,7 @@ export class VendorProductService {
    * Image ID Mapping:
    * - Image IDs are expected in format 'image_{index}' (e.g., 'image_0', 'image_1')
    * - Index is extracted and used to locate corresponding URL in current array
-   * - This approach assumes sequential image IDs from getProductImages response
+   * - This approach assumes sequential image IDs from image retrieval
    *
    * Validation Requirements:
    * - Exact count match: Number of provided IDs must equal current image count
@@ -1107,18 +1011,30 @@ export class VendorProductService {
         );
       }
 
-      // Create new order based on provided IDs
-      // For simplicity, we'll reorder based on the order provided
-      // In a real implementation, you might want to validate that all IDs exist
-      const reorderedImages = imageIds
-        .map((id) => {
-          const index = parseInt(id.split('_')[1]);
-          return currentImages[index];
-        })
-        .filter(Boolean);
+      // Validate and reorder images based on provided IDs
+      const indices = new Set<number>();
+      const reorderedImages: string[] = [];
 
-      if (reorderedImages.length !== currentImages.length) {
-        throw new BadRequestException('Invalid image IDs provided');
+      for (const id of imageIds) {
+        if (!id.startsWith('image_')) {
+          throw new BadRequestException(`Invalid image ID format: ${id}`);
+        }
+
+        const index = parseInt(id.split('_')[1], 10);
+        if (isNaN(index) || index < 0 || index >= currentImages.length) {
+          throw new BadRequestException(`Invalid image index in ID: ${id}`);
+        }
+
+        if (indices.has(index)) {
+          throw new BadRequestException(`Duplicate image ID: ${id}`);
+        }
+
+        indices.add(index);
+        reorderedImages.push(currentImages[index]);
+      }
+
+      if (indices.size !== currentImages.length) {
+        throw new BadRequestException('Not all images are included in the reorder list');
       }
 
       await this.prisma.product.update({
@@ -1179,7 +1095,7 @@ export class VendorProductService {
       description: product.description,
       category: product.category,
       attributes: {
-        imageUrl: product.images?.[0],
+        imageUrl: product.images,
         specifications: product.specifications,
         hasDeposit: product.hasDeposit,
         depositAmount: product.depositAmount,

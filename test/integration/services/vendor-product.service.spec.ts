@@ -69,6 +69,7 @@ describe('VendorProductService - Conflict Scenarios', () => {
     const mockVendorService = {};
 
     const mockImageProcessingService = {
+      validateImage: jest.fn(),
       processAndUploadMultipleImages: jest.fn(),
     };
 
@@ -647,8 +648,11 @@ describe('VendorProductService - Conflict Scenarios', () => {
         const productId = '456';
         const mockFiles = [
           {
+            buffer: Buffer.from('fake-image-data'),
             filename: 'test-image.jpg',
-            toBuffer: jest.fn().mockResolvedValue(Buffer.from('fake-image-data')),
+            mimetype: 'image/jpeg',
+            encoding: '7bit',
+            fields: {},
           } as any, // MultipartFile mock
         ];
 
@@ -665,6 +669,9 @@ describe('VendorProductService - Conflict Scenarios', () => {
           vendorId: BigInt(123),
           images: [],
         } as any);
+
+        // Mock image validation
+        jest.mocked(imageProcessingService.validateImage).mockResolvedValueOnce({ isValid: true });
 
         // Mock image processing service
         jest.mocked(imageProcessingService.processAndUploadMultipleImages).mockResolvedValueOnce(mockUploadResults);
@@ -696,8 +703,11 @@ describe('VendorProductService - Conflict Scenarios', () => {
         const productId = '999';
         const mockFiles = [
           {
+            buffer: Buffer.from('fake-image-data'),
             filename: 'test-image.jpg',
-            toBuffer: jest.fn().mockResolvedValue(Buffer.from('fake-image-data')),
+            mimetype: 'image/jpeg',
+            encoding: '7bit',
+            fields: {},
           } as any, // MultipartFile mock
         ];
 
@@ -727,8 +737,11 @@ describe('VendorProductService - Conflict Scenarios', () => {
       it('should throw BadRequestException when exceeding max images', async () => {
         const productId = '456';
         const mockFiles = Array(11).fill({
+          buffer: Buffer.from('fake-image-data'),
           filename: 'test-image.jpg',
-          toBuffer: jest.fn().mockResolvedValue(Buffer.from('fake-image-data')),
+          mimetype: 'image/jpeg',
+          encoding: '7bit',
+          fields: {},
         } as any); // MultipartFile mock
 
         // Mock product with max images
@@ -744,43 +757,6 @@ describe('VendorProductService - Conflict Scenarios', () => {
       });
     });
 
-    describe('getProductImages', () => {
-      it('should successfully retrieve product images', async () => {
-        const productId = '456';
-        const mockProduct = {
-          id: BigInt(456),
-          vendorId: BigInt(123),
-          images: [
-            'https://project-ref.supabase.co/storage/v1/object/public/images/products/456/image1.webp',
-            'https://project-ref.supabase.co/storage/v1/object/public/images/products/456/image2.webp',
-          ],
-          updatedAt: new Date(),
-        };
-
-        // Mock product exists and belongs to vendor
-        prismaService.product.findFirst.mockResolvedValueOnce(mockProduct as any);
-
-        const result = await service.getProductImages(mockVendor, productId);
-
-        expect(result.productId).toBe(productId);
-        expect(result.totalImages).toBe(2);
-        expect(result.maxImages).toBe(10);
-        expect(result.images).toHaveLength(2);
-        expect(result.images[0].id).toBe('image_0');
-        expect(result.images[1].id).toBe('image_1');
-      });
-
-      it('should throw NotFoundException when product does not exist', async () => {
-        const productId = '999';
-
-        // Mock product not found
-        prismaService.product.findFirst.mockResolvedValueOnce(null);
-
-        await expect(
-          service.getProductImages(mockVendor, productId),
-        ).rejects.toThrow('Product not found');
-      });
-    });
 
     describe('deleteProductImage', () => {
       it('should successfully delete a product image and remove from storage', async () => {

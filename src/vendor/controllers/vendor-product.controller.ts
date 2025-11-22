@@ -33,7 +33,7 @@ import {
   UploadProductImagesResponseDto,
   DeleteProductImageDto,
   ReorderProductImagesDto,
-  ProductImagesResponseDto,
+  ProductImageResponseDto,
 } from '../dto/vendor.dto';
 import { VendorJwtAuthGuard } from '../guards/vendor-jwt-auth.guard';
 import { CurrentVendor } from '../decorators/current-vendor.decorator';
@@ -493,53 +493,6 @@ export class VendorProductController {
     );
   }
 
-  /**
-   * Retrieve all images associated with a specific product.
-   *
-   * This endpoint returns a list of all images for a product, including metadata
-   * such as image URLs, filenames, dimensions, and upload timestamps.
-   *
-   * Access control:
-   * - Only the vendor who owns the product can access its images
-   * - Product ownership is validated before returning image data
-   *
-   * Response includes:
-   * - Product ID and total image count
-   * - Maximum allowed images (currently 10)
-   * - Array of image objects with URLs and metadata
-   *
-   * Security considerations:
-   * - URLs point to S3 with public read access for authenticated requests
-   * - No sensitive file system paths are exposed
-   *
-   * @param productId - The unique identifier of the product
-   * @param vendor - The authenticated vendor making the request
-   * @returns Promise<ProductImagesResponseDto> - List of product images with metadata
-   */
-  @Get(':id/images')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Get product images',
-    description: 'Retrieve all images for a specific product',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Product images retrieved successfully',
-    type: ProductImagesResponseDto,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Product not found',
-  })
-  async getProductImages(
-    @Param('id') productId: string,
-    @CurrentVendor() vendor: Vendor,
-  ): Promise<ProductImagesResponseDto> {
-    this.logger.log(
-      `Product images retrieval attempt for vendor: ${vendor.id}, product ID: ${productId}`,
-    );
-    return this.vendorProductService.getProductImages(vendor, productId);
-  }
 
   /**
    * Delete a specific image from a product.
@@ -693,7 +646,7 @@ export class VendorProductController {
     @Param('id') productId: string,
     @Body() reorderDto: ReorderProductImagesDto,
     @CurrentVendor() vendor: Vendor,
-  ): Promise<{ message: string; images: any[] }> {
+  ): Promise<{ message: string; images: ProductImageResponseDto[] }> {
     this.logger.log(
       `Product images reorder attempt for vendor: ${vendor.id}, product ID: ${productId}`,
     );

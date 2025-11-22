@@ -2131,32 +2131,7 @@ export class ReorderProductImagesDto {
   })
   @IsArray()
   @IsString({ each: true })
-  @MaxLength(10, { each: true })
+  @MaxLength(50, { each: true })
   imageIds: string[];
 }
 
-export class ProductImagesResponseDto {
-  @ApiProperty({
-    description: 'Product unique identifier',
-    example: '123',
-  })
-  productId: string;
-
-  @ApiProperty({
-    description: 'Total number of images',
-    example: 5,
-  })
-  totalImages: number;
-
-  @ApiProperty({
-    description: 'Maximum allowed images',
-    example: 10,
-  })
-  maxImages: number;
-
-  @ApiProperty({
-    description: 'List of product images',
-    type: [ProductImageResponseDto],
-  })
-  images: ProductImageResponseDto[];
-}
