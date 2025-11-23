@@ -49,27 +49,6 @@ export class ProductController {
 
   constructor(private readonly productService: ProductService) {}
 
-  @Public()
-  @Get('location/:location')
-  async getProductsByLocation(
-    @Param('location') location: string,
-    @Query('lat', ParseFloatPipe) lat: number,
-    @Query('lng', ParseFloatPipe) lng: number,
-  ): Promise<ProductResponseDto[]> {
-    this.logger.log(
-      `Getting products for location: ${location} (${lat}, ${lng})`,
-    );
-    return this.productService.findByLocation(lat, lng);
-  }
-
-  @Public()
-  @Get('details/:productId')
-  async getProductDetails(
-    @Param('productId') productId: string,
-  ): Promise<ProductResponseDto> {
-    this.logger.log(`Getting product details for: ${productId}`);
-    return this.productService.getProductDetails(productId);
-  }
 
   @Public()
   @Get('search')

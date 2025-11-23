@@ -41,7 +41,6 @@ export interface CreateUserData {
 export interface IProductService extends IModuleService {
   findById(id: string): Promise<ProductData | null>;
   findByVendor(vendorId: string): Promise<ProductData[]>;
-  findByLocation(location: string): Promise<ProductData[]>;
   validateProduct(id: string): Promise<boolean>;
   updateStock(id: string, quantity: number): Promise<ProductData>;
   checkAvailability(id: string, quantity: number): Promise<boolean>;
@@ -65,7 +64,6 @@ export interface IVendorService extends IModuleService {
   findByUserId(userId: string): Promise<VendorData | null>;
   validateVendor(id: string): Promise<boolean>;
   isVendorActive(id: string): Promise<boolean>;
-  getVendorsByLocation(location: string): Promise<VendorData[]>;
 }
 
 export interface VendorData {

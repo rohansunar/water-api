@@ -78,14 +78,6 @@ export class ProductService {
     }
   }
 
-  async getProductDetails(productId: string): Promise<ProductResponseDto> {
-    const product = await this.findById(productId);
-    if (!product) {
-      throw new NotFoundException('Product not found');
-    }
-
-    return this.mapToProductResponseDto(product);
-  }
 
   async create(
     createProductDto: CreateCustomerProductDto,
@@ -183,15 +175,6 @@ export class ProductService {
     }
   }
 
-  async findByLocation(
-    lat: number,
-    lng: number,
-  ): Promise<ProductResponseDto[]> {
-    // In real implementation, calculate distance from vendor location
-    // For now, return all available products
-    const products = await this.findAll();
-    return products.map((product) => this.mapToProductResponseDto(product));
-  }
 
   async searchProducts(searchDto: any): Promise<any> {
     try {
