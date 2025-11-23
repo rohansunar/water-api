@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { PaymentResponseDto } from '../dto/payment.dto';
 import { PaginationQueryDto, PaginatedResponseDto } from '../dto/vendor.dto';
-import { Vendor } from '../interfaces/vendor.interface';
+import { Vendor } from '../../product/interfaces/vendor.interface';
 
 @Injectable()
 export class VendorPaymentService {

@@ -13,7 +13,7 @@ import {
   StoreResponseDto,
 } from '../dto/vendor.dto';
 import { VendorService } from './vendor.service';
-import { Vendor } from '../interfaces/vendor.interface';
+import { Vendor } from '../../product/interfaces/vendor.interface';
 
 @Injectable()
 export class VendorStoreService {

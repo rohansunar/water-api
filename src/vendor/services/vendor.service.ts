@@ -9,7 +9,7 @@ import {
   Vendor,
   DeliveryZone,
   DayOfWeek,
-} from '../interfaces/vendor.interface';
+} from '../../product/interfaces/vendor.interface';
 import {
   CreateProductDto,
   ProductResponseDto,
@@ -40,8 +40,8 @@ import {
   RejectOrderDto,
   PaginationQueryDto,
   PaginatedResponseDto,
-  VendorProductVariantResponseDto,
 } from '../dto/vendor.dto';
+import { VendorProductVariantResponseDto } from '../../product/dto/product.dto';
 import { PrismaService } from '../../common/database/prisma.service';
 
 @Injectable()
@@ -435,20 +435,21 @@ export class VendorService {
       const product = await this.prisma.product.create({
         data: {
           vendorId: BigInt(vendor.id),
-          name: createProductDto.name,
+          name: createProductDto.title,
           description: createProductDto.description,
           category: createProductDto.category,
-          capacity: createProductDto.size, // Using size as capacity
-          unit: 'liter', // Default unit
-          price: createProductDto.price,
-          depositAmount: createProductDto.depositAmount,
-          hasDeposit: createProductDto.hasDeposit,
-          stockQuantity: createProductDto.stockQuantity,
-          images: createProductDto.images || [],
+          capacity: createProductDto.attributes?.size || createProductDto.unit,
+          unit: createProductDto.unit,
+          price: createProductDto.base_price,
+          depositAmount: createProductDto.attributes?.depositAmount || 0,
+          hasDeposit: createProductDto.attributes?.hasDeposit || false,
+          stockQuantity: createProductDto.attributes?.stockQuantity || 0,
+          images: createProductDto.attributes?.images || [],
           specifications: {
-            capacity: this.getSizeCapacity(createProductDto.size),
+            capacity: this.getSizeCapacity(createProductDto.attributes?.size),
             material: 'Plastic',
             brand: 'Generic',
+            sku: createProductDto.sku,
           },
           isActive: true,
         },
@@ -2743,38 +2744,22 @@ export class VendorService {
   ): ProductResponseDto {
     return {
       id: product.id.toString(),
-      vendorId: vendor.id,
-      name: product.name,
+      vendor_id: vendor.id,
+      title: product.name,
+      sku: product.specifications?.sku || product.name.toLowerCase().replace(/\s+/g, '-'),
       description: product.description,
       category: product.category,
-      size: product.capacity, // Using capacity as size
-      price: Number(product.price),
-      depositAmount: Number(product.depositAmount),
-      hasDeposit: product.hasDeposit,
-      stockQuantity: product.stockQuantity,
-      isActive: product.isActive,
-      images: product.images,
-      specifications: product.specifications || {
-        capacity: parseFloat(product.capacity) || 0,
-        material: 'Plastic',
-        brand: 'Generic',
+      attributes: {
+        size: product.capacity,
+        depositAmount: product.depositAmount,
+        hasDeposit: product.hasDeposit,
+        stockQuantity: product.stockQuantity,
       },
-      vendor: {
-        id: vendor.id,
-        businessName: vendor.businessName,
-        rating: vendor.rating,
-        totalOrders: vendor.totalOrders,
-        deliveryZones: vendor.deliveryZones.map((zone) => ({
-          id: zone.id,
-          name: zone.name,
-          deliveryFee: zone.deliveryFee,
-          minOrderAmount: zone.minOrderAmount,
-          maxDeliveryTime: zone.maxDeliveryTime,
-          isActive: zone.isActive,
-        })),
-      },
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt,
+      base_price: Number(product.price),
+      unit: product.unit || 'piece',
+      is_active: product.isActive,
+      created_at: product.createdAt,
+      updated_at: product.updatedAt,
     };
   }
 }

@@ -5,12 +5,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { VendorAuthController } from './controllers/vendor-auth.controller';
 import { VendorAuthService } from './services/vendor-auth.service';
 import { VendorJwtStrategy } from './strategies/vendor-jwt.strategy';
-import { VendorJwtAuthGuard } from './guards/vendor-jwt-auth.guard';
 import { OtpService } from '../common/services/otp.service';
+import { ProductModule } from '../product/product.module';
 
 @Module({
   imports: [
     ConfigModule,
+    ProductModule,
     PassportModule.register({ defaultStrategy: 'vendor-jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -29,9 +30,8 @@ import { OtpService } from '../common/services/otp.service';
   providers: [
     VendorAuthService,
     VendorJwtStrategy,
-    VendorJwtAuthGuard,
     OtpService,
   ],
-  exports: [VendorAuthService, VendorJwtStrategy, VendorJwtAuthGuard],
+  exports: [VendorAuthService, VendorJwtStrategy],
 })
 export class VendorAuthModule {}

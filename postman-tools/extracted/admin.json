@@ -1,0 +1,2333 @@
+{
+  "info": {
+    "name": "Water Delivery API - Admin",
+    "description": "Complete API collection for the Water Delivery Platform including Phase 1 core features, Phase 1.5 enhanced features, Phase 2 security enhancements, and Phase 3 infrastructure endpoints.\n\n**Phase 1 Features:**\n- Authentication & Authorization\n- Admin Management\n- Product Moderation\n- Order Management\n- Refund Management\n- Dispute Management\n- Escalation Management\n- Vendor Products\n- Store Management\n- Product Discovery\n- Customer Management - Commission Management (admin commission rules and calculations) - Subscription Management (customer recurring delivery subscriptions) - Wallet Management (customer wallet operations and balance management) - Vendor Store Management (comprehensive vendor store operations)\n\n**Phase 2 Security Enhancements:**\n- Rider Authentication (OTP-based login, JWT tokens)\n- Task Management (accept, pickup, deliver, fail)\n- Shift Management (shift end, cash reconciliation)\n- Notifications & Support (notification history, support tickets)\n- Security Features (rate limiting, session management)\n\n**Phase 3 Infrastructure:**\n- Background Worker Status (worker monitoring, queue metrics)\n- Cache Management (cache statistics, invalidation)\n- Offline Support (connectivity monitoring, sync status)\n- System Monitoring (health checks, performance metrics)\n\n**Security Features:**\n- JWT-based authentication for all protected endpoints\n- Rate limiting on authentication endpoints\n- Session management with automatic expiration\n- Role-based access control (Admin, Vendor, Customer, Rider)\n- Input validation and sanitization\n- Error response standardization\n\n**Environment Variables:**\n- baseUrl: Base URL for the API server\n- adminToken: JWT token for admin operations\n- vendorToken: JWT token for vendor operations\n- customerToken: JWT token for customer operations\n- riderToken: JWT token for rider operations",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4242",
+      "type": "string"
+    },
+    {
+      "key": "vendorToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT token for authenticated vendor requests"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT token for authenticated admin requests"
+    },
+    {
+      "key": "customerToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT token for authenticated customer requests"
+    },
+    {
+      "key": "riderToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT token for authenticated rider requests"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{riderToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// This script runs before every request",
+          "// You can add common setup logic here",
+          "console.log('Making request to: ' + pm.request.url.toString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// This script runs after every request",
+          "// You can add common test logic here",
+          "console.log('Request completed with status: ' + pm.response.code);",
+          "",
+          "// Check for common error responses",
+          "if (pm.response.code >= 400) {",
+          "    console.log('Error response:', pm.response.json());",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "System Monitoring",
+      "description": "Phase 3 Infrastructure Endpoints - System health and monitoring",
+      "item": [
+        {
+          "name": "Get System Health",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "monitoring",
+                "health"
+              ]
+            },
+            "description": "Get comprehensive system health status",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has health information\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('status');",
+                    "    pm.expect(jsonData).to.have.property('score');",
+                    "    pm.expect(jsonData).to.have.property('metrics');",
+                    "    pm.expect(jsonData).to.have.property('connectivity');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Performance Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/performance",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "monitoring",
+                "performance"
+              ]
+            },
+            "description": "Get detailed performance metrics and recommendations",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has performance data\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('system');",
+                    "    pm.expect(jsonData).to.have.property('business');",
+                    "    pm.expect(jsonData).to.have.property('alerts');",
+                    "    pm.expect(jsonData).to.have.property('recommendations');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Connectivity Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/connectivity",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "monitoring",
+                "connectivity"
+              ]
+            },
+            "description": "Get current connectivity and sync status",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has connectivity metrics\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('connectivity');",
+                    "    pm.expect(jsonData).to.have.property('sync');",
+                    "    pm.expect(jsonData.connectivity).to.have.property('isOnline');",
+                    "    pm.expect(jsonData.connectivity).to.have.property('lastCheck');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Background Services",
+      "description": "Phase 3 Infrastructure Endpoints - Background worker management",
+      "item": [
+        {
+          "name": "Get Worker Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workers/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workers",
+                "status"
+              ]
+            },
+            "description": "Get status of all background workers",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has worker information\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('totalWorkers');",
+                    "    pm.expect(jsonData).to.have.property('activeWorkers');",
+                    "    pm.expect(jsonData).to.have.property('workers');",
+                    "    pm.expect(jsonData).to.have.property('timestamp');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Worker Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workers/metrics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workers",
+                "metrics"
+              ]
+            },
+            "description": "Get detailed metrics for all workers",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has worker metrics\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('workers');",
+                    "    pm.expect(jsonData.workers).to.be.an('array');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Retry Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workers/retry-metrics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workers",
+                "retry-metrics"
+              ]
+            },
+            "description": "Get retry queue metrics and failed jobs",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has retry metrics\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('deadLetterLength');",
+                    "    pm.expect(jsonData).to.have.property('retryJobs');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cache Management",
+      "description": "Phase 3 Infrastructure Endpoints - Cache operations and management",
+      "item": [
+        {
+          "name": "Get Cache Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cache/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cache",
+                "stats"
+              ]
+            },
+            "description": "Get cache performance statistics and memory usage",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has cache statistics\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('isActive');",
+                    "    pm.expect(jsonData).to.have.property('memory');",
+                    "    pm.expect(jsonData).to.have.property('keyspace');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Invalidate Cache Pattern",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pattern\": \"user:profile:*\",\n  \"confirm\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cache/invalidate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cache",
+                "invalidate"
+              ]
+            },
+            "description": "Invalidate cache keys matching a pattern",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has invalidation result\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "    pm.expect(jsonData).to.have.property('deletedKeys');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Management",
+      "description": "Admin-only endpoints for platform management",
+      "item": [
+        {
+          "name": "Get Admin Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "profile"
+              ]
+            },
+            "description": "Get current admin profile information",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has required fields\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('email');",
+                    "    pm.expect(jsonData).to.have.property('name');",
+                    "    pm.expect(jsonData).to.have.property('roleLevel');",
+                    "    pm.expect(jsonData).to.have.property('permissions');",
+                    "    pm.expect(jsonData).to.have.property('lastActiveAt');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard"
+              ]
+            },
+            "description": "Get comprehensive dashboard statistics",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Pending Vendor Approvals",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/vendors/pending-approvals",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "vendors",
+                "pending-approvals"
+              ]
+            },
+            "description": "Get list of vendors pending approval",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Approve Vendor",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/vendors/:vendorId/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "vendors",
+                ":vendorId",
+                "approve"
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "vendor123"
+                }
+              ]
+            },
+            "description": "Approve a vendor application",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has success message\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Reject Vendor",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Incomplete documentation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/vendors/:vendorId/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "vendors",
+                ":vendorId",
+                "reject"
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "vendor123"
+                }
+              ]
+            },
+            "description": "Reject a vendor application with reason",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has success message\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Monthly Payment Monitoring",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/monthly-payment-monitoring?month=9&year=2024",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "monthly-payment-monitoring"
+              ],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "9"
+                },
+                {
+                  "key": "year",
+                  "value": "2024"
+                }
+              ]
+            },
+            "description": "Get monthly payment monitoring data",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Export Pending Dues Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"month\": 9,\n  \"year\": 2024\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/pending-dues",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "pending-dues"
+              ]
+            },
+            "description": "Export pending dues report for specific month/year",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has report URL\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "    pm.expect(jsonData).to.have.property('reportUrl');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product Moderation",
+      "description": "Admin endpoints for product moderation",
+      "item": [
+        {
+          "name": "Get Products for Moderation",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/products/moderation?page=1&limit=10&status=pending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "products",
+                "moderation"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            },
+            "description": "Get products pending moderation with filters",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has products array and total\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('products');",
+                    "    pm.expect(jsonData).to.have.property('total');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Moderation Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/products/moderation/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "products",
+                "moderation",
+                "stats"
+              ]
+            },
+            "description": "Get product moderation statistics",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Approve Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"moderationNotes\": \"Product approved after review\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/products/:productId/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "products",
+                ":productId",
+                "approve"
+              ],
+              "variable": [
+                {
+                  "key": "productId",
+                  "value": "product123"
+                }
+              ]
+            },
+            "description": "Approve a product for listing",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has success message\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Reject Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Product description is insufficient\",\n  \"moderationNotes\": \"Please provide more detailed description\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/products/:productId/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "products",
+                ":productId",
+                "reject"
+              ],
+              "variable": [
+                {
+                  "key": "productId",
+                  "value": "product123"
+                }
+              ]
+            },
+            "description": "Reject a product with reason",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has success message\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Bulk Moderate Products",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"approve\",\n  \"productIds\": [\"product1\", \"product2\", \"product3\"],\n  \"moderationNotes\": \"Bulk approval completed\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/products/bulk-moderate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "products",
+                "bulk-moderate"
+              ]
+            },
+            "description": "Bulk approve or reject multiple products",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has processed count\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "    pm.expect(jsonData).to.have.property('processed');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Order Management",
+      "description": "Admin endpoints for order management",
+      "item": [
+        {
+          "name": "Get Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/orders?page=1&limit=10&status=pending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            },
+            "description": "Get orders with admin filters",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"confirmed\",\n  \"notes\": \"Order confirmed by admin\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/orders/:orderId/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "orders",
+                ":orderId",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "order123"
+                }
+              ]
+            },
+            "description": "Update order status by admin",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has success message\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('message');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Refund Management",
+      "description": "Admin endpoints for refund management",
+      "item": [
+        {
+          "name": "Create Refund",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"order123\",\n  \"amount\": 50.00,\n  \"reason\": \"Customer dissatisfaction\",\n  \"refundMethod\": \"original_payment\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/refunds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "refunds"
+              ]
+            },
+            "description": "Create a new refund request",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 201\", function () {",
+                    "    pm.response.to.have.status(201);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Refunds",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/refunds?page=1&limit=10&status=pending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "refunds"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            },
+            "description": "Get refunds with filters",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Approve Refund",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approvalNotes\": \"Refund approved after review\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/refunds/:refundId/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "refunds",
+                ":refundId",
+                "approve"
+              ],
+              "variable": [
+                {
+                  "key": "refundId",
+                  "value": "refund123"
+                }
+              ]
+            },
+            "description": "Approve a refund request",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Reject Refund",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Refund request does not meet criteria\",\n  \"rejectionNotes\": \"Customer can reorder instead\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/refunds/:refundId/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "refunds",
+                ":refundId",
+                "reject"
+              ],
+              "variable": [
+                {
+                  "key": "refundId",
+                  "value": "refund123"
+                }
+              ]
+            },
+            "description": "Reject a refund request",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Process Refund",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"txn_123456\",\n  \"processingNotes\": \"Refund processed successfully\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/refunds/:refundId/process",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "refunds",
+                ":refundId",
+                "process"
+              ],
+              "variable": [
+                {
+                  "key": "refundId",
+                  "value": "refund123"
+                }
+              ]
+            },
+            "description": "Process an approved refund",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dispute Management",
+      "description": "Admin endpoints for dispute management",
+      "item": [
+        {
+          "name": "Create Dispute",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"order123\",\n  \"title\": \"Product quality issue\",\n  \"description\": \"Customer reported receiving damaged product\",\n  \"priority\": \"high\",\n  \"category\": \"product_quality\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/disputes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "disputes"
+              ]
+            },
+            "description": "Create a new dispute",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 201\", function () {",
+                    "    pm.response.to.have.status(201);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Disputes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/disputes?page=1&limit=10&status=active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "disputes"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "active"
+                }
+              ]
+            },
+            "description": "Get disputes with filters",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Resolve Dispute",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resolution\": \"Refund provided to customer\",\n  \"resolutionNotes\": \"Issue resolved by providing full refund\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/disputes/:disputeId/resolve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "disputes",
+                ":disputeId",
+                "resolve"
+              ],
+              "variable": [
+                {
+                  "key": "disputeId",
+                  "value": "dispute123"
+                }
+              ]
+            },
+            "description": "Resolve a dispute",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update Dispute Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"investigating\",\n  \"statusNotes\": \"Currently investigating the issue\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/disputes/:disputeId/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "disputes",
+                ":disputeId",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "disputeId",
+                  "value": "dispute123"
+                }
+              ]
+            },
+            "description": "Update dispute status",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Escalate Dispute",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"escalatedTo\": \"senior_support\",\n  \"reason\": \"Complex issue requiring senior attention\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/disputes/:disputeId/escalate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "disputes",
+                ":disputeId",
+                "escalate"
+              ],
+              "variable": [
+                {
+                  "key": "disputeId",
+                  "value": "dispute123"
+                }
+              ]
+            },
+            "description": "Escalate dispute to higher level",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Escalation Management",
+      "description": "Admin endpoints for escalation management",
+      "item": [
+        {
+          "name": "Get Escalations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/escalations?page=1&limit=10&status=active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "escalations"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "active"
+                }
+              ]
+            },
+            "description": "Get escalations with filters",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ],
+                  "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                      {
+                        "key": "token",
+                        "value": "{{riderToken}}",
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "documentation": {
+                    "overview": "Water Delivery Platform API - Complete Documentation",
+                    "phases": {
+                      "phase1": {
+                        "name": "Core Features",
+                        "description": "Basic authentication, product management, order processing, and customer services",
+                        "endpoints": [
+                          "Authentication & Authorization",
+                          "Admin Management",
+                          "Product Moderation",
+                          "Order Management",
+                          "Refund Management",
+                          "Dispute Management",
+                          "Escalation Management",
+                          "Vendor Products",
+                          "Store Management",
+                          "Product Discovery",
+                          "Customer Management",
+                          "Commission Management",
+                          "Subscription Management",
+                          "Wallet Management",
+                          "Vendor Store Management"
+                        ]
+                      },
+                      "phase2": {
+                        "name": "Security Enhancements",
+                        "description": "Rider authentication, task management, shift operations, and support systems",
+                        "endpoints": [
+                          "Rider Authentication",
+                          "Task Management",
+                          "Rider Operations",
+                          "Earnings & Performance",
+                          "Shift Management",
+                          "Notifications & Support"
+                        ]
+                      },
+                      "phase3": {
+                        "name": "Infrastructure",
+                        "description": "Background services, monitoring, caching, and system resilience",
+                        "endpoints": [
+                          "System Monitoring",
+                          "Background Services",
+                          "Cache Management"
+                        ]
+                      }
+                    },
+                    "authentication": {
+                      "jwt": {
+                        "description": "JWT-based authentication for all protected endpoints",
+                        "tokenFormat": "Bearer <token>",
+                        "expiration": "24 hours for regular tokens, 7 days for refresh tokens",
+                        "roles": [
+                          "admin",
+                          "vendor",
+                          "customer",
+                          "rider"
+                        ]
+                      },
+                      "otp": {
+                        "description": "OTP-based authentication for riders",
+                        "method": "SMS-based verification",
+                        "validity": "5 minutes",
+                        "length": "6 digits"
+                      },
+                      "rateLimiting": {
+                        "loginAttempts": "5 attempts per 15 minutes",
+                        "otpRequests": "3 requests per minute per phone number"
+                      }
+                    },
+                    "requestResponseSchemas": {
+                      "errorResponse": {
+                        "400": {
+                          "description": "Bad Request - Invalid input data",
+                          "schema": {
+                            "type": "object",
+                            "properties": {
+                              "statusCode": {
+                                "type": "number",
+                                "example": 400
+                              },
+                              "message": {
+                                "type": "string",
+                                "example": "Validation failed"
+                              },
+                              "error": {
+                                "type": "string",
+                                "example": "Bad Request"
+                              },
+                              "details": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "field": {
+                                      "type": "string"
+                                    },
+                                    "message": {
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "401": {
+                          "description": "Unauthorized - Invalid or missing authentication",
+                          "schema": {
+                            "type": "object",
+                            "properties": {
+                              "statusCode": {
+                                "type": "number",
+                                "example": 401
+                              },
+                              "message": {
+                                "type": "string",
+                                "example": "Unauthorized"
+                              },
+                              "error": {
+                                "type": "string",
+                                "example": "Unauthorized"
+                              }
+                            }
+                          }
+                        },
+                        "403": {
+                          "description": "Forbidden - Insufficient permissions",
+                          "schema": {
+                            "type": "object",
+                            "properties": {
+                              "statusCode": {
+                                "type": "number",
+                                "example": 403
+                              },
+                              "message": {
+                                "type": "string",
+                                "example": "Insufficient permissions"
+                              },
+                              "error": {
+                                "type": "string",
+                                "example": "Forbidden"
+                              }
+                            }
+                          }
+                        },
+                        "404": {
+                          "description": "Not Found - Resource not found",
+                          "schema": {
+                            "type": "object",
+                            "properties": {
+                              "statusCode": {
+                                "type": "number",
+                                "example": 404
+                              },
+                              "message": {
+                                "type": "string",
+                                "example": "Resource not found"
+                              },
+                              "error": {
+                                "type": "string",
+                                "example": "Not Found"
+                              }
+                            }
+                          }
+                        },
+                        "500": {
+                          "description": "Internal Server Error",
+                          "schema": {
+                            "type": "object",
+                            "properties": {
+                              "statusCode": {
+                                "type": "number",
+                                "example": 500
+                              },
+                              "message": {
+                                "type": "string",
+                                "example": "Internal server error"
+                              },
+                              "error": {
+                                "type": "string",
+                                "example": "Internal Server Error"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "pagination": {
+                        "description": "Standard pagination response format",
+                        "schema": {
+                          "type": "object",
+                          "properties": {
+                            "data": {
+                              "type": "array",
+                              "description": "Array of items"
+                            },
+                            "total": {
+                              "type": "number",
+                              "description": "Total number of items"
+                            },
+                            "page": {
+                              "type": "number",
+                              "description": "Current page number"
+                            },
+                            "limit": {
+                              "type": "number",
+                              "description": "Items per page"
+                            },
+                            "totalPages": {
+                              "type": "number",
+                              "description": "Total number of pages"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "environmentVariables": {
+                      "baseUrl": {
+                        "description": "Base URL for the API server",
+                        "example": "http://localhost:4242",
+                        "required": true
+                      },
+                      "adminToken": {
+                        "description": "JWT token for admin operations",
+                        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "required": true
+                      },
+                      "vendorToken": {
+                        "description": "JWT token for vendor operations",
+                        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "required": true
+                      },
+                      "customerToken": {
+                        "description": "JWT token for customer operations",
+                        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "required": true
+                      },
+                      "riderToken": {
+                        "description": "JWT token for rider operations",
+                        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "required": true
+                      }
+                    },
+                    "securityConsiderations": {
+                      "rateLimiting": {
+                        "description": "Rate limiting is applied to prevent abuse",
+                        "limits": {
+                          "authentication": "5 attempts per 15 minutes",
+                          "otp": "3 requests per minute per phone number",
+                          "general": "100 requests per minute per user"
+                        }
+                      },
+                      "inputValidation": {
+                        "description": "All inputs are validated and sanitized",
+                        "methods": [
+                          "SQL injection prevention",
+                          "XSS protection",
+                          "Input sanitization"
+                        ]
+                      },
+                      "sessionManagement": {
+                        "description": "Secure session management with automatic expiration",
+                        "tokenExpiration": "24 hours for regular tokens",
+                        "refreshTokenExpiration": "7 days"
+                      },
+                      "dataProtection": {
+                        "description": "Sensitive data protection measures",
+                        "methods": [
+                          "Encryption at rest",
+                          "TLS encryption in transit",
+                          "Secure token storage"
+                        ]
+                      }
+                    },
+                    "endpointCategories": {
+                      "authentication": {
+                        "description": "User authentication and authorization endpoints",
+                        "security": "Rate limited, JWT-based authentication"
+                      },
+                      "taskManagement": {
+                        "description": "Delivery task assignment and management",
+                        "security": "Rider authentication required"
+                      },
+                      "deliveryOperations": {
+                        "description": "Real-time delivery tracking and updates",
+                        "security": "Rider authentication required"
+                      },
+                      "cashReconciliation": {
+                        "description": "Cash collection and reconciliation processes",
+                        "security": "Rider authentication required"
+                      },
+                      "notifications": {
+                        "description": "Notification delivery and support ticket management",
+                        "security": "User-specific authentication required"
+                      },
+                      "systemMonitoring": {
+                        "description": "System health and performance monitoring",
+                        "security": "Admin authentication required"
+                      },
+                      "backgroundServices": {
+                        "description": "Background worker and queue management",
+                        "security": "Admin authentication required"
+                      }
+                    },
+                    "configuration": {
+                      "redis": {
+                        "description": "Redis configuration for caching and sessions",
+                        "ttl": {
+                          "session": "24 hours",
+                          "cache": "1 hour",
+                          "otp": "5 minutes"
+                        }
+                      },
+                      "database": {
+                        "description": "Database configuration and connection settings",
+                        "connectionPool": "10-50 connections",
+                        "timeout": "30 seconds"
+                      },
+                      "monitoring": {
+                        "description": "System monitoring and alerting configuration",
+                        "healthCheckInterval": "30 seconds",
+                        "metricsCollection": "60 seconds"
+                      }
+                    },
+                    "apiUsageExamples": {
+                      "riderLogin": {
+                        "description": "Complete rider authentication flow",
+                        "steps": [
+                          "Send OTP to phone number",
+                          "Verify OTP to get JWT token",
+                          "Use token for subsequent requests"
+                        ]
+                      },
+                      "orderManagement": {
+                        "description": "Complete order lifecycle",
+                        "steps": [
+                          "Customer creates order",
+                          "System assigns to rider",
+                          "Rider accepts and picks up",
+                          "Rider delivers and collects payment",
+                          "Rider reconciles cash at shift end"
+                        ]
+                      },
+                      "errorHandling": {
+                        "description": "Proper error handling patterns",
+                        "examples": [
+                          "Check response status codes",
+                          "Handle rate limiting with exponential backoff",
+                          "Implement retry logic for transient failures"
+                        ]
+                      }
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// This script runs before every request",
+                          "// You can add common setup logic here",
+                          "console.log('Making request to: ' + pm.request.url.toString());"
+                        ]
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// This script runs after every request",
+                          "// You can add common test logic here",
+                          "console.log('Request completed with status: ' + pm.response.code);",
+                          "",
+                          "// Check for common error responses",
+                          "if (pm.response.code >= 400) {",
+                          "    console.log('Error response:', pm.response.json());",
+                          "}"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Resolve Escalation",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resolution\": \"Issue resolved with compensation\",\n  \"resolutionNotes\": \"Provided additional discount on next order\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/escalations/:escalationId/resolve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "escalations",
+                ":escalationId",
+                "resolve"
+              ],
+              "variable": [
+                {
+                  "key": "escalationId",
+                  "value": "escalation123"
+                }
+              ]
+            },
+            "description": "Resolve an escalation",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update Escalation Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_progress\",\n  \"statusNotes\": \"Working on resolution\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/escalations/:escalationId/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "escalations",
+                ":escalationId",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "escalationId",
+                  "value": "escalation123"
+                }
+              ]
+            },
+            "description": "Update escalation status",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Order Management",
+      "description": "Customer order management endpoints",
+      "item": [
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productMappingId\": \"mapping123\",\n      \"quantity\": 2,\n      \"unitPrice\": 50.00\n    }\n  ],\n  \"deliveryAddress\": {\n    \"street\": \"123 Main St\",\n    \"city\": \"Mumbai\",\n    \"state\": \"MH\",\n    \"pincode\": \"400001\",\n    \"coordinates\": {\n      \"lat\": 19.0760,\n      \"lng\": 72.8777\n    }\n  },\n  \"deliveryInstructions\": \"Please call before delivery\",\n  \"paymentMethod\": \"cash_on_delivery\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "Create a new order",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 201\", function () {",
+                    "    pm.response.to.have.status(201);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has order fields\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('customerId');",
+                    "    pm.expect(jsonData).to.have.property('status');",
+                    "    pm.expect(jsonData).to.have.property('totalAmount');",
+                    "    pm.expect(jsonData).to.have.property('items');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get User Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "Get all orders for the authenticated user",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response is array of orders\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.be.an('array');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Cancel Order",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders/:id/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                ":id",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "order123"
+                }
+              ]
+            },
+            "description": "Cancel an order",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has updated order\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('id');",
+                    "    pm.expect(jsonData).to.have.property('status');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

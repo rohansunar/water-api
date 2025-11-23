@@ -51,6 +51,7 @@ export class VendorJwtStrategy extends PassportStrategy(
         id: vendor.id.toString(),
         phone: vendor.phone,
         name: vendor.name,
+        role: 'vendor',
         isActive: vendor.isActive,
       };
     } catch (error) {

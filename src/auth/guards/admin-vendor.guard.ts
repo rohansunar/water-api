@@ -1,14 +1,10 @@
-import {
-  Injectable,
-  ExecutionContext,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
-export class JwtAuthGuard extends AuthGuard('jwt') {
+export class AdminVendorGuard extends AuthGuard(['jwt', 'vendor-jwt']) {
   constructor(private reflector: Reflector) {
     super();
   }
@@ -16,11 +12,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest();
     // const path = request.url;
-
-    // Skip authentication for admin routes - they use their own guards
-    // if (path.startsWith('/admin')) {
-    //   return true;
-    // }
 
     // Check if route is marked as public using @Public() decorator
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [

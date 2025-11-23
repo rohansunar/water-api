@@ -16,7 +16,7 @@ import { VendorService } from '../services/vendor.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
-import { CurrentVendor } from '../decorators/current-vendor.decorator';
+import { CurrentVendor } from '../../product/decorators/current-vendor.decorator';
 import { User, UserRole } from '../../common/interfaces/user.interface';
 import {
   SalesAnalyticsDto,

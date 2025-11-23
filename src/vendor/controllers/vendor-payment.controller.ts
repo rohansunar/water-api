@@ -10,11 +10,11 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { VendorPaymentService } from '../services/vendor-payment.service';
-import { VendorJwtAuthGuard } from '../guards/vendor-jwt-auth.guard';
-import { CurrentVendor } from '../decorators/current-vendor.decorator';
+import { VendorJwtAuthGuard } from '../../product/guards/vendor-jwt-auth.guard';
+import { CurrentVendor } from '../../product/decorators/current-vendor.decorator';
 import { PaginationQueryDto, PaginatedResponseDto } from '../dto/vendor.dto';
 import { PaymentResponseDto } from '../dto/payment.dto';
-import { Vendor } from '../interfaces/vendor.interface';
+import { Vendor } from '../../product/interfaces/vendor.interface';
 
 @ApiTags('Vendor Payments')
 @Controller('vendors/me/payments')

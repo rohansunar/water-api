@@ -1,0 +1,330 @@
+{
+  "info": {
+    "name": "Water Delivery API - Refund",
+    "description": "Complete API collection for the Water Delivery Platform including Phase 1 core features, Phase 1.5 enhanced features, Phase 2 security enhancements, and Phase 3 infrastructure endpoints.\n\n**Phase 1 Features:**\n- Authentication & Authorization\n- Admin Management\n- Product Moderation\n- Order Management\n- Refund Management\n- Dispute Management\n- Escalation Management\n- Vendor Products\n- Store Management\n- Product Discovery\n- Customer Management - Commission Management (admin commission rules and calculations) - Subscription Management (customer recurring delivery subscriptions) - Wallet Management (customer wallet operations and balance management) - Vendor Store Management (comprehensive vendor store operations)\n\n**Phase 2 Security Enhancements:**\n- Rider Authentication (OTP-based login, JWT tokens)\n- Task Management (accept, pickup, deliver, fail)\n- Shift Management (shift end, cash reconciliation)\n- Notifications & Support (notification history, support tickets)\n- Security Features (rate limiting, session management)\n\n**Phase 3 Infrastructure:**\n- Background Worker Status (worker monitoring, queue metrics)\n- Cache Management (cache statistics, invalidation)\n- Offline Support (connectivity monitoring, sync status)\n- System Monitoring (health checks, performance metrics)\n\n**Security Features:**\n- JWT-based authentication for all protected endpoints\n- Rate limiting on authentication endpoints\n- Session management with automatic expiration\n- Role-based access control (Admin, Vendor, Customer, Rider)\n- Input validation and sanitization\n- Error response standardization\n\n**Environment Variables:**\n- baseUrl: Base URL for the API server\n- adminToken: JWT token for admin operations\n- vendorToken: JWT token for vendor operations\n- customerToken: JWT token for customer operations\n- riderToken: JWT token for rider operations",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4242",
+      "type": "string"
+    },
+    {
+      "key": "vendorToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT token for authenticated vendor requests"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT token for authenticated admin requests"
+    },
+    {
+      "key": "customerToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT token for authenticated customer requests"
+    },
+    {
+      "key": "riderToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT token for authenticated rider requests"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{riderToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// This script runs before every request",
+          "// You can add common setup logic here",
+          "console.log('Making request to: ' + pm.request.url.toString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// This script runs after every request",
+          "// You can add common test logic here",
+          "console.log('Request completed with status: ' + pm.response.code);",
+          "",
+          "// Check for common error responses",
+          "if (pm.response.code >= 400) {",
+          "    console.log('Error response:', pm.response.json());",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Refund Management",
+      "description": "Admin endpoints for refund management",
+      "item": [
+        {
+          "name": "Create Refund",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"order123\",\n  \"amount\": 50.00,\n  \"reason\": \"Customer dissatisfaction\",\n  \"refundMethod\": \"original_payment\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/refunds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "refunds"
+              ]
+            },
+            "description": "Create a new refund request",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 201\", function () {",
+                    "    pm.response.to.have.status(201);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Refunds",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/refunds?page=1&limit=10&status=pending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "refunds"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            },
+            "description": "Get refunds with filters",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Approve Refund",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approvalNotes\": \"Refund approved after review\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/refunds/:refundId/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "refunds",
+                ":refundId",
+                "approve"
+              ],
+              "variable": [
+                {
+                  "key": "refundId",
+                  "value": "refund123"
+                }
+              ]
+            },
+            "description": "Approve a refund request",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Reject Refund",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Refund request does not meet criteria\",\n  \"rejectionNotes\": \"Customer can reorder instead\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/refunds/:refundId/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "refunds",
+                ":refundId",
+                "reject"
+              ],
+              "variable": [
+                {
+                  "key": "refundId",
+                  "value": "refund123"
+                }
+              ]
+            },
+            "description": "Reject a refund request",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Process Refund",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"txn_123456\",\n  \"processingNotes\": \"Refund processed successfully\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/refunds/:refundId/process",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "refunds",
+                ":refundId",
+                "process"
+              ],
+              "variable": [
+                {
+                  "key": "refundId",
+                  "value": "refund123"
+                }
+              ]
+            },
+            "description": "Process an approved refund",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

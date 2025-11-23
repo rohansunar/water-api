@@ -5,7 +5,7 @@ import { AdminAuthModule } from './admin-auth.module';
 import { VendorModule } from '../vendor/vendor.module';
 import { LedgerModule } from '../ledger/ledger.module';
 import { LoggerModule } from '../common/logger/logger.module';
-import { ProductModerationModule } from '../product/product-moderation.module';
+import { ProductModule } from '../product/product.module';
 import { RefundModule } from '../refund/refund.module';
 import { OrderModule } from '../order/order.module';
 
@@ -15,7 +15,7 @@ import { OrderModule } from '../order/order.module';
     VendorModule,
     LedgerModule,
     LoggerModule,
-    ProductModerationModule,
+    ProductModule,
     RefundModule,
     OrderModule,
   ],

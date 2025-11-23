@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { VendorService } from '../../../src/vendor/services/vendor.service';
 import { PrismaService } from '../../../src/common/database/prisma.service';
-import { Vendor } from '../../../src/vendor/interfaces/vendor.interface';
+import { Vendor } from '../../../src/product/interfaces/vendor.interface';
 import {
   ProductCategory,
   ProductSize,

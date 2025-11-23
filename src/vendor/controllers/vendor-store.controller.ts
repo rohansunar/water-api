@@ -28,9 +28,9 @@ import {
   UpdateStoreAddressDto,
   StoreAddressResponseDto,
 } from '../dto/vendor.dto';
-import { VendorJwtAuthGuard } from '../guards/vendor-jwt-auth.guard';
-import { CurrentVendor } from '../decorators/current-vendor.decorator';
-import { Vendor } from '../interfaces/vendor.interface';
+import { VendorJwtAuthGuard } from '../../product/guards/vendor-jwt-auth.guard';
+import { CurrentVendor } from '../../product/decorators/current-vendor.decorator';
+import { Vendor } from '../../product/interfaces/vendor.interface';
 
 @ApiTags('Vendor Stores')
 @Controller('vendors/me/stores')

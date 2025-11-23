@@ -1249,33 +1249,17 @@ export class AdminService {
     return [
       {
         id: '1',
-        vendorId: 'vendor-1',
-        name: 'Premium Water Bottle 1L',
+        vendor_id: 'vendor-1',
+        title: 'Premium Water Bottle 1L',
+        sku: 'PW-1L-001',
         description: 'High-quality reusable water bottle',
         category: 'water_bottles',
-        size: '1L',
-        price: 25.0,
-        depositAmount: 50.0,
-        hasDeposit: true,
-        stockQuantity: 100,
-        isActive: true,
-        images: ['bottle1.jpg', 'bottle2.jpg'],
-        specifications: {
-          capacity: 1000,
-          material: 'Stainless Steel',
-          brand: 'AquaBrand',
-          weight: 0.5,
-          dimensions: { height: 25, diameter: 7 },
-        },
-        vendor: {
-          id: 'vendor-1',
-          businessName: 'Fresh Water Co.',
-          rating: 4.5,
-          totalOrders: 150,
-          deliveryZones: [],
-        },
-        createdAt: new Date('2024-01-15T10:30:00Z'),
-        updatedAt: new Date('2024-01-15T10:30:00Z'),
+        attributes: { size: '1L' },
+        base_price: 25.0,
+        unit: 'piece',
+        is_active: true,
+        created_at: new Date('2024-01-15T10:30:00Z'),
+        updated_at: new Date('2024-01-15T10:30:00Z'),
       },
     ];
   }
@@ -1314,7 +1298,7 @@ export class AdminService {
       const searchLower = query.query.toLowerCase();
       filteredProducts = filteredProducts.filter(
         (p) =>
-          p.name.toLowerCase().includes(searchLower) ||
+          p.title.toLowerCase().includes(searchLower) ||
           p.description?.toLowerCase().includes(searchLower),
       );
     }
