@@ -13,7 +13,7 @@ import {
 } from '../../common/dto/customer.dto';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 import { PrismaService } from '../../common/database/prisma.service';
-import {UserRole} from '@prisma/client';
+import {UserRole, AddressType } from '@prisma/client';
 
 @Injectable()
 export class CustomerService {
@@ -346,7 +346,7 @@ export class CustomerService {
   ): Promise<AddressResponseDto[]> {
     try {
       const customer = await this.prisma.customer.findUnique({
-        where: { uuid: customerId },
+        where: { id: BigInt(customerId) },
       });
       if (!customer) {
         throw new NotFoundException('Customer not found');
@@ -386,7 +386,7 @@ export class CustomerService {
   ): Promise<AddressResponseDto> {
     try {
       const customer = await this.prisma.customer.findUnique({
-        where: { uuid: customerId },
+        where: { id: BigInt(customerId) },
       });
       if (!customer) {
         throw new NotFoundException('Customer not found');
@@ -403,7 +403,7 @@ export class CustomerService {
       const address = await this.prisma.customerAddress.create({
         data: {
           customerId: customer.id,
-          type: createAddressDto.type as any,
+          type: createAddressDto.type.toLocaleUpperCase() as AddressType,
           street: createAddressDto.street,
           landmark: createAddressDto.landmark,
           city: createAddressDto.city,

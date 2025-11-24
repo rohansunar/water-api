@@ -84,9 +84,9 @@ export class CustomerController {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Getting profile for customer: ${customer._id}`);
+      this.logger.log(`Getting profile for customer: ${customer.id}`);
       const profile = await this.customerService.getCustomerProfile(
-        customer._id.toString(),
+        customer.id.toString(),
       );
 
       const duration = Date.now() - startTime;
@@ -95,7 +95,7 @@ export class CustomerController {
         '/customers/me',
         HttpStatus.OK,
         duration,
-        { userId: customer._id.toString() },
+        { userId: customer.id.toString() },
       );
 
       return profile;
@@ -163,11 +163,11 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Updating monthly payment mode for customer: ${customer._id.toString()} to ${updateDto.monthlyPaymentMode}`,
+        `Updating monthly payment mode for customer: ${customer.id.toString()} to ${updateDto.monthlyPaymentMode}`,
       );
 
       await this.customerService.updateMonthlyPaymentMode(
-        customer._id.toString(),
+        customer.id.toString(),
         updateDto.monthlyPaymentMode,
       );
 
@@ -177,7 +177,7 @@ export class CustomerController {
         '/customers/monthly-payment-mode',
         HttpStatus.OK,
         duration,
-        { userId: customer._id.toString() },
+        { userId: customer.id.toString() },
       );
 
       return {
@@ -220,10 +220,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Getting addresses for customer: ${customer._id.toString()}`,
+        `Getting addresses for customer: ${customer.id.toString()}`,
       );
       const addresses = await this.customerService.getCustomerAddresses(
-        customer._id.toString(),
+        customer.id.toString(),
       );
 
       const duration = Date.now() - startTime;
@@ -232,7 +232,7 @@ export class CustomerController {
         '/customers/addresses',
         HttpStatus.OK,
         duration,
-        { userId: customer._id.toString() },
+        { userId: customer.id.toString() },
       );
 
       return addresses;
@@ -275,10 +275,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Creating address for customer: ${customer._id.toString()}`,
+        `Creating address for customer: ${customer.id.toString()}`,
       );
       const address = await this.customerService.createAddress(
-        customer._id.toString(),
+        customer.id.toString(),
         createAddressDto,
       );
 
@@ -288,7 +288,7 @@ export class CustomerController {
         '/customers/addresses',
         HttpStatus.CREATED,
         duration,
-        { userId: customer._id.toString() },
+        { userId: customer.id.toString() },
       );
 
       return address;
@@ -337,10 +337,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Updating address ${addressId} for customer: ${customer._id.toString()}`,
+        `Updating address ${addressId} for customer: ${customer.id.toString()}`,
       );
       const address = await this.customerService.updateAddress(
-        customer._id.toString(),
+        customer.id.toString(),
         addressId,
         updateAddressDto,
       );
@@ -351,7 +351,7 @@ export class CustomerController {
         `/customers/addresses/${addressId}`,
         HttpStatus.OK,
         duration,
-        { userId: customer._id.toString() },
+        { userId: customer.id.toString() },
       );
 
       return address;
@@ -403,10 +403,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Deleting address ${addressId} for customer: ${customer._id.toString()}`,
+        `Deleting address ${addressId} for customer: ${customer.id.toString()}`,
       );
       await this.customerService.deleteAddress(
-        customer._id.toString(),
+        customer.id.toString(),
         addressId,
       );
 
@@ -416,7 +416,7 @@ export class CustomerController {
         `/customers/addresses/${addressId}`,
         HttpStatus.OK,
         duration,
-        { userId: customer._id.toString() },
+        { userId: customer.id.toString() },
       );
 
       return { message: 'Address deleted successfully' };
@@ -473,10 +473,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Setting address ${addressId} as default for customer: ${customer._id.toString()}`,
+        `Setting address ${addressId} as default for customer: ${customer.id.toString()}`,
       );
       await this.customerService.setDefaultAddress(
-        customer._id.toString(),
+        customer.id.toString(),
         addressId,
       );
 
@@ -486,7 +486,7 @@ export class CustomerController {
         `/customers/addresses/${addressId}/default`,
         HttpStatus.OK,
         duration,
-        { userId: customer._id.toString() },
+        { userId: customer.id.toString() },
       );
 
       return { message: 'Default address set successfully' };
@@ -527,10 +527,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Getting order history for customer: ${customer._id.toString()}`,
+        `Getting order history for customer: ${customer.id.toString()}`,
       );
       const result = await this.customerService.getOrderHistory(
-        customer._id.toString(),
+        customer.id.toString(),
         paginationQuery.page || 1,
         paginationQuery.limit || 10,
       );
@@ -541,7 +541,7 @@ export class CustomerController {
         '/customers/orders',
         HttpStatus.OK,
         duration,
-        { userId: customer._id.toString() },
+        { userId: customer.id.toString() },
       );
 
       return result;
@@ -584,10 +584,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Getting order details ${orderId} for customer: ${customer._id.toString()}`,
+        `Getting order details ${orderId} for customer: ${customer.id.toString()}`,
       );
       const order = await this.customerService.getOrderDetails(
-        customer._id.toString(),
+        customer.id.toString(),
         orderId,
       );
 
@@ -597,7 +597,7 @@ export class CustomerController {
         `/customers/orders/${orderId}`,
         HttpStatus.OK,
         duration,
-        { userId: customer._id.toString() },
+        { userId: customer.id.toString() },
       );
 
       return order;
@@ -646,10 +646,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Cancelling order ${orderId} for customer: ${customer._id.toString()}`,
+        `Cancelling order ${orderId} for customer: ${customer.id.toString()}`,
       );
       await this.customerService.cancelOrder(
-        customer._id.toString(),
+        customer.id.toString(),
         orderId,
         cancelOrderDto.reason,
       );
@@ -660,7 +660,7 @@ export class CustomerController {
         `/customers/orders/${orderId}/cancel`,
         HttpStatus.OK,
         duration,
-        { userId: customer._id.toString() },
+        { userId: customer.id.toString() },
       );
 
       return { message: 'Order cancelled successfully' };
@@ -709,10 +709,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Requesting refund for order ${orderId} for customer: ${customer._id.toString()}`,
+        `Requesting refund for order ${orderId} for customer: ${customer.id.toString()}`,
       );
       await this.customerService.requestRefund(
-        customer._id.toString(),
+        customer.id.toString(),
         orderId,
         refundRequestDto.reason,
         refundRequestDto.description,
@@ -724,7 +724,7 @@ export class CustomerController {
         `/customers/orders/${orderId}/refund`,
         HttpStatus.OK,
         duration,
-        { userId: customer._id.toString() },
+        { userId: customer.id.toString() },
       );
 
       return { message: 'Refund request submitted successfully' };
@@ -762,10 +762,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Getting subscriptions for customer: ${customer._id.toString()}`,
+        `Getting subscriptions for customer: ${customer.id.toString()}`,
       );
       const subscriptions = await this.customerService.getCustomerSubscriptions(
-        customer._id.toString(),
+        customer.id.toString(),
       );
 
       const duration = Date.now() - startTime;
@@ -774,7 +774,7 @@ export class CustomerController {
         '/customers/subscriptions',
         HttpStatus.OK,
         duration,
-        { userId: customer._id.toString() },
+        { userId: customer.id.toString() },
       );
 
       return subscriptions;
@@ -817,10 +817,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Creating subscription for customer: ${customer._id.toString()}`,
+        `Creating subscription for customer: ${customer.id.toString()}`,
       );
       const subscription = await this.customerService.createSubscription(
-        customer._id.toString(),
+        customer.id.toString(),
         createSubscriptionDto,
       );
 
@@ -830,7 +830,7 @@ export class CustomerController {
         '/customers/subscriptions',
         HttpStatus.CREATED,
         duration,
-        { userId: customer._id.toString() },
+        { userId: customer.id.toString() },
       );
 
       return subscription;
@@ -879,10 +879,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Updating subscription ${subscriptionId} for customer: ${customer._id.toString()}`,
+        `Updating subscription ${subscriptionId} for customer: ${customer.id.toString()}`,
       );
       const subscription = await this.customerService.updateSubscription(
-        customer._id.toString(),
+        customer.id.toString(),
         subscriptionId,
         updateSubscriptionDto,
       );
@@ -893,7 +893,7 @@ export class CustomerController {
         `/customers/subscriptions/${subscriptionId}`,
         HttpStatus.OK,
         duration,
-        { userId: customer._id.toString() },
+        { userId: customer.id.toString() },
       );
 
       return subscription;
@@ -942,10 +942,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Cancelling subscription ${subscriptionId} for customer: ${customer._id.toString()}`,
+        `Cancelling subscription ${subscriptionId} for customer: ${customer.id.toString()}`,
       );
       await this.customerService.cancelSubscription(
-        customer._id.toString(),
+        customer.id.toString(),
         subscriptionId,
         cancelSubscriptionDto.reason,
       );
@@ -956,7 +956,7 @@ export class CustomerController {
         `/customers/subscriptions/${subscriptionId}`,
         HttpStatus.OK,
         duration,
-        { userId: customer._id.toString() },
+        { userId: customer.id.toString() },
       );
 
       return { message: 'Subscription cancelled successfully' };
@@ -1005,10 +1005,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Updating profile for customer: ${customer._id.toString()}`,
+        `Updating profile for customer: ${customer.id.toString()}`,
       );
       const profile = await this.customerService.updateProfile(
-        customer._id.toString(),
+        customer.id.toString(),
         updateProfileDto,
       );
 
@@ -1018,7 +1018,7 @@ export class CustomerController {
         '/customers/profile',
         HttpStatus.OK,
         duration,
-        { userId: customer._id.toString() },
+        { userId: customer.id.toString() },
       );
 
       return profile;
@@ -1074,10 +1074,10 @@ export class CustomerController {
 
     try {
       this.logger.log(
-        `Updating preferences for customer: ${customer._id.toString()}`,
+        `Updating preferences for customer: ${customer.id.toString()}`,
       );
       await this.customerService.updatePreferences(
-        customer._id.toString(),
+        customer.id.toString(),
         updatePreferencesDto,
       );
 
@@ -1087,7 +1087,7 @@ export class CustomerController {
         '/customers/preferences',
         HttpStatus.OK,
         duration,
-        { userId: customer._id.toString() },
+        { userId: customer.id.toString() },
       );
 
       return { message: 'Preferences updated successfully' };
