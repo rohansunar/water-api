@@ -8,7 +8,7 @@ import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
-export class AdminVendorGuard extends AuthGuard(['jwt', 'vendor-jwt']) {
+export class AdminVendorGuard extends AuthGuard(['jwt', 'vendor-jwt', 'admin-jwt']) {
   constructor(private reflector: Reflector) {
     super();
   }

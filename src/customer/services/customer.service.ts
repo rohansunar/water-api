@@ -13,6 +13,7 @@ import {
 } from '../../common/dto/customer.dto';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 import { PrismaService } from '../../common/database/prisma.service';
+import {UserRole} from '@prisma/client';
 
 @Injectable()
 export class CustomerService {
@@ -48,10 +49,10 @@ export class CustomerService {
       const customer = await this.prisma.customer.create({
         data: {
           phone: customerData.phone,
-          name: customerData.name,
-          email: customerData.email,
+          name: customerData.name || null,
+          email: customerData.email || null,
           walletBalance: customerData.walletBalance || 0,
-          role: customerData.role || CustomerRole.CUSTOMER,
+          role: UserRole.CUSTOMER,
           isActive: customerData.isActive !== false,
           monthlyPaymentMode: customerData.monthlyPaymentMode || false,
         },
@@ -105,7 +106,7 @@ export class CustomerService {
   async getCustomerProfile(id: string): Promise<CustomerProfileDto> {
     try {
       const customer = await this.prisma.customer.findUnique({
-        where: { uuid: id },
+        where: { id: BigInt(id) },
         include: {
           addresses: true,
         },
@@ -335,23 +336,6 @@ export class CustomerService {
       };
     } catch (error) {
       this.logger.error('Error getting customer stats:', error);
-      throw error;
-    }
-  }
-
-  // Development/Testing
-  async clearTestData(): Promise<void> {
-    try {
-      await this.prisma.customer.deleteMany({
-        where: {
-          phone: {
-            in: ['9999999999', '8888888888', '7777777777'],
-          },
-        },
-      });
-      this.logger.log('Customer test data cleared successfully');
-    } catch (error) {
-      this.logger.error('Error clearing customer test data:', error);
       throw error;
     }
   }

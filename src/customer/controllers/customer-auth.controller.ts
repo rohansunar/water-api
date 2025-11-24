@@ -21,8 +21,10 @@ import { CustomerJwtAuthGuard } from '../guards/customer-jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import {
   CustomerLoginDto,
+  CustomerSendOtpDto,
   CustomerVerifyOtpDto,
   CustomerAuthResponseDto,
+  CustomerOtpResponseDto,
 } from '../dto/customer-auth.dto';
 import { Public } from '../../auth/decorators/public.decorator';
 
@@ -80,49 +82,84 @@ export class CustomerAuthController {
     return this.customerAuthService.login(loginDto);
   }
 
-  @Post('verify')
+  @Post('request-otp')
   @HttpCode(HttpStatus.OK)
   @Public()
   @ApiOperation({
-    summary: 'Verify OTP and complete customer authentication',
-    description: 'Verify the OTP sent to the phone number and return JWT token',
+    summary: 'Send OTP for customer login',
+    description:
+      'Generate and send OTP to customer phone number for authentication',
   })
-  @ApiBody({
+  @ApiBody({ type: CustomerSendOtpDto })
+  @ApiResponse({
+    status: 200,
+    description: 'OTP sent successfully',
+    type: CustomerOtpResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - invalid phone number or rate limit exceeded',
     schema: {
       type: 'object',
       properties: {
-        phone: {
+        statusCode: { type: 'number', example: 400 },
+        message: {
           type: 'string',
-          example: '+919876543210',
-          description: 'Customer phone number',
+          example: 'Too many OTP requests. Please try again later.',
         },
-        otp: {
-          type: 'string',
-          example: '123456',
-          description: '6-digit OTP code',
-        },
+        error: { type: 'string', example: 'Bad Request' },
       },
-      required: ['phone', 'otp'],
     },
   })
+  async requestOtp(
+    @Body() sendOtpDto: CustomerSendOtpDto,
+  ): Promise<CustomerOtpResponseDto> {
+    this.logger.log(`Customer OTP request for phone: ${sendOtpDto.phone}`);
+    return this.customerAuthService.sendOtp(sendOtpDto);
+  }
+
+  @Post('verify-otp')
+  @HttpCode(HttpStatus.OK)
+  @Public()
+  @ApiOperation({
+    summary: 'Verify OTP and authenticate customer',
+    description: 'Verify the OTP code and authenticate the customer if valid',
+  })
+  @ApiBody({ type: CustomerVerifyOtpDto })
   @ApiResponse({
     status: 200,
-    description: 'Authentication successful',
+    description: 'OTP verified successfully, customer authenticated',
     type: CustomerAuthResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid OTP or phone number',
+    description: 'Bad request - invalid OTP format',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'string', example: 'OTP must be exactly 6 digits' },
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
   })
   @ApiResponse({
     status: 401,
-    description: 'OTP expired or invalid',
+    description: 'Invalid OTP or customer not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Invalid OTP' },
+        error: { type: 'string', example: 'Unauthorized' },
+      },
+    },
   })
-  async verifyOtp(
-    @Body() verifyDto: CustomerVerifyOtpDto,
+  async verifyOtpEndpoint(
+    @Body() verifyOtpDto: CustomerVerifyOtpDto,
   ): Promise<CustomerAuthResponseDto> {
-    this.logger.log(`Customer OTP verification for phone: ${verifyDto.phone}`);
-    return this.customerAuthService.verifyOtp(verifyDto);
+    this.logger.log(`Customer OTP verification for phone: ${verifyOtpDto.phone}`);
+    return this.customerAuthService.verifyOtp(verifyOtpDto);
   }
 
   @Get('me')

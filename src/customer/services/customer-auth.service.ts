@@ -11,8 +11,10 @@ import { OtpService } from '../../common/services/otp.service';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 import {
   CustomerLoginDto,
+  CustomerSendOtpDto,
   CustomerVerifyOtpDto,
   CustomerAuthResponseDto,
+  CustomerOtpResponseDto,
 } from '../dto/customer-auth.dto';
 import { CustomerRole } from '../interfaces/customer.interface';
 
@@ -69,6 +71,49 @@ export class CustomerAuthService {
   }
 
   /**
+   * Send OTP for customer authentication
+   */
+  async sendOtp(sendOtpDto: CustomerSendOtpDto): Promise<CustomerOtpResponseDto> {
+    const { phone } = sendOtpDto;
+    this.logger.log(`Customer OTP send attempt for phone: ${phone}`);
+
+    this.customLogger.logSecurityEvent(
+      'customer_otp_send_attempt',
+      { phone },
+      undefined,
+      undefined,
+    );
+
+    try {
+      const result = await this.otpService.generateOtp({
+        phone,
+        purpose: 'customer_login',
+      });
+
+      this.customLogger.logSecurityEvent(
+        'customer_otp_send_success',
+        { phone },
+        undefined,
+        undefined,
+      );
+
+      return {
+        success: result.success,
+        message: result.message,
+        expiresIn: 1800, // 30 minutes in seconds
+      };
+    } catch (error) {
+      this.customLogger.logSecurityEvent(
+        'customer_otp_send_failure',
+        { phone, error: error.message },
+        undefined,
+        undefined,
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Verify OTP and authenticate customer
    */
   async verifyOtp(
@@ -104,7 +149,7 @@ export class CustomerAuthService {
 
       // Get customer profile
       const customerProfile = await this.customerService.getCustomerProfile(
-        customer._id.toString(),
+        customer.id.toString(),
       );
 
       this.customLogger.logSecurityEvent(
@@ -123,7 +168,7 @@ export class CustomerAuthService {
       return {
         token,
         customer: customerProfile,
-        message: 'Authentication successful',
+        expiresIn: 3600 * 24 * 7, // 7 days in seconds
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) {
@@ -159,7 +204,7 @@ export class CustomerAuthService {
         walletBalance: 0,
       };
       customer = await this.customerService.create(createCustomerDto);
-      this.logger.log(`New customer created: ${customer._id}`);
+      this.logger.log(`New customer created: ${customer.id}`);
     }
 
     return customer;
@@ -170,7 +215,7 @@ export class CustomerAuthService {
    */
   private generateToken(customer: any): string {
     const payload = {
-      sub: customer._id.toString(),
+      sub: customer.id.toString(),
       phone: customer.phone,
       role: customer.role,
       type: 'customer',
