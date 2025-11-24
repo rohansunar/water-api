@@ -58,10 +58,9 @@ export class CustomerSubscriptionController {
       this.logger.log(
         `Getting subscriptions for customer: ${customer.id.toString()}`,
       );
-      const subscriptions =
-        await this.customerSubscriptionService.getCustomerSubscriptions(
-          customer.id.toString(),
-        );
+      const subscriptions = await this.customerSubscriptionService.getCustomerSubscriptions(
+        customer.id.toString(),
+      );
 
       const duration = Date.now() - startTime;
       this.logger.logApiRequest(
@@ -114,11 +113,10 @@ export class CustomerSubscriptionController {
       this.logger.log(
         `Creating subscription for customer: ${customer.id.toString()}`,
       );
-      const subscription =
-        await this.customerSubscriptionService.createSubscription(
-          customer.id.toString(),
-          createSubscriptionDto,
-        );
+      const subscription = await this.customerSubscriptionService.createSubscription(
+        customer.id.toString(),
+        createSubscriptionDto,
+      );
 
       const duration = Date.now() - startTime;
       this.logger.logApiRequest(
@@ -177,12 +175,11 @@ export class CustomerSubscriptionController {
       this.logger.log(
         `Updating subscription ${subscriptionId} for customer: ${customer.id.toString()}`,
       );
-      const subscription =
-        await this.customerSubscriptionService.updateSubscription(
-          customer.id.toString(),
-          subscriptionId,
-          updateSubscriptionDto,
-        );
+      const subscription = await this.customerSubscriptionService.updateSubscription(
+        customer.id.toString(),
+        subscriptionId,
+        updateSubscriptionDto,
+      );
 
       const duration = Date.now() - startTime;
       this.logger.logApiRequest(
