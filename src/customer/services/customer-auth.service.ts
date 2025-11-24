@@ -73,7 +73,9 @@ export class CustomerAuthService {
   /**
    * Send OTP for customer authentication
    */
-  async sendOtp(sendOtpDto: CustomerSendOtpDto): Promise<CustomerOtpResponseDto> {
+  async requestOtp(
+    sendOtpDto: CustomerSendOtpDto,
+  ): Promise<CustomerOtpResponseDto> {
     const { phone } = sendOtpDto;
     this.logger.log(`Customer OTP send attempt for phone: ${phone}`);
 
@@ -150,7 +152,11 @@ export class CustomerAuthService {
       // Get customer profile
       const customerProfile = await this.customerService.getCustomerProfile(
         customer.id.toString(),
+        false,
       );
+
+      // Check if customer has an address
+      const hasAddress = customerProfile.addressCount > 0;
 
       this.customLogger.logSecurityEvent(
         'customer_otp_verification_success',
@@ -169,6 +175,7 @@ export class CustomerAuthService {
         token,
         customer: customerProfile,
         expiresIn: 3600 * 24 * 7, // 7 days in seconds
+        address: hasAddress,
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) {

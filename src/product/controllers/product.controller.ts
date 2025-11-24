@@ -56,7 +56,8 @@ export class ProductController {
   @Get('search')
   @ApiOperation({
     summary: 'Search products',
-    description: 'Search for available products with optional filters for query, category, and location. Supports pagination.',
+    description:
+      'Search for available products with optional filters for query, category, and location. Supports pagination.',
   })
   @ApiQuery({
     name: 'query',
@@ -108,7 +109,7 @@ export class ProductController {
               name: { type: 'string', example: 'Premium Water Jar' },
               category: { type: 'string', example: 'water_jar' },
               subcategory: { type: 'string', example: '20L' },
-              price: { type: 'number', example: 1500.00 },
+              price: { type: 'number', example: 1500.0 },
               store: {
                 type: 'object',
                 properties: {
@@ -545,7 +546,10 @@ export class ProductController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 400 },
-        message: { type: 'string', example: 'Invalid image file: File size too large' },
+        message: {
+          type: 'string',
+          example: 'Invalid image file: File size too large',
+        },
         error: { type: 'string', example: 'Bad Request' },
       },
     },
@@ -688,7 +692,10 @@ export class ProductController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 400 },
-        message: { type: 'string', example: 'Invalid image ID format: image_abc' },
+        message: {
+          type: 'string',
+          example: 'Invalid image ID format: image_abc',
+        },
         error: { type: 'string', example: 'Bad Request' },
       },
     },

@@ -10,6 +10,7 @@ import { CustomerService } from '../src/customer/services/customer.service';
 import { OtpService } from '../src/common/services/otp.service';
 import { CustomLoggerService } from '../src/common/logger/logger.service';
 import { CustomerAuthController } from '../src/customer/controllers/customer-auth.controller';
+import { PrismaService } from '../src/common/database/prisma.service';
 import {
   CustomerSendOtpDto,
   CustomerVerifyOtpDto,
@@ -22,6 +23,7 @@ import { CustomerRole } from '../src/customer/interfaces/customer.interface';
 jest.mock('../src/customer/services/customer.service');
 jest.mock('../src/common/services/otp.service');
 jest.mock('../src/common/logger/logger.service');
+jest.mock('../src/common/database/prisma.service');
 jest.mock('@nestjs/jwt');
 
 describe('CustomerAuthService - OTP Flow', () => {
@@ -53,7 +55,7 @@ describe('CustomerAuthService - OTP Flow', () => {
     jest.clearAllMocks();
   });
 
-  describe('sendOtp', () => {
+  describe('requestOtp', () => {
     const validPhone = '+919876543210';
     const sendOtpDto: CustomerSendOtpDto = { phone: validPhone };
 
@@ -65,7 +67,7 @@ describe('CustomerAuthService - OTP Flow', () => {
 
       otpService.generateOtp.mockResolvedValue(mockOtpResult);
 
-      const result = await service.sendOtp(sendOtpDto);
+      const result = await service.requestOtp(sendOtpDto);
 
       expect(result).toEqual({
         success: true,
@@ -94,7 +96,7 @@ describe('CustomerAuthService - OTP Flow', () => {
       const error = new BadRequestException('Rate limit exceeded');
       otpService.generateOtp.mockRejectedValue(error);
 
-      await expect(service.sendOtp(sendOtpDto)).rejects.toThrow(
+      await expect(service.requestOtp(sendOtpDto)).rejects.toThrow(
         BadRequestException,
       );
 
@@ -118,7 +120,7 @@ describe('CustomerAuthService - OTP Flow', () => {
       const error = new BadRequestException('Invalid phone number');
       otpService.generateOtp.mockRejectedValue(error);
 
-      await expect(service.sendOtp(invalidDto)).rejects.toThrow(
+      await expect(service.requestOtp(invalidDto)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -133,6 +135,7 @@ describe('CustomerAuthService - OTP Flow', () => {
     };
 
     const mockCustomer = {
+      id: 'customer123',
       _id: 'customer123',
       phone: validPhone,
       role: CustomerRole.CUSTOMER,
@@ -151,6 +154,18 @@ describe('CustomerAuthService - OTP Flow', () => {
       createdAt: new Date(),
     };
 
+    const mockCustomerProfileWithAddress = {
+      id: 'customer456',
+      phone: validPhone,
+      role: CustomerRole.CUSTOMER,
+      walletBalance: 0,
+      isActive: true,
+      monthlyPaymentMode: false,
+      addresses: [],
+      addressCount: 1,
+      createdAt: new Date(),
+    };
+
     beforeEach(() => {
       jwtService.sign.mockReturnValue('mock-jwt-token');
       customerService.getCustomerProfile.mockResolvedValue(mockCustomerProfile);
@@ -158,7 +173,10 @@ describe('CustomerAuthService - OTP Flow', () => {
 
     it('should successfully verify OTP and create new customer', async () => {
       // OTP verification succeeds
-      otpService.verifyOtp.mockResolvedValue({ valid: true, message: 'OTP verified successfully' });
+      otpService.verifyOtp.mockResolvedValue({
+        valid: true,
+        message: 'OTP verified successfully',
+      });
 
       // Customer doesn't exist, so create new one
       customerService.findByPhone.mockResolvedValue(null);
@@ -170,6 +188,7 @@ describe('CustomerAuthService - OTP Flow', () => {
         token: 'mock-jwt-token',
         customer: mockCustomerProfile,
         expiresIn: 3600 * 24 * 7,
+        address: false, // Customer has no addresses
       });
 
       expect(otpService.verifyOtp).toHaveBeenCalledWith({
@@ -204,7 +223,10 @@ describe('CustomerAuthService - OTP Flow', () => {
 
     it('should successfully verify OTP for existing customer', async () => {
       // OTP verification succeeds
-      otpService.verifyOtp.mockResolvedValue({ valid: true, message: 'OTP verified successfully' });
+      otpService.verifyOtp.mockResolvedValue({
+        valid: true,
+        message: 'OTP verified successfully',
+      });
 
       // Customer exists
       customerService.findByPhone.mockResolvedValue(mockCustomer);
@@ -215,14 +237,106 @@ describe('CustomerAuthService - OTP Flow', () => {
         token: 'mock-jwt-token',
         customer: mockCustomerProfile,
         expiresIn: 3600 * 24 * 7,
+        address: false, // Customer has no addresses
       });
 
       expect(customerService.create).not.toHaveBeenCalled();
       expect(customerService.findByPhone).toHaveBeenCalledWith(validPhone);
     });
 
+    it('should successfully verify OTP for existing customer with address', async () => {
+      // OTP verification succeeds
+      otpService.verifyOtp.mockResolvedValue({
+        valid: true,
+        message: 'OTP verified successfully',
+      });
+
+      // Customer exists
+      const customerWithAddress = {
+        ...mockCustomer,
+        id: 'customer456',
+        _id: 'customer456',
+      };
+      customerService.findByPhone.mockResolvedValue(customerWithAddress);
+      // Mock customer profile with address
+      customerService.getCustomerProfile.mockResolvedValue(
+        mockCustomerProfileWithAddress,
+      );
+
+      const result = await service.verifyOtp(verifyOtpDto);
+
+      expect(result).toEqual({
+        token: 'mock-jwt-token',
+        customer: mockCustomerProfileWithAddress,
+        expiresIn: 3600 * 24 * 7,
+        address: true, // Customer has addresses
+      });
+
+      expect(customerService.create).not.toHaveBeenCalled();
+      expect(customerService.findByPhone).toHaveBeenCalledWith(validPhone);
+      expect(customerService.getCustomerProfile).toHaveBeenCalledWith(
+        'customer456',
+        false,
+      );
+      expect(customLogger.logBusinessEvent).toHaveBeenCalledWith(
+        'customer_authenticated',
+        { customerId: 'customer456', phone: validPhone },
+        'customer456',
+      );
+    });
+
+    it('should successfully verify OTP for existing customer with no addresses', async () => {
+      // OTP verification succeeds
+      otpService.verifyOtp.mockResolvedValue({
+        valid: true,
+        message: 'OTP verified successfully',
+      });
+
+      // Customer exists
+      const customerNoAddress = {
+        ...mockCustomer,
+        id: 'customer789',
+        _id: 'customer789',
+      };
+      customerService.findByPhone.mockResolvedValue(customerNoAddress);
+
+      // Mock customer profile with no addresses (addressCount = 0)
+      const mockCustomerProfileNoAddress = {
+        ...mockCustomerProfile,
+        id: 'customer789',
+        addressCount: 0,
+      };
+      customerService.getCustomerProfile.mockResolvedValue(
+        mockCustomerProfileNoAddress,
+      );
+
+      const result = await service.verifyOtp(verifyOtpDto);
+
+      expect(result).toEqual({
+        token: 'mock-jwt-token',
+        customer: mockCustomerProfileNoAddress,
+        expiresIn: 3600 * 24 * 7,
+        address: false, // Customer has no addresses
+      });
+
+      expect(customerService.create).not.toHaveBeenCalled();
+      expect(customerService.findByPhone).toHaveBeenCalledWith(validPhone);
+      expect(customerService.getCustomerProfile).toHaveBeenCalledWith(
+        'customer789',
+        false,
+      );
+      expect(customLogger.logBusinessEvent).toHaveBeenCalledWith(
+        'customer_authenticated',
+        { customerId: 'customer789', phone: validPhone },
+        'customer789',
+      );
+    });
+
     it('should throw UnauthorizedException for invalid OTP', async () => {
-      otpService.verifyOtp.mockResolvedValue({ valid: false, message: 'Invalid OTP' });
+      otpService.verifyOtp.mockResolvedValue({
+        valid: false,
+        message: 'Invalid OTP',
+      });
 
       await expect(service.verifyOtp(verifyOtpDto)).rejects.toThrow(
         UnauthorizedException,
@@ -253,7 +367,10 @@ describe('CustomerAuthService - OTP Flow', () => {
     });
 
     it('should handle customer creation failure', async () => {
-      otpService.verifyOtp.mockResolvedValue({ valid: true, message: 'OTP verified successfully' });
+      otpService.verifyOtp.mockResolvedValue({
+        valid: true,
+        message: 'OTP verified successfully',
+      });
       customerService.findByPhone.mockResolvedValue(null);
       customerService.create.mockRejectedValue(
         new Error('Database connection failed'),
@@ -326,6 +443,192 @@ describe('CustomerAuthService - OTP Flow', () => {
   });
 });
 
+describe('Integration - Full OTP Verification Flow with Address Count Logic', () => {
+  let service: CustomerAuthService;
+  let customerService: jest.Mocked<CustomerService>;
+  let otpService: jest.Mocked<OtpService>;
+  let jwtService: jest.Mocked<JwtService>;
+  let customLogger: jest.Mocked<CustomLoggerService>;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        CustomerAuthService,
+        CustomerService,
+        OtpService,
+        JwtService,
+        CustomLoggerService,
+      ],
+    }).compile();
+
+    service = module.get<CustomerAuthService>(CustomerAuthService);
+    customerService = module.get(CustomerService);
+    otpService = module.get(OtpService);
+    jwtService = module.get(JwtService);
+    customLogger = module.get(CustomLoggerService);
+
+    jwtService.sign.mockReturnValue('mock-jwt-token');
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should complete full OTP verification flow for new customer with address count logic', async () => {
+    const phone = '+919876543210';
+    const otp = '123456';
+    const verifyOtpDto: CustomerVerifyOtpDto = { phone, otp };
+
+    // Mock OTP verification success
+    otpService.verifyOtp.mockResolvedValue({
+      valid: true,
+      message: 'OTP verified successfully',
+    });
+
+    // Mock customer creation (new customer)
+    customerService.findByPhone.mockResolvedValue(null);
+    customerService.create.mockResolvedValue({
+      id: 'customer123',
+      _id: 'customer123',
+      phone,
+      role: CustomerRole.CUSTOMER,
+      isActive: true,
+      walletBalance: 0,
+    });
+
+    // Mock customer profile with address count (no addresses for new customer)
+    const mockProfile = {
+      id: 'customer123',
+      phone,
+      role: CustomerRole.CUSTOMER,
+      walletBalance: 0,
+      isActive: true,
+      monthlyPaymentMode: false,
+      addresses: [],
+      addressCount: 0, // New customer has no addresses
+      createdAt: new Date(),
+    };
+    customerService.getCustomerProfile.mockResolvedValue(mockProfile);
+
+    const result = await service.verifyOtp(verifyOtpDto);
+
+    // Verify the complete flow
+    expect(result).toEqual({
+      token: 'mock-jwt-token',
+      customer: mockProfile,
+      expiresIn: 3600 * 24 * 7,
+      address: false, // hasAddress = false because addressCount = 0
+    });
+
+    // Verify all service calls
+    expect(otpService.verifyOtp).toHaveBeenCalledWith({
+      phone,
+      otp,
+      purpose: 'customer_login',
+    });
+    expect(customerService.findByPhone).toHaveBeenCalledWith(phone);
+    expect(customerService.create).toHaveBeenCalledWith({
+      phone,
+      role: CustomerRole.CUSTOMER,
+      isActive: true,
+      walletBalance: 0,
+    });
+    expect(customerService.getCustomerProfile).toHaveBeenCalledWith(
+      'customer123',
+      false,
+    ); // includeAddresses=false
+    expect(jwtService.sign).toHaveBeenCalled();
+    expect(customLogger.logBusinessEvent).toHaveBeenCalledWith(
+      'customer_authenticated',
+      { customerId: 'customer123', phone },
+      'customer123',
+    );
+  });
+
+  it('should complete full OTP verification flow for existing customer with addresses', async () => {
+    const phone = '+919876543210';
+    const otp = '123456';
+    const verifyOtpDto: CustomerVerifyOtpDto = { phone, otp };
+
+    // Mock OTP verification success
+    otpService.verifyOtp.mockResolvedValue({
+      valid: true,
+      message: 'OTP verified successfully',
+    });
+
+    // Mock existing customer with addresses
+    const existingCustomer = {
+      id: 'customer456',
+      _id: 'customer456',
+      phone,
+      role: CustomerRole.CUSTOMER,
+      isActive: true,
+      walletBalance: 100,
+    };
+    customerService.findByPhone.mockResolvedValue(existingCustomer);
+
+    // Mock customer profile with addresses
+    const mockProfile = {
+      id: 'customer456',
+      phone,
+      role: CustomerRole.CUSTOMER,
+      walletBalance: 100,
+      isActive: true,
+      monthlyPaymentMode: false,
+      addresses: [], // Empty because includeAddresses=false
+      addressCount: 2, // Customer has 2 addresses
+      createdAt: new Date(),
+    };
+    customerService.getCustomerProfile.mockResolvedValue(mockProfile);
+
+    const result = await service.verifyOtp(verifyOtpDto);
+
+    // Verify the complete flow
+    expect(result).toEqual({
+      token: 'mock-jwt-token',
+      customer: mockProfile,
+      expiresIn: 3600 * 24 * 7,
+      address: true, // hasAddress = true because addressCount = 2
+    });
+
+    // Verify service calls
+    expect(customerService.create).not.toHaveBeenCalled(); // No creation for existing customer
+    expect(customerService.getCustomerProfile).toHaveBeenCalledWith(
+      'customer456',
+      false,
+    );
+  });
+
+  it('should ensure backward compatibility for getCustomerProfile usage', async () => {
+    // Test that getCustomerProfile still works with default includeAddresses=true
+    const mockProfileWithAddresses = {
+      id: '123',
+      phone: '+919876543210',
+      addresses: [
+        {
+          id: 'addr1',
+          type: 'home',
+          street: '123 Main St',
+          city: 'Mumbai',
+          state: 'Maharashtra',
+          pincode: '400001',
+          isDefault: true,
+        },
+      ],
+      addressCount: 1,
+    };
+
+    customerService.getCustomerProfile.mockResolvedValue(
+      mockProfileWithAddresses as any,
+    );
+
+    const result = await service.getCustomerProfile('123');
+
+    expect(result).toBe(mockProfileWithAddresses);
+    expect(customerService.getCustomerProfile).toHaveBeenCalledWith('123'); // Default true
+  });
+});
+
 describe('CustomerAuthController - OTP Endpoints', () => {
   let controller: CustomerAuthController;
   let customerAuthService: jest.Mocked<CustomerAuthService>;
@@ -337,7 +640,7 @@ describe('CustomerAuthController - OTP Endpoints', () => {
         {
           provide: CustomerAuthService,
           useValue: {
-            sendOtp: jest.fn(),
+            requestOtp: jest.fn(),
             verifyOtp: jest.fn(),
             getCustomerProfile: jest.fn(),
           },
@@ -364,17 +667,19 @@ describe('CustomerAuthController - OTP Endpoints', () => {
         expiresIn: 1800,
       };
 
-      customerAuthService.sendOtp.mockResolvedValue(mockResponse);
+      customerAuthService.requestOtp.mockResolvedValue(mockResponse);
 
       const result = await controller.requestOtp(sendOtpDto);
 
       expect(result).toBe(mockResponse);
-      expect(customerAuthService.sendOtp).toHaveBeenCalledWith(sendOtpDto);
+      expect(customerAuthService.requestOtp).toHaveBeenCalledWith(sendOtpDto);
     });
 
     it('should handle rate limit exceeded', async () => {
-      const error = new BadRequestException('Too many OTP requests. Please try again later.');
-      customerAuthService.sendOtp.mockRejectedValue(error);
+      const error = new BadRequestException(
+        'Too many OTP requests. Please try again later.',
+      );
+      customerAuthService.requestOtp.mockRejectedValue(error);
 
       await expect(controller.requestOtp(sendOtpDto)).rejects.toThrow(
         BadRequestException,
@@ -383,8 +688,10 @@ describe('CustomerAuthController - OTP Endpoints', () => {
 
     it('should handle invalid phone number', async () => {
       const invalidDto: CustomerSendOtpDto = { phone: 'invalid' };
-      const error = new BadRequestException('Please provide a valid Indian phone number');
-      customerAuthService.sendOtp.mockRejectedValue(error);
+      const error = new BadRequestException(
+        'Please provide a valid Indian phone number',
+      );
+      customerAuthService.requestOtp.mockRejectedValue(error);
 
       await expect(controller.requestOtp(invalidDto)).rejects.toThrow(
         BadRequestException,
@@ -392,7 +699,7 @@ describe('CustomerAuthController - OTP Endpoints', () => {
     });
   });
 
-  describe('verifyOtpEndpoint', () => {
+  describe('verifyOtp', () => {
     const validPhone = '+919876543210';
     const validOtp = '123456';
     const verifyOtpDto: CustomerVerifyOtpDto = {
@@ -405,11 +712,12 @@ describe('CustomerAuthController - OTP Endpoints', () => {
         token: 'jwt-token',
         customer: { id: '123', phone: validPhone },
         expiresIn: 3600 * 24 * 7,
+        address: false,
       };
 
       customerAuthService.verifyOtp.mockResolvedValue(mockAuthResponse);
 
-      const result = await controller.verifyOtpEndpoint(verifyOtpDto);
+      const result = await controller.verifyOtp(verifyOtpDto);
 
       expect(result).toBe(mockAuthResponse);
       expect(customerAuthService.verifyOtp).toHaveBeenCalledWith(verifyOtpDto);
@@ -419,7 +727,7 @@ describe('CustomerAuthController - OTP Endpoints', () => {
       const error = new UnauthorizedException('Invalid OTP');
       customerAuthService.verifyOtp.mockRejectedValue(error);
 
-      await expect(controller.verifyOtpEndpoint(verifyOtpDto)).rejects.toThrow(
+      await expect(controller.verifyOtp(verifyOtpDto)).rejects.toThrow(
         UnauthorizedException,
       );
     });
@@ -428,7 +736,7 @@ describe('CustomerAuthController - OTP Endpoints', () => {
       const error = new UnauthorizedException('OTP expired');
       customerAuthService.verifyOtp.mockRejectedValue(error);
 
-      await expect(controller.verifyOtpEndpoint(verifyOtpDto)).rejects.toThrow(
+      await expect(controller.verifyOtp(verifyOtpDto)).rejects.toThrow(
         UnauthorizedException,
       );
     });
@@ -438,10 +746,12 @@ describe('CustomerAuthController - OTP Endpoints', () => {
         phone: validPhone,
         otp: '123',
       };
-      const error = new BadRequestException('OTP must be between 4 and 6 digits');
+      const error = new BadRequestException(
+        'OTP must be between 4 and 6 digits',
+      );
       customerAuthService.verifyOtp.mockRejectedValue(error);
 
-      await expect(controller.verifyOtpEndpoint(invalidDto)).rejects.toThrow(
+      await expect(controller.verifyOtp(invalidDto)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -450,14 +760,22 @@ describe('CustomerAuthController - OTP Endpoints', () => {
   describe('getProfile', () => {
     it('should return customer profile', async () => {
       const mockUser = { id: '123', phone: '+919876543210' };
-      const mockProfile = { id: '123', phone: '+919876543210', walletBalance: 100 };
+      const mockProfile = {
+        id: '123',
+        phone: '+919876543210',
+        walletBalance: 100,
+      };
 
-      customerAuthService.getCustomerProfile.mockResolvedValue(mockProfile as any);
+      customerAuthService.getCustomerProfile.mockResolvedValue(
+        mockProfile as any,
+      );
 
       const result = await controller.getProfile(mockUser as any);
 
       expect(result).toBe(mockProfile);
-      expect(customerAuthService.getCustomerProfile).toHaveBeenCalledWith('123');
+      expect(customerAuthService.getCustomerProfile).toHaveBeenCalledWith(
+        '123',
+      );
     });
 
     it('should handle profile not found', async () => {
@@ -513,15 +831,15 @@ describe('CustomerAuthService - Edge Cases and Error Handling', () => {
 
       // Simulate concurrent requests
       const promises = [
-        service.sendOtp(sendOtpDto),
-        service.sendOtp(sendOtpDto),
-        service.sendOtp(sendOtpDto),
+        service.requestOtp(sendOtpDto),
+        service.requestOtp(sendOtpDto),
+        service.requestOtp(sendOtpDto),
       ];
 
       const results = await Promise.all(promises);
 
       expect(results).toHaveLength(3);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.success).toBe(true);
       });
       expect(otpService.generateOtp).toHaveBeenCalledTimes(3);
@@ -533,9 +851,14 @@ describe('CustomerAuthService - Edge Cases and Error Handling', () => {
       const phone = '+919876543210';
       const verifyOtpDto: CustomerVerifyOtpDto = { phone, otp: '123456' };
 
-      otpService.verifyOtp.mockResolvedValue({ valid: true, message: 'OTP verified successfully' });
+      otpService.verifyOtp.mockResolvedValue({
+        valid: true,
+        message: 'OTP verified successfully',
+      });
       jwtService.sign.mockReturnValue('mock-token');
-      customerService.getCustomerProfile.mockResolvedValue({ id: '123' } as any);
+      customerService.getCustomerProfile.mockResolvedValue({
+        id: '123',
+      } as any);
 
       // First call finds no customer, second call also finds no customer (race condition)
       customerService.findByPhone
@@ -543,8 +866,8 @@ describe('CustomerAuthService - Edge Cases and Error Handling', () => {
         .mockResolvedValueOnce(null);
 
       customerService.create
-        .mockResolvedValueOnce({ _id: '123', phone } as any)
-        .mockResolvedValueOnce({ _id: '456', phone } as any);
+        .mockResolvedValueOnce({ id: '123', _id: '123', phone } as any)
+        .mockResolvedValueOnce({ id: '456', _id: '456', phone } as any);
 
       const result1 = await service.verifyOtp(verifyOtpDto);
       const result2 = await service.verifyOtp(verifyOtpDto);
@@ -561,7 +884,7 @@ describe('CustomerAuthService - Edge Cases and Error Handling', () => {
       const error = new Error('OTP service unavailable');
       otpService.generateOtp.mockRejectedValue(error);
 
-      await expect(service.sendOtp(sendOtpDto)).rejects.toThrow();
+      await expect(service.requestOtp(sendOtpDto)).rejects.toThrow();
 
       expect(customLogger.logSecurityEvent).toHaveBeenCalledWith(
         'customer_otp_send_failure',
@@ -577,9 +900,14 @@ describe('CustomerAuthService - Edge Cases and Error Handling', () => {
         otp: '123456',
       };
 
-      otpService.verifyOtp.mockResolvedValue({ valid: true, message: 'OTP verified successfully' });
+      otpService.verifyOtp.mockResolvedValue({
+        valid: true,
+        message: 'OTP verified successfully',
+      });
       customerService.findByPhone.mockResolvedValue(null);
-      customerService.create.mockRejectedValue(new Error('Database connection failed'));
+      customerService.create.mockRejectedValue(
+        new Error('Database connection failed'),
+      );
 
       await expect(service.verifyOtp(verifyOtpDto)).rejects.toThrow();
 
@@ -596,18 +924,22 @@ describe('CustomerAuthService - Edge Cases and Error Handling', () => {
     it('should reject phone numbers with invalid format', async () => {
       const invalidPhones = [
         '+910123456789', // Invalid starting digits
-        '+91987654321',  // Too short
+        '+91987654321', // Too short
         '+9198765432101', // Too long
-        '9876543210',     // Missing country code
-        '+1 9876543210',  // Wrong country code
+        '9876543210', // Missing country code
+        '+1 9876543210', // Wrong country code
       ];
 
       for (const phone of invalidPhones) {
         const sendOtpDto: CustomerSendOtpDto = { phone };
-        const error = new BadRequestException('Please provide a valid Indian phone number');
+        const error = new BadRequestException(
+          'Please provide a valid Indian phone number',
+        );
         otpService.generateOtp.mockRejectedValue(error);
 
-        await expect(service.sendOtp(sendOtpDto)).rejects.toThrow(BadRequestException);
+        await expect(service.requestOtp(sendOtpDto)).rejects.toThrow(
+          BadRequestException,
+        );
       }
     });
 
@@ -620,7 +952,9 @@ describe('CustomerAuthService - Edge Cases and Error Handling', () => {
       const error = new BadRequestException('OTP must contain only digits');
       otpService.verifyOtp.mockRejectedValue(error);
 
-      await expect(service.verifyOtp(verifyOtpDto)).rejects.toThrow(BadRequestException);
+      await expect(service.verifyOtp(verifyOtpDto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should reject OTP with wrong length', async () => {
@@ -631,10 +965,14 @@ describe('CustomerAuthService - Edge Cases and Error Handling', () => {
           phone: '+919876543210',
           otp,
         };
-        const error = new BadRequestException('OTP must be between 4 and 6 digits');
+        const error = new BadRequestException(
+          'OTP must be between 4 and 6 digits',
+        );
         otpService.verifyOtp.mockRejectedValue(error);
 
-        await expect(service.verifyOtp(verifyOtpDto)).rejects.toThrow(BadRequestException);
+        await expect(service.verifyOtp(verifyOtpDto)).rejects.toThrow(
+          BadRequestException,
+        );
       }
     });
   });
@@ -649,7 +987,7 @@ describe('CustomerAuthService - Edge Cases and Error Handling', () => {
         message: 'OTP sent',
       });
 
-      await service.sendOtp(sendOtpDto);
+      await service.requestOtp(sendOtpDto);
 
       expect(customLogger.logSecurityEvent).toHaveBeenCalledWith(
         'customer_otp_send_attempt',
@@ -671,9 +1009,16 @@ describe('CustomerAuthService - Edge Cases and Error Handling', () => {
         otp: '123456',
       };
 
-      otpService.verifyOtp.mockResolvedValue({ valid: true, message: 'OTP verified successfully' });
+      otpService.verifyOtp.mockResolvedValue({
+        valid: true,
+        message: 'OTP verified successfully',
+      });
       customerService.findByPhone.mockResolvedValue(null);
-      customerService.create.mockResolvedValue({ _id: '123', phone: '+919876543210' } as any);
+      customerService.create.mockResolvedValue({
+        id: '123',
+        _id: '123',
+        phone: '+919876543210',
+      } as any);
       jwtService.sign.mockReturnValue('token');
       customerService.getCustomerProfile.mockResolvedValue({} as any);
 

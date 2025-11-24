@@ -115,7 +115,7 @@ export class CustomerAuthController {
     @Body() sendOtpDto: CustomerSendOtpDto,
   ): Promise<CustomerOtpResponseDto> {
     this.logger.log(`Customer OTP request for phone: ${sendOtpDto.phone}`);
-    return this.customerAuthService.sendOtp(sendOtpDto);
+    return this.customerAuthService.requestOtp(sendOtpDto);
   }
 
   @Post('verify-otp')
@@ -155,10 +155,12 @@ export class CustomerAuthController {
       },
     },
   })
-  async verifyOtpEndpoint(
+  async verifyOtp(
     @Body() verifyOtpDto: CustomerVerifyOtpDto,
   ): Promise<CustomerAuthResponseDto> {
-    this.logger.log(`Customer OTP verification for phone: ${verifyOtpDto.phone}`);
+    this.logger.log(
+      `Customer OTP verification for phone: ${verifyOtpDto.phone}`,
+    );
     return this.customerAuthService.verifyOtp(verifyOtpDto);
   }
 

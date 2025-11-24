@@ -11,7 +11,15 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { LedgerService } from '../services/ledger.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
@@ -54,12 +62,18 @@ export class LedgerController {
    * Get vendor's ledger entries with pagination and filtering
    */
   @Get('ledger')
-  @ApiOperation({ summary: 'Get vendor ledger', description: 'Retrieve vendor ledger entries with pagination and filtering' })
+  @ApiOperation({
+    summary: 'Get vendor ledger',
+    description: 'Retrieve vendor ledger entries with pagination and filtering',
+  })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'type', required: false, enum: LedgerEntryType })
   @ApiQuery({ name: 'status', required: false, enum: LedgerEntryStatus })
-  @ApiResponse({ status: 200, description: 'Ledger entries retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Ledger entries retrieved successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
@@ -91,9 +105,16 @@ export class LedgerController {
    */
   @Post('ledger')
   @Roles(UserRole.ADMIN, UserRole.VENDOR)
-  @ApiOperation({ summary: 'Create ledger entry', description: 'Create a new ledger entry' })
+  @ApiOperation({
+    summary: 'Create ledger entry',
+    description: 'Create a new ledger entry',
+  })
   @ApiBody({ type: CreateLedgerEntryDto })
-  @ApiResponse({ status: 201, description: 'Ledger entry created successfully', type: LedgerEntryResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Ledger entry created successfully',
+    type: LedgerEntryResponseDto,
+  })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
@@ -117,9 +138,16 @@ export class LedgerController {
    * Get vendor analytics for specified period
    */
   @Get('analytics')
-  @ApiOperation({ summary: 'Get vendor analytics', description: 'Retrieve vendor analytics for specified period' })
+  @ApiOperation({
+    summary: 'Get vendor analytics',
+    description: 'Retrieve vendor analytics for specified period',
+  })
   @ApiQuery({ type: GetAnalyticsDto })
-  @ApiResponse({ status: 200, description: 'Analytics retrieved successfully', type: VendorAnalyticsResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Analytics retrieved successfully',
+    type: VendorAnalyticsResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
@@ -138,8 +166,15 @@ export class LedgerController {
    * Get ledger summary with balance and payout information
    */
   @Get('ledger/summary')
-  @ApiOperation({ summary: 'Get ledger summary', description: 'Get ledger summary with balance and payout information' })
-  @ApiResponse({ status: 200, description: 'Ledger summary retrieved successfully', type: LedgerSummaryResponseDto })
+  @ApiOperation({
+    summary: 'Get ledger summary',
+    description: 'Get ledger summary with balance and payout information',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Ledger summary retrieved successfully',
+    type: LedgerSummaryResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
@@ -155,7 +190,10 @@ export class LedgerController {
    * Get vendor's payout history with pagination
    */
   @Get('payouts')
-  @ApiOperation({ summary: 'Get vendor payouts', description: 'Get vendor payout history with pagination' })
+  @ApiOperation({
+    summary: 'Get vendor payouts',
+    description: 'Get vendor payout history with pagination',
+  })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'status', required: false, enum: PayoutStatus })
@@ -183,9 +221,16 @@ export class LedgerController {
    * Request a new payout
    */
   @Post('payouts')
-  @ApiOperation({ summary: 'Create payout', description: 'Request a new payout' })
+  @ApiOperation({
+    summary: 'Create payout',
+    description: 'Request a new payout',
+  })
   @ApiBody({ type: CreatePayoutDto })
-  @ApiResponse({ status: 201, description: 'Payout request created successfully', type: PayoutResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Payout request created successfully',
+    type: PayoutResponseDto,
+  })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
@@ -220,13 +265,19 @@ export class AdminLedgerController {
    * Get any vendor's ledger entries (admin only)
    */
   @Get('vendors/:vendorId/ledger')
-  @ApiOperation({ summary: 'Get vendor ledger (admin)', description: 'Get any vendor ledger entries (admin only)' })
+  @ApiOperation({
+    summary: 'Get vendor ledger (admin)',
+    description: 'Get any vendor ledger entries (admin only)',
+  })
   @ApiParam({ name: 'vendorId', description: 'Vendor ID', type: String })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'type', required: false, enum: LedgerEntryType })
   @ApiQuery({ name: 'status', required: false, enum: LedgerEntryStatus })
-  @ApiResponse({ status: 200, description: 'Ledger entries retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Ledger entries retrieved successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Vendor not found' })
@@ -258,10 +309,17 @@ export class AdminLedgerController {
    * Get any vendor's analytics (admin only)
    */
   @Get('vendors/:vendorId/analytics')
-  @ApiOperation({ summary: 'Get vendor analytics (admin)', description: 'Get any vendor analytics (admin only)' })
+  @ApiOperation({
+    summary: 'Get vendor analytics (admin)',
+    description: 'Get any vendor analytics (admin only)',
+  })
   @ApiParam({ name: 'vendorId', description: 'Vendor ID', type: String })
   @ApiQuery({ type: GetAnalyticsDto })
-  @ApiResponse({ status: 200, description: 'Analytics retrieved successfully', type: VendorAnalyticsResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Analytics retrieved successfully',
+    type: VendorAnalyticsResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Vendor not found' })
@@ -279,7 +337,10 @@ export class AdminLedgerController {
    * Get any vendor's payouts (admin only)
    */
   @Get('vendors/:vendorId/payouts')
-  @ApiOperation({ summary: 'Get vendor payouts (admin)', description: 'Get any vendor payouts (admin only)' })
+  @ApiOperation({
+    summary: 'Get vendor payouts (admin)',
+    description: 'Get any vendor payouts (admin only)',
+  })
   @ApiParam({ name: 'vendorId', description: 'Vendor ID', type: String })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -309,9 +370,16 @@ export class AdminLedgerController {
    * Create ledger entry for any vendor (admin only)
    */
   @Post('ledger-entries')
-  @ApiOperation({ summary: 'Create ledger entry (admin)', description: 'Create ledger entry for any vendor (admin only)' })
+  @ApiOperation({
+    summary: 'Create ledger entry (admin)',
+    description: 'Create ledger entry for any vendor (admin only)',
+  })
   @ApiBody({ type: CreateLedgerEntryDto })
-  @ApiResponse({ status: 201, description: 'Ledger entry created successfully', type: LedgerEntryResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Ledger entry created successfully',
+    type: LedgerEntryResponseDto,
+  })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })

@@ -176,6 +176,14 @@ export class CustomerProfileDto {
   addresses: AddressDto[];
 
   @ApiProperty({
+    description: 'Number of addresses associated with the customer',
+    example: 2,
+    required: false,
+  })
+  @IsOptional()
+  addressCount?: number;
+
+  @ApiProperty({
     description: 'Account creation timestamp',
     example: '2024-01-15T10:30:00Z',
   })

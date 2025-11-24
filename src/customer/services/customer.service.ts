@@ -13,7 +13,7 @@ import {
 } from '../../common/dto/customer.dto';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 import { PrismaService } from '../../common/database/prisma.service';
-import {UserRole, AddressType } from '@prisma/client';
+import { UserRole, AddressType } from '@prisma/client';
 
 @Injectable()
 export class CustomerService {
@@ -103,13 +103,18 @@ export class CustomerService {
     }
   }
 
-  async getCustomerProfile(id: string): Promise<CustomerProfileDto> {
+  async getCustomerProfile(
+    id: string,
+    includeAddresses: boolean = true,
+  ): Promise<CustomerProfileDto> {
     try {
+      const includeObj = includeAddresses
+        ? { addresses: true }
+        : { _count: { select: { addresses: true } } };
+
       const customer = await this.prisma.customer.findUnique({
         where: { id: BigInt(id) },
-        include: {
-          addresses: true,
-        },
+        include: includeObj,
       });
       if (!customer) {
         throw new NotFoundException('Customer not found');
@@ -124,18 +129,21 @@ export class CustomerService {
         walletBalance: Number(customer.walletBalance),
         isActive: customer.isActive,
         monthlyPaymentMode: customer.monthlyPaymentMode,
-        addresses: customer.addresses.map((addr) => ({
-          id: addr.id.toString(),
-          type: addr.type,
-          street: addr.street,
-          city: addr.city,
-          state: addr.state,
-          pincode: addr.pincode,
-          landmark: addr.landmark,
-          latitude: addr.latitude ? Number(addr.latitude) : undefined,
-          longitude: addr.longitude ? Number(addr.longitude) : undefined,
-          isDefault: addr.isDefault,
-        })),
+        addresses: includeAddresses
+          ? customer.addresses.map((addr) => ({
+              id: addr.id.toString(),
+              type: addr.type,
+              street: addr.street,
+              city: addr.city,
+              state: addr.state,
+              pincode: addr.pincode,
+              landmark: addr.landmark,
+              latitude: addr.latitude ? Number(addr.latitude) : undefined,
+              longitude: addr.longitude ? Number(addr.longitude) : undefined,
+              isDefault: addr.isDefault,
+            }))
+          : [],
+        addressCount: customer._count?.addresses ?? 0,
         createdAt: customer.createdAt,
       };
     } catch (error) {
@@ -383,7 +391,11 @@ export class CustomerService {
   async createAddress(
     customerId: string,
     createAddressDto: CreateAddressDto,
-  ): Promise<AddressResponseDto> {
+  ): Promise<{
+    address: AddressResponseDto;
+    isDefaultSetAutomatically: boolean;
+    message: string;
+  }> {
     try {
       const customer = await this.prisma.customer.findUnique({
         where: { id: BigInt(customerId) },
@@ -392,8 +404,22 @@ export class CustomerService {
         throw new NotFoundException('Customer not found');
       }
 
+      // Check for existing addresses
+      const existingAddressesCount = await this.prisma.customerAddress.count({
+        where: { customerId: customer.id },
+      });
+
+      // Determine isDefault value
+      let finalIsDefault = createAddressDto.isDefault;
+      let isDefaultSetAutomatically = false;
+
+      if (existingAddressesCount === 0 && finalIsDefault === undefined) {
+        finalIsDefault = true;
+        isDefaultSetAutomatically = true;
+      }
+
       // If this is set as default, unset other default addresses
-      if (createAddressDto.isDefault) {
+      if (finalIsDefault) {
         await this.prisma.customerAddress.updateMany({
           where: { customerId: customer.id },
           data: { isDefault: false },
@@ -411,14 +437,23 @@ export class CustomerService {
           pincode: createAddressDto.pincode,
           latitude: createAddressDto.latitude,
           longitude: createAddressDto.longitude,
-          isDefault: createAddressDto.isDefault,
+          isDefault: finalIsDefault,
         },
       });
 
       this.logger.log(
         `Created address ${address.id} for customer ${customerId}`,
       );
-      return this.getAddressResponse(address);
+
+      const message = isDefaultSetAutomatically
+        ? 'isDefault was set to true automatically since this is the first address.'
+        : 'isDefault was set based on the provided DTO value.';
+
+      return {
+        address: this.getAddressResponse(address),
+        isDefaultSetAutomatically,
+        message,
+      };
     } catch (error) {
       this.logger.error(
         `Error creating address for customer ${customerId}:`,

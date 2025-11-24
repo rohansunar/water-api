@@ -7,7 +7,7 @@ import {
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { CustomLoggerService } from './common/logger/logger.service';
-import * as fs from 'fs'; 
+import * as fs from 'fs';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -97,7 +97,7 @@ async function bootstrap() {
       'https://waterjardelivery.com',
       'support@waterjardelivery.com',
     )
-    .addBearerAuth()  
+    .addBearerAuth()
     .addTag('Authentication', 'User authentication and OTP verification')
     .addTag('Users', 'User profile and address management')
     .addTag('Riders', 'Delivery rider operations and order management')
@@ -128,7 +128,6 @@ async function bootstrap() {
 
   fs.writeFileSync('./swagger.json', JSON.stringify(document, null, 2));
 
-
   // Seed test data for development
   // const userService = app.get(UserService);
   // await userService.seedTestData();
@@ -155,7 +154,6 @@ async function bootstrap() {
   logger.log(
     `🚀 Water Jar Delivery API is running on: http://localhost:${port}`,
   );
-  logger.log(`📋 Health check available at: http://localhost:${port}/health`);
   logger.log(
     `📚 API Documentation available at: http://localhost:${port}/docs`,
   );

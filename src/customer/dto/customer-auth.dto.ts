@@ -113,4 +113,11 @@ export class CustomerAuthResponseDto {
   })
   @IsNumber({}, { message: 'Expires in must be a number' })
   expiresIn: number;
+
+  @ApiProperty({
+    description: 'Whether the customer has an address associated',
+    example: true,
+  })
+  @IsBoolean({ message: 'Address must be a boolean' })
+  address: boolean;
 }

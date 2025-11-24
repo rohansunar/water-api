@@ -8,7 +8,14 @@ import {
   UseGuards,
   Logger,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { SubscriptionService } from '../services/subscription.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -29,9 +36,16 @@ export class SubscriptionController {
   constructor(private readonly subscriptionService: SubscriptionService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create subscription', description: 'Create a new subscription' })
+  @ApiOperation({
+    summary: 'Create subscription',
+    description: 'Create a new subscription',
+  })
   @ApiBody({ type: CreateSubscriptionDto })
-  @ApiResponse({ status: 201, description: 'Subscription created successfully', type: SubscriptionResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Subscription created successfully',
+    type: SubscriptionResponseDto,
+  })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
@@ -44,8 +58,15 @@ export class SubscriptionController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get user subscriptions', description: 'Retrieve all subscriptions for the current user' })
-  @ApiResponse({ status: 200, description: 'Subscriptions retrieved successfully', type: [SubscriptionResponseDto] })
+  @ApiOperation({
+    summary: 'Get user subscriptions',
+    description: 'Retrieve all subscriptions for the current user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscriptions retrieved successfully',
+    type: [SubscriptionResponseDto],
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
   async getUserSubscriptions(
@@ -56,10 +77,17 @@ export class SubscriptionController {
   }
 
   @Put(':id')
-  @ApiOperation({ summary: 'Update subscription', description: 'Update an existing subscription' })
+  @ApiOperation({
+    summary: 'Update subscription',
+    description: 'Update an existing subscription',
+  })
   @ApiParam({ name: 'id', description: 'Subscription ID', type: String })
   @ApiBody({ type: UpdateSubscriptionDto })
-  @ApiResponse({ status: 200, description: 'Subscription updated successfully', type: SubscriptionResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription updated successfully',
+    type: SubscriptionResponseDto,
+  })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
@@ -81,9 +109,16 @@ export class SubscriptionController {
   }
 
   @Put(':id/cancel')
-  @ApiOperation({ summary: 'Cancel subscription', description: 'Cancel an existing subscription' })
+  @ApiOperation({
+    summary: 'Cancel subscription',
+    description: 'Cancel an existing subscription',
+  })
   @ApiParam({ name: 'id', description: 'Subscription ID', type: String })
-  @ApiResponse({ status: 200, description: 'Subscription cancelled successfully', type: SubscriptionResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription cancelled successfully',
+    type: SubscriptionResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Subscription not found' })
@@ -99,9 +134,16 @@ export class SubscriptionController {
   }
 
   @Put(':id/pause')
-  @ApiOperation({ summary: 'Pause subscription', description: 'Pause an existing subscription' })
+  @ApiOperation({
+    summary: 'Pause subscription',
+    description: 'Pause an existing subscription',
+  })
   @ApiParam({ name: 'id', description: 'Subscription ID', type: String })
-  @ApiResponse({ status: 200, description: 'Subscription paused successfully', type: SubscriptionResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription paused successfully',
+    type: SubscriptionResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Subscription not found' })
@@ -117,9 +159,16 @@ export class SubscriptionController {
   }
 
   @Put(':id/resume')
-  @ApiOperation({ summary: 'Resume subscription', description: 'Resume a paused subscription' })
+  @ApiOperation({
+    summary: 'Resume subscription',
+    description: 'Resume a paused subscription',
+  })
   @ApiParam({ name: 'id', description: 'Subscription ID', type: String })
-  @ApiResponse({ status: 200, description: 'Subscription resumed successfully', type: SubscriptionResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription resumed successfully',
+    type: SubscriptionResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Subscription not found' })
@@ -134,7 +183,10 @@ export class SubscriptionController {
     return this.subscriptionService.resume(subscriptionId, user.id);
   }
   @Get(':id/analytics')
-  @ApiOperation({ summary: 'Get subscription analytics', description: 'Retrieve analytics for a specific subscription' })
+  @ApiOperation({
+    summary: 'Get subscription analytics',
+    description: 'Retrieve analytics for a specific subscription',
+  })
   @ApiParam({ name: 'id', description: 'Subscription ID', type: String })
   @ApiResponse({ status: 200, description: 'Analytics retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })

@@ -117,7 +117,12 @@ export class CustomerController {
     summary: 'Update monthly payment mode',
     description: 'Enable or disable monthly payment mode for the customer',
   })
-  @ApiBody({ schema: { type: 'object', properties: { monthlyPaymentMode: { type: 'boolean' } } } })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { monthlyPaymentMode: { type: 'boolean' } },
+    },
+  })
   @ApiResponse({
     status: 200,
     description: 'Monthly payment mode updated successfully',
@@ -257,7 +262,18 @@ export class CustomerController {
   @ApiResponse({
     status: 201,
     description: 'Address created successfully',
-    type: AddressResponseDto,
+    schema: {
+      type: 'object',
+      properties: {
+        address: { $ref: '#/components/schemas/AddressResponseDto' },
+        isDefaultSetAutomatically: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example:
+            'isDefault was set to true automatically since this is the first address.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
@@ -270,14 +286,18 @@ export class CustomerController {
   async createAddress(
     @CurrentUser() customer: User,
     @Body() createAddressDto: CreateAddressDto,
-  ): Promise<AddressResponseDto> {
+  ): Promise<{
+    address: AddressResponseDto;
+    isDefaultSetAutomatically: boolean;
+    message: string;
+  }> {
     const startTime = Date.now();
 
     try {
       this.logger.log(
         `Creating address for customer: ${customer.id.toString()}`,
       );
-      const address = await this.customerService.createAddress(
+      const result = await this.customerService.createAddress(
         customer.id.toString(),
         createAddressDto,
       );
@@ -291,7 +311,7 @@ export class CustomerController {
         { userId: customer.id.toString() },
       );
 
-      return address;
+      return result;
     } catch (error) {
       const duration = Date.now() - startTime;
       this.logger.logApiError(
@@ -620,7 +640,9 @@ export class CustomerController {
     description: 'Cancel a specific order for the authenticated customer',
   })
   @ApiParam({ name: 'id', description: 'Order ID', type: String })
-  @ApiBody({ schema: { type: 'object', properties: { reason: { type: 'string' } } } })
+  @ApiBody({
+    schema: { type: 'object', properties: { reason: { type: 'string' } } },
+  })
   @ApiResponse({
     status: 200,
     description: 'Order cancelled successfully',
@@ -683,7 +705,15 @@ export class CustomerController {
     description: 'Request a refund for a specific order',
   })
   @ApiParam({ name: 'id', description: 'Order ID', type: String })
-  @ApiBody({ schema: { type: 'object', properties: { reason: { type: 'string' }, description: { type: 'string' } } } })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        reason: { type: 'string' },
+        description: { type: 'string' },
+      },
+    },
+  })
   @ApiResponse({
     status: 200,
     description: 'Refund request submitted successfully',
@@ -916,7 +946,9 @@ export class CustomerController {
     description: 'Cancel an existing subscription',
   })
   @ApiParam({ name: 'id', description: 'Subscription ID', type: String })
-  @ApiBody({ schema: { type: 'object', properties: { reason: { type: 'string' } } } })
+  @ApiBody({
+    schema: { type: 'object', properties: { reason: { type: 'string' } } },
+  })
   @ApiResponse({
     status: 200,
     description: 'Subscription cancelled successfully',
