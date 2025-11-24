@@ -27,11 +27,7 @@ import { ProductModule } from '../product/product.module';
     }),
   ],
   controllers: [VendorAuthController],
-  providers: [
-    VendorAuthService,
-    VendorJwtStrategy,
-    OtpService,
-  ],
+  providers: [VendorAuthService, VendorJwtStrategy, OtpService],
   exports: [VendorAuthService, VendorJwtStrategy],
 })
 export class VendorAuthModule {}

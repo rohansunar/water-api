@@ -339,7 +339,6 @@ export class CustomerService {
     }
   }
 
-
   // Development/Testing
   async clearTestData(): Promise<void> {
     try {

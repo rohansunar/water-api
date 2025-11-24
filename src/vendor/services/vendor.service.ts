@@ -2745,7 +2745,9 @@ export class VendorService {
       id: product.id.toString(),
       vendor_id: vendor.id,
       title: product.name,
-      sku: product.specifications?.sku || product.name.toLowerCase().replace(/\s+/g, '-'),
+      sku:
+        product.specifications?.sku ||
+        product.name.toLowerCase().replace(/\s+/g, '-'),
       description: product.description,
       category: product.category,
       attributes: {

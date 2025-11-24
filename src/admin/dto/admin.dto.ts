@@ -865,7 +865,7 @@ export class CreateRiderDto {
         'thursday',
         'friday',
         'saturday',
-        'sunday'
+        'sunday',
       ],
     },
     required: false,
@@ -950,7 +950,7 @@ export class UpdateRiderDto {
         'thursday',
         'friday',
         'saturday',
-        'sunday'
+        'sunday',
       ],
     },
     required: false,

@@ -340,14 +340,16 @@ export class ImageProcessingService {
     options: ImageProcessingOptions = {},
   ): Promise<S3UploadResult[]> {
     try {
-      return await Promise.all(files.map((file) =>
-      this.processAndUploadImage(
-        file.buffer,
-        file.filename,
-        productId,
-        options,
-      ),
-    ));
+      return await Promise.all(
+        files.map((file) =>
+          this.processAndUploadImage(
+            file.buffer,
+            file.filename,
+            productId,
+            options,
+          ),
+        ),
+      );
     } catch (error) {
       this.logger.error('Batch image processing failed:', error);
       throw new BadRequestException('Failed to process one or more images');

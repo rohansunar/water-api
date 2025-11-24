@@ -31,9 +31,7 @@ import {
   ComplaintResponseDto,
   ComplaintListQueryDto,
 } from '../../complaint/dto/complaint.dto';
-import {
-  ProductResponseDto,
-} from '../../product/dto/product.dto';
+import { ProductResponseDto } from '../../product/dto/product.dto';
 import {
   CreateCustomerDto,
   UpdateCustomerDto,

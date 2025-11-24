@@ -13,7 +13,8 @@ describe('S3Service', () => {
 
   beforeEach(async () => {
     const mockConfigService = {
-      get: jest.fn()
+      get: jest
+        .fn()
         .mockReturnValueOnce('https://test.supabase.co')
         .mockReturnValueOnce('test-anon-key')
         .mockReturnValueOnce('images')
@@ -55,12 +56,21 @@ describe('S3Service', () => {
   describe('uploadFile', () => {
     it('should upload file successfully with public access', async () => {
       const mockUploadResponse = { data: { path: 'test-key' }, error: null };
-      mockSupabaseClient.storage.from().upload.mockResolvedValue(mockUploadResponse);
+      mockSupabaseClient.storage
+        .from()
+        .upload.mockResolvedValue(mockUploadResponse);
       mockSupabaseClient.storage.from().getPublicUrl.mockReturnValue({
-        data: { publicUrl: 'https://test.supabase.co/storage/v1/object/public/images/test-key' },
+        data: {
+          publicUrl:
+            'https://test.supabase.co/storage/v1/object/public/images/test-key',
+        },
       });
 
-      const result = await service.uploadFile(Buffer.from('test'), 'test-key', 'image/webp');
+      const result = await service.uploadFile(
+        Buffer.from('test'),
+        'test-key',
+        'image/webp',
+      );
 
       expect(result).toEqual({
         key: 'test-key',
@@ -68,16 +78,21 @@ describe('S3Service', () => {
         bucket: 'images',
         etag: undefined,
       });
-      expect(mockSupabaseClient.storage.from().upload).toHaveBeenCalledWith('test-key', Buffer.from('test'), {
-        contentType: 'image/webp',
-        upsert: false,
-      });
+      expect(mockSupabaseClient.storage.from().upload).toHaveBeenCalledWith(
+        'test-key',
+        Buffer.from('test'),
+        {
+          contentType: 'image/webp',
+          upsert: false,
+        },
+      );
     });
 
     it('should upload file successfully with private access', async () => {
       // Create service with private access
       const privateConfigService = {
-        get: jest.fn()
+        get: jest
+          .fn()
           .mockReturnValueOnce('https://test.supabase.co')
           .mockReturnValueOnce('test-anon-key')
           .mockReturnValueOnce('images')
@@ -97,24 +112,40 @@ describe('S3Service', () => {
       const privateService = privateModule.get<S3Service>(S3Service);
 
       const mockUploadResponse = { data: { path: 'test-key' }, error: null };
-      mockSupabaseClient.storage.from().upload.mockResolvedValue(mockUploadResponse);
+      mockSupabaseClient.storage
+        .from()
+        .upload.mockResolvedValue(mockUploadResponse);
       mockSupabaseClient.storage.from().createSignedUrl.mockResolvedValue({
-        data: { signedUrl: 'https://test.supabase.co/storage/v1/object/sign/images/test-key?token=abc' },
+        data: {
+          signedUrl:
+            'https://test.supabase.co/storage/v1/object/sign/images/test-key?token=abc',
+        },
         error: null,
       });
 
-      const result = await privateService.uploadFile(Buffer.from('test'), 'test-key', 'image/webp');
+      const result = await privateService.uploadFile(
+        Buffer.from('test'),
+        'test-key',
+        'image/webp',
+      );
 
-      expect(result.url).toBe('https://test.supabase.co/storage/v1/object/sign/images/test-key?token=abc');
+      expect(result.url).toBe(
+        'https://test.supabase.co/storage/v1/object/sign/images/test-key?token=abc',
+      );
     });
 
     it('should throw error on upload failure', async () => {
-      const mockUploadResponse = { data: null, error: { message: 'Upload failed' } };
-      mockSupabaseClient.storage.from().upload.mockResolvedValue(mockUploadResponse);
+      const mockUploadResponse = {
+        data: null,
+        error: { message: 'Upload failed' },
+      };
+      mockSupabaseClient.storage
+        .from()
+        .upload.mockResolvedValue(mockUploadResponse);
 
-      await expect(service.uploadFile(Buffer.from('test'), 'test-key', 'image/webp')).rejects.toThrow(
-        'Supabase upload failed: Upload failed',
-      );
+      await expect(
+        service.uploadFile(Buffer.from('test'), 'test-key', 'image/webp'),
+      ).rejects.toThrow('Supabase upload failed: Upload failed');
     });
   });
 
@@ -123,17 +154,25 @@ describe('S3Service', () => {
 
     it('should delete file successfully', async () => {
       const mockDeleteResponse = { error: null };
-      mockSupabaseClient.storage.from().remove.mockResolvedValue(mockDeleteResponse);
+      mockSupabaseClient.storage
+        .from()
+        .remove.mockResolvedValue(mockDeleteResponse);
 
       await expect(service.deleteFile('test-key')).resolves.toBeUndefined();
-      expect(mockSupabaseClient.storage.from().remove).toHaveBeenCalledWith(['test-key']);
+      expect(mockSupabaseClient.storage.from().remove).toHaveBeenCalledWith([
+        'test-key',
+      ]);
     });
 
     it('should throw error on delete failure', async () => {
       const mockDeleteResponse = { error: { message: 'Delete failed' } };
-      mockSupabaseClient.storage.from().remove.mockResolvedValue(mockDeleteResponse);
+      mockSupabaseClient.storage
+        .from()
+        .remove.mockResolvedValue(mockDeleteResponse);
 
-      await expect(service.deleteFile('test-key')).rejects.toThrow('Supabase delete failed: Delete failed');
+      await expect(service.deleteFile('test-key')).rejects.toThrow(
+        'Supabase delete failed: Delete failed',
+      );
     });
   });
 
@@ -145,7 +184,9 @@ describe('S3Service', () => {
         data: [{ name: 'test-file.webp' }],
         error: null,
       };
-      mockSupabaseClient.storage.from().list.mockResolvedValue(mockListResponse);
+      mockSupabaseClient.storage
+        .from()
+        .list.mockResolvedValue(mockListResponse);
 
       const result = await service.fileExists('products/123/test-file.webp');
       expect(result).toBe(true);
@@ -156,17 +197,26 @@ describe('S3Service', () => {
         data: [],
         error: null,
       };
-      mockSupabaseClient.storage.from().list.mockResolvedValue(mockListResponse);
+      mockSupabaseClient.storage
+        .from()
+        .list.mockResolvedValue(mockListResponse);
 
       const result = await service.fileExists('products/123/test-file.webp');
       expect(result).toBe(false);
     });
 
     it('should throw error on list failure', async () => {
-      const mockListResponse = { data: null, error: { message: 'List failed' } };
-      mockSupabaseClient.storage.from().list.mockResolvedValue(mockListResponse);
+      const mockListResponse = {
+        data: null,
+        error: { message: 'List failed' },
+      };
+      mockSupabaseClient.storage
+        .from()
+        .list.mockResolvedValue(mockListResponse);
 
-      await expect(service.fileExists('test-key')).rejects.toThrow('Supabase file existence check failed: List failed');
+      await expect(service.fileExists('test-key')).rejects.toThrow(
+        'Supabase file existence check failed: List failed',
+      );
     });
   });
 
@@ -179,8 +229,14 @@ describe('S3Service', () => {
     });
 
     it('should sanitize filename', () => {
-      const key = service.generateKey('products', 'test-image<script>.jpg', '123');
-      expect(key).toMatch(/^products\/products\/123\/\d+_test-image_script_.jpg$/);
+      const key = service.generateKey(
+        'products',
+        'test-image<script>.jpg',
+        '123',
+      );
+      expect(key).toMatch(
+        /^products\/products\/123\/\d+_test-image_script_.jpg$/,
+      );
     });
   });
 });

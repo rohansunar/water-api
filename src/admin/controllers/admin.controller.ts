@@ -10,6 +10,7 @@ import {
   UseGuards,
   Logger,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminJwtAuthGuard } from '../guards/admin-jwt-auth.guard';
 import { AdminRolesGuard } from '../guards/admin-roles.guard';
 import { AdminRoles } from '../decorators/admin-roles.decorator';
@@ -62,9 +63,7 @@ import {
   ComplaintResponseDto,
   ComplaintListQueryDto,
 } from '../../complaint/dto/complaint.dto';
-import {
-  ProductResponseDto,
-} from '../../product/dto/product.dto';
+import { ProductResponseDto } from '../../product/dto/product.dto';
 import {
   AdminUpdateOrderStatusDto,
   AdminOrderQueryDto,
@@ -78,6 +77,8 @@ import {
 @Controller('admin')
 @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
 @AdminRoles('super_admin', 'finance_admin', 'support_admin')
+@ApiTags('Admin')
+@ApiBearerAuth()
 export class AdminController {
   private readonly logger = new Logger(AdminController.name);
 
@@ -89,6 +90,11 @@ export class AdminController {
   ) {}
 
   @Get('profile')
+  @ApiOperation({ summary: 'Get admin profile', description: 'Retrieve the current admin user profile information' })
+  @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getProfile(@AdminCurrentUser() user: any): Promise<any> {
     this.logger.log(`Admin ${user.id} accessing profile`);
     return {
@@ -103,6 +109,13 @@ export class AdminController {
 
   // Admin CRUD Endpoints
   @Get('admins/:id')
+  @ApiOperation({ summary: 'Get admin by ID', description: 'Retrieve a specific admin user by their ID' })
+  @ApiParam({ name: 'id', description: 'Admin ID', type: String })
+  @ApiResponse({ status: 200, description: 'Admin retrieved successfully', type: AdminResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Admin not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getAdminById(
     @Param('id') id: string,
     @AdminCurrentUser() user: any,
@@ -113,6 +126,13 @@ export class AdminController {
 
   @Post('admins')
   @AdminRoles('super_admin')
+  @ApiOperation({ summary: 'Create admin', description: 'Create a new admin user' })
+  @ApiBody({ type: CreateAdminDto })
+  @ApiResponse({ status: 201, description: 'Admin created successfully', type: AdminResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async createAdmin(
     @Body() createDto: CreateAdminDto,
     @AdminCurrentUser() user: any,
@@ -139,6 +159,15 @@ export class AdminController {
 
   @Put('admins/:id')
   @AdminRoles('super_admin')
+  @ApiOperation({ summary: 'Update admin', description: 'Update an existing admin user' })
+  @ApiParam({ name: 'id', description: 'Admin ID', type: String })
+  @ApiBody({ type: UpdateAdminDto })
+  @ApiResponse({ status: 200, description: 'Admin updated successfully', type: AdminResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Admin not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async updateAdmin(
     @Param('id') id: string,
     @Body() updateDto: UpdateAdminDto,
@@ -168,6 +197,13 @@ export class AdminController {
 
   @Delete('admins/:id')
   @AdminRoles('super_admin')
+  @ApiOperation({ summary: 'Delete admin', description: 'Delete an admin user' })
+  @ApiParam({ name: 'id', description: 'Admin ID', type: String })
+  @ApiResponse({ status: 200, description: 'Admin deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Admin not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async deleteAdmin(
     @Param('id') id: string,
     @AdminCurrentUser() user: any,
@@ -188,6 +224,11 @@ export class AdminController {
   }
 
   @Get('dashboard')
+  @ApiOperation({ summary: 'Get dashboard stats', description: 'Retrieve admin dashboard statistics' })
+  @ApiResponse({ status: 200, description: 'Dashboard stats retrieved successfully', type: Object })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getDashboardStats(
     @AdminCurrentUser() user: any,
   ): Promise<AdminDashboardStats> {
@@ -196,6 +237,12 @@ export class AdminController {
   }
 
   @Get('customers')
+  @ApiOperation({ summary: 'Get all customers', description: 'Retrieve a paginated list of all customers' })
+  @ApiQuery({ type: AdminPaginationQueryDto })
+  @ApiResponse({ status: 200, description: 'Customers retrieved successfully', type: AdminPaginatedResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getAllCustomers(
     @AdminCurrentUser() user: any,
     @Query() query: AdminPaginationQueryDto,
@@ -207,6 +254,13 @@ export class AdminController {
   }
 
   @Get('customers/:id')
+  @ApiOperation({ summary: 'Get customer by ID', description: 'Retrieve a specific customer by their ID' })
+  @ApiParam({ name: 'id', description: 'Customer ID', type: String })
+  @ApiResponse({ status: 200, description: 'Customer retrieved successfully', type: AdminUserListResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Customer not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getCustomerById(
     @Param('id') id: string,
     @AdminCurrentUser() user: any,
@@ -217,6 +271,13 @@ export class AdminController {
 
   @Post('customers')
   @AdminRoles('super_admin', 'support_admin')
+  @ApiOperation({ summary: 'Create customer', description: 'Create a new customer' })
+  @ApiBody({ type: CreateCustomerDto })
+  @ApiResponse({ status: 201, description: 'Customer created successfully', type: AdminUserListResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async createCustomer(
     @Body() createDto: CreateCustomerDto,
     @AdminCurrentUser() user: any,
@@ -244,6 +305,15 @@ export class AdminController {
 
   @Put('customers/:id')
   @AdminRoles('super_admin', 'support_admin')
+  @ApiOperation({ summary: 'Update customer', description: 'Update an existing customer' })
+  @ApiParam({ name: 'id', description: 'Customer ID', type: String })
+  @ApiBody({ type: UpdateCustomerDto })
+  @ApiResponse({ status: 200, description: 'Customer updated successfully', type: AdminUserListResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Customer not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async updateCustomer(
     @Param('id') id: string,
     @Body() updateDto: UpdateCustomerDto,
@@ -273,6 +343,13 @@ export class AdminController {
 
   @Delete('customers/:id')
   @AdminRoles('super_admin')
+  @ApiOperation({ summary: 'Delete customer', description: 'Delete a customer' })
+  @ApiParam({ name: 'id', description: 'Customer ID', type: String })
+  @ApiResponse({ status: 200, description: 'Customer deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Customer not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async deleteCustomer(
     @Param('id') id: string,
     @AdminCurrentUser() user: any,
@@ -293,6 +370,12 @@ export class AdminController {
   }
 
   @Get('vendors')
+  @ApiOperation({ summary: 'Get all vendors', description: 'Retrieve a paginated list of all vendors' })
+  @ApiQuery({ type: AdminPaginationQueryDto })
+  @ApiResponse({ status: 200, description: 'Vendors retrieved successfully', type: AdminPaginatedResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getAllVendors(
     @AdminCurrentUser() user: any,
     @Query() query: AdminPaginationQueryDto,
@@ -304,6 +387,13 @@ export class AdminController {
   }
 
   @Get('vendors/:id')
+  @ApiOperation({ summary: 'Get vendor by ID', description: 'Retrieve a specific vendor by their ID' })
+  @ApiParam({ name: 'id', description: 'Vendor ID', type: String })
+  @ApiResponse({ status: 200, description: 'Vendor retrieved successfully', type: VendorResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Vendor not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getVendorById(
     @Param('id') id: string,
     @AdminCurrentUser() user: any,
@@ -314,6 +404,13 @@ export class AdminController {
 
   @Post('vendors')
   @AdminRoles('super_admin', 'support_admin')
+  @ApiOperation({ summary: 'Create vendor', description: 'Create a new vendor' })
+  @ApiBody({ type: CreateVendorDto })
+  @ApiResponse({ status: 201, description: 'Vendor created successfully', type: VendorResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async createVendor(
     @Body() createDto: CreateVendorDto,
     @AdminCurrentUser() user: any,
@@ -342,6 +439,15 @@ export class AdminController {
 
   @Put('vendors/:id')
   @AdminRoles('super_admin', 'support_admin')
+  @ApiOperation({ summary: 'Update vendor', description: 'Update an existing vendor' })
+  @ApiParam({ name: 'id', description: 'Vendor ID', type: String })
+  @ApiBody({ type: UpdateVendorDto })
+  @ApiResponse({ status: 200, description: 'Vendor updated successfully', type: VendorResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Vendor not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async updateVendor(
     @Param('id') id: string,
     @Body() updateDto: UpdateVendorDto,
@@ -371,6 +477,13 @@ export class AdminController {
 
   @Delete('vendors/:id')
   @AdminRoles('super_admin')
+  @ApiOperation({ summary: 'Delete vendor', description: 'Delete a vendor' })
+  @ApiParam({ name: 'id', description: 'Vendor ID', type: String })
+  @ApiResponse({ status: 200, description: 'Vendor deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Vendor not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async deleteVendor(
     @Param('id') id: string,
     @AdminCurrentUser() user: any,
@@ -391,6 +504,12 @@ export class AdminController {
   }
 
   @Get('riders')
+  @ApiOperation({ summary: 'Get all riders', description: 'Retrieve a paginated list of all riders' })
+  @ApiQuery({ type: AdminPaginationQueryDto })
+  @ApiResponse({ status: 200, description: 'Riders retrieved successfully', type: AdminPaginatedResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getAllRiders(
     @AdminCurrentUser() user: any,
     @Query() query: AdminPaginationQueryDto,
@@ -402,6 +521,13 @@ export class AdminController {
   }
 
   @Get('riders/:id')
+  @ApiOperation({ summary: 'Get rider by ID', description: 'Retrieve a specific rider by their ID' })
+  @ApiParam({ name: 'id', description: 'Rider ID', type: String })
+  @ApiResponse({ status: 200, description: 'Rider retrieved successfully', type: RiderResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Rider not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getRiderById(
     @Param('id') id: string,
     @AdminCurrentUser() user: any,
@@ -412,6 +538,13 @@ export class AdminController {
 
   @Post('riders')
   @AdminRoles('super_admin', 'support_admin')
+  @ApiOperation({ summary: 'Create rider', description: 'Create a new rider' })
+  @ApiBody({ type: CreateRiderDto })
+  @ApiResponse({ status: 201, description: 'Rider created successfully', type: RiderResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async createRider(
     @Body() createDto: CreateRiderDto,
     @AdminCurrentUser() user: any,
@@ -441,6 +574,15 @@ export class AdminController {
 
   @Put('riders/:id')
   @AdminRoles('super_admin', 'support_admin')
+  @ApiOperation({ summary: 'Update rider', description: 'Update an existing rider' })
+  @ApiParam({ name: 'id', description: 'Rider ID', type: String })
+  @ApiBody({ type: UpdateRiderDto })
+  @ApiResponse({ status: 200, description: 'Rider updated successfully', type: RiderResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Rider not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async updateRider(
     @Param('id') id: string,
     @Body() updateDto: UpdateRiderDto,
@@ -470,6 +612,13 @@ export class AdminController {
 
   @Delete('riders/:id')
   @AdminRoles('super_admin')
+  @ApiOperation({ summary: 'Delete rider', description: 'Delete a rider' })
+  @ApiParam({ name: 'id', description: 'Rider ID', type: String })
+  @ApiResponse({ status: 200, description: 'Rider deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Rider not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async deleteRider(
     @Param('id') id: string,
     @AdminCurrentUser() user: any,
@@ -490,6 +639,11 @@ export class AdminController {
   }
 
   @Get('vendors/pending-approvals')
+  @ApiOperation({ summary: 'Get pending vendor approvals', description: 'Retrieve list of vendors pending approval' })
+  @ApiResponse({ status: 200, description: 'Pending approvals retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getPendingVendorApprovals(
     @AdminCurrentUser() user: any,
   ): Promise<VendorApprovalDto[]> {
@@ -498,6 +652,13 @@ export class AdminController {
   }
 
   @Put('vendors/:vendorId/approve')
+  @ApiOperation({ summary: 'Approve vendor', description: 'Approve a pending vendor' })
+  @ApiParam({ name: 'vendorId', description: 'Vendor ID', type: String })
+  @ApiResponse({ status: 200, description: 'Vendor approved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Vendor not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async approveVendor(
     @Param('vendorId') vendorId: string,
     @AdminCurrentUser() user: any,
@@ -507,6 +668,15 @@ export class AdminController {
   }
 
   @Put('vendors/:vendorId/reject')
+  @ApiOperation({ summary: 'Reject vendor', description: 'Reject a pending vendor with reason' })
+  @ApiParam({ name: 'vendorId', description: 'Vendor ID', type: String })
+  @ApiBody({ schema: { type: 'object', properties: { reason: { type: 'string' } } } })
+  @ApiResponse({ status: 200, description: 'Vendor rejected successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Vendor not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async rejectVendor(
     @Param('vendorId') vendorId: string,
     @Body() rejectDto: { reason: string },
@@ -519,6 +689,13 @@ export class AdminController {
   }
 
   @Get('monthly-payment-monitoring')
+  @ApiOperation({ summary: 'Get monthly payment monitoring', description: 'Retrieve monthly payment monitoring data' })
+  @ApiQuery({ name: 'month', required: false, type: String })
+  @ApiQuery({ name: 'year', required: false, type: String })
+  @ApiResponse({ status: 200, description: 'Payment monitoring data retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getMonthlyPaymentMonitoring(
     @AdminCurrentUser() user: any,
     @Query('month') month?: string,
@@ -534,6 +711,13 @@ export class AdminController {
   }
 
   @Post('reports/pending-dues')
+  @ApiOperation({ summary: 'Export pending dues report', description: 'Generate and export pending dues report' })
+  @ApiBody({ schema: { type: 'object', properties: { month: { type: 'number' }, year: { type: 'number' } } } })
+  @ApiResponse({ status: 200, description: 'Report generated successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async exportPendingDuesReport(
     @Body() reportDto: { month: number; year: number },
     @AdminCurrentUser() user: any,
@@ -549,6 +733,12 @@ export class AdminController {
 
   // Product Moderation Endpoints
   @Get('products/moderation')
+  @ApiOperation({ summary: 'Get products for moderation', description: 'Retrieve products pending moderation' })
+  @ApiQuery({ type: ProductModerationListQueryDto })
+  @ApiResponse({ status: 200, description: 'Products retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getProductsForModeration(
     @AdminCurrentUser() user: any,
     @Query() query: ProductModerationListQueryDto,
@@ -560,6 +750,11 @@ export class AdminController {
   }
 
   @Get('products/moderation/stats')
+  @ApiOperation({ summary: 'Get moderation stats', description: 'Retrieve product moderation statistics' })
+  @ApiResponse({ status: 200, description: 'Stats retrieved successfully', type: ProductModerationStatsDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getModerationStats(
     @AdminCurrentUser() user: any,
   ): Promise<ProductModerationStatsDto> {
@@ -568,6 +763,15 @@ export class AdminController {
   }
 
   @Put('products/:productId/approve')
+  @ApiOperation({ summary: 'Approve product', description: 'Approve a product for moderation' })
+  @ApiParam({ name: 'productId', description: 'Product ID', type: String })
+  @ApiBody({ type: ApproveProductDto })
+  @ApiResponse({ status: 200, description: 'Product approved successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async approveProduct(
     @Param('productId') productId: string,
     @Body() dto: ApproveProductDto,
@@ -582,6 +786,15 @@ export class AdminController {
   }
 
   @Put('products/:productId/reject')
+  @ApiOperation({ summary: 'Reject product', description: 'Reject a product for moderation' })
+  @ApiParam({ name: 'productId', description: 'Product ID', type: String })
+  @ApiBody({ type: RejectProductDto })
+  @ApiResponse({ status: 200, description: 'Product rejected successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async rejectProduct(
     @Param('productId') productId: string,
     @Body() dto: RejectProductDto,
@@ -594,6 +807,13 @@ export class AdminController {
   }
 
   @Post('products/bulk-moderate')
+  @ApiOperation({ summary: 'Bulk moderate products', description: 'Perform bulk moderation on multiple products' })
+  @ApiBody({ type: BulkModerationDto })
+  @ApiResponse({ status: 200, description: 'Bulk moderation completed successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async bulkModerateProducts(
     @Body() dto: BulkModerationDto,
     @AdminCurrentUser() user: any,
@@ -606,6 +826,12 @@ export class AdminController {
 
   // Order Management Endpoints
   @Get('orders')
+  @ApiOperation({ summary: 'Get orders', description: 'Retrieve a paginated list of orders' })
+  @ApiQuery({ type: AdminOrderQueryDto })
+  @ApiResponse({ status: 200, description: 'Orders retrieved successfully', type: AdminPaginatedResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getOrders(
     @AdminCurrentUser() user: any,
     @Query() query: AdminOrderQueryDto,
@@ -617,6 +843,12 @@ export class AdminController {
   }
 
   @Get('orders/pending')
+  @ApiOperation({ summary: 'Get pending orders', description: 'Retrieve a paginated list of pending orders' })
+  @ApiQuery({ type: AdminOrderQueryDto })
+  @ApiResponse({ status: 200, description: 'Pending orders retrieved successfully', type: AdminPaginatedResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getPendingOrders(
     @AdminCurrentUser() user: any,
     @Query() query: AdminOrderQueryDto,
@@ -628,6 +860,12 @@ export class AdminController {
   }
 
   @Get('orders/completed')
+  @ApiOperation({ summary: 'Get completed orders', description: 'Retrieve a paginated list of completed orders' })
+  @ApiQuery({ type: AdminOrderQueryDto })
+  @ApiResponse({ status: 200, description: 'Completed orders retrieved successfully', type: AdminPaginatedResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getCompletedOrders(
     @AdminCurrentUser() user: any,
     @Query() query: AdminOrderQueryDto,
@@ -639,6 +877,12 @@ export class AdminController {
   }
 
   @Get('orders/cancelled')
+  @ApiOperation({ summary: 'Get cancelled orders', description: 'Retrieve a paginated list of cancelled orders' })
+  @ApiQuery({ type: AdminOrderQueryDto })
+  @ApiResponse({ status: 200, description: 'Cancelled orders retrieved successfully', type: AdminPaginatedResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getCancelledOrders(
     @AdminCurrentUser() user: any,
     @Query() query: AdminOrderQueryDto,
@@ -650,6 +894,15 @@ export class AdminController {
   }
 
   @Put('orders/:orderId/status')
+  @ApiOperation({ summary: 'Update order status', description: 'Update the status of an order' })
+  @ApiParam({ name: 'orderId', description: 'Order ID', type: String })
+  @ApiBody({ type: AdminUpdateOrderStatusDto })
+  @ApiResponse({ status: 200, description: 'Order status updated successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async updateOrderStatus(
     @Param('orderId') orderId: string,
     @Body() dto: AdminUpdateOrderStatusDto,
@@ -664,6 +917,12 @@ export class AdminController {
 
   // Financial Management Endpoints
   @Get('transactions')
+  @ApiOperation({ summary: 'Get transactions', description: 'Retrieve a paginated list of transactions' })
+  @ApiQuery({ type: AdminTransactionListQueryDto })
+  @ApiResponse({ status: 200, description: 'Transactions retrieved successfully', type: AdminPaginatedResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getTransactions(
     @AdminCurrentUser() user: any,
     @Query() query: AdminTransactionListQueryDto,
@@ -675,6 +934,12 @@ export class AdminController {
   }
 
   @Get('payouts')
+  @ApiOperation({ summary: 'Get payouts', description: 'Retrieve a paginated list of payouts' })
+  @ApiQuery({ type: AdminTransactionListQueryDto })
+  @ApiResponse({ status: 200, description: 'Payouts retrieved successfully', type: AdminPaginatedResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getPayouts(
     @AdminCurrentUser() user: any,
     @Query() query: AdminTransactionListQueryDto,
@@ -686,6 +951,12 @@ export class AdminController {
   }
 
   @Get('commissions')
+  @ApiOperation({ summary: 'Get commissions', description: 'Retrieve a paginated list of commissions' })
+  @ApiQuery({ type: AdminTransactionListQueryDto })
+  @ApiResponse({ status: 200, description: 'Commissions retrieved successfully', type: AdminPaginatedResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getCommissions(
     @AdminCurrentUser() user: any,
     @Query() query: AdminTransactionListQueryDto,
@@ -698,6 +969,13 @@ export class AdminController {
 
   // Refund Management Endpoints
   @Post('refunds')
+  @ApiOperation({ summary: 'Create refund', description: 'Create a new refund request' })
+  @ApiBody({ type: CreateRefundDto })
+  @ApiResponse({ status: 201, description: 'Refund created successfully', type: RefundResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async createRefund(
     @Body() dto: CreateRefundDto,
     @AdminCurrentUser() user: any,
@@ -709,6 +987,12 @@ export class AdminController {
   }
 
   @Get('refunds')
+  @ApiOperation({ summary: 'Get refunds', description: 'Retrieve a list of refunds' })
+  @ApiQuery({ type: RefundListQueryDto })
+  @ApiResponse({ status: 200, description: 'Refunds retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getRefunds(
     @AdminCurrentUser() user: any,
     @Query() query: RefundListQueryDto,
@@ -718,6 +1002,15 @@ export class AdminController {
   }
 
   @Put('refunds/:refundId/approve')
+  @ApiOperation({ summary: 'Approve refund', description: 'Approve a refund request' })
+  @ApiParam({ name: 'refundId', description: 'Refund ID', type: String })
+  @ApiBody({ type: ApproveRefundDto })
+  @ApiResponse({ status: 200, description: 'Refund approved successfully', type: RefundResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Refund not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async approveRefund(
     @Param('refundId') refundId: string,
     @Body() dto: ApproveRefundDto,
@@ -732,6 +1025,15 @@ export class AdminController {
   }
 
   @Put('refunds/:refundId/reject')
+  @ApiOperation({ summary: 'Reject refund', description: 'Reject a refund request' })
+  @ApiParam({ name: 'refundId', description: 'Refund ID', type: String })
+  @ApiBody({ type: RejectRefundDto })
+  @ApiResponse({ status: 200, description: 'Refund rejected successfully', type: RefundResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Refund not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async rejectRefund(
     @Param('refundId') refundId: string,
     @Body() dto: RejectRefundDto,
@@ -746,6 +1048,15 @@ export class AdminController {
   }
 
   @Put('refunds/:refundId/process')
+  @ApiOperation({ summary: 'Process refund', description: 'Process a refund request' })
+  @ApiParam({ name: 'refundId', description: 'Refund ID', type: String })
+  @ApiBody({ type: ProcessRefundDto })
+  @ApiResponse({ status: 200, description: 'Refund processed successfully', type: RefundResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Refund not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async processRefund(
     @Param('refundId') refundId: string,
     @Body() dto: ProcessRefundDto,
@@ -761,6 +1072,12 @@ export class AdminController {
 
   // Complaint Management Endpoints
   @Get('complaints')
+  @ApiOperation({ summary: 'Get complaints', description: 'Retrieve a paginated list of complaints' })
+  @ApiQuery({ type: ComplaintListQueryDto })
+  @ApiResponse({ status: 200, description: 'Complaints retrieved successfully', type: AdminPaginatedResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getComplaints(
     @AdminCurrentUser() user: any,
     @Query() query: ComplaintListQueryDto,
@@ -773,6 +1090,12 @@ export class AdminController {
 
   // Content Management Endpoints
   @Get('products')
+  @ApiOperation({ summary: 'Get products', description: 'Retrieve a paginated list of products' })
+  @ApiQuery({ type: Object })
+  @ApiResponse({ status: 200, description: 'Products retrieved successfully', type: AdminPaginatedResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getProducts(
     @AdminCurrentUser() user: any,
     @Query() query: any,
@@ -784,6 +1107,12 @@ export class AdminController {
   }
 
   @Get('reviews')
+  @ApiOperation({ summary: 'Get reviews', description: 'Retrieve a paginated list of reviews' })
+  @ApiQuery({ type: AdminPaginationQueryDto })
+  @ApiResponse({ status: 200, description: 'Reviews retrieved successfully', type: AdminPaginatedResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getReviews(
     @AdminCurrentUser() user: any,
     @Query() query: AdminPaginationQueryDto,
@@ -795,6 +1124,12 @@ export class AdminController {
   }
 
   @Get('reports')
+  @ApiOperation({ summary: 'Get reports', description: 'Retrieve a paginated list of reports' })
+  @ApiQuery({ type: AdminPaginationQueryDto })
+  @ApiResponse({ status: 200, description: 'Reports retrieved successfully', type: AdminPaginatedResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getReports(
     @AdminCurrentUser() user: any,
     @Query() query: AdminPaginationQueryDto,

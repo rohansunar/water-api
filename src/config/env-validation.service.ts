@@ -29,69 +29,69 @@ export class EnvValidationService {
 
   // Mandatory environment variables required for application startup
   private readonly mandatoryVars = [
-    'DATABASE_URL',           // PostgreSQL database connection string
-    'JWT_SECRET',             // Secret key for JWT token signing
-    'JWT_ADMIN_SECRET',       // Secret key for admin JWT token signing
-    'SUPABASE_URL',           // Supabase project URL (e.g., https://your-project.supabase.co)
-    'SUPABASE_ANON_KEY',      // Supabase anonymous/public API key for client access
+    'DATABASE_URL', // PostgreSQL database connection string
+    'JWT_SECRET', // Secret key for JWT token signing
+    'JWT_ADMIN_SECRET', // Secret key for admin JWT token signing
+    'SUPABASE_URL', // Supabase project URL (e.g., https://your-project.supabase.co)
+    'SUPABASE_ANON_KEY', // Supabase anonymous/public API key for client access
   ];
 
   // Optional environment variables with default values
   private readonly optionalVars = [
-    'PORT',                      // Server port (default: 3000)
-    'FRONTEND_URL',              // Frontend application URL for CORS
-    'LOG_LEVEL',                 // Logging level: error, warn, info, debug, verbose
-    'JWT_EXPIRES_IN',            // JWT token expiration time
-    'NODE_ENV',                  // Environment: development, production, test
-    'LOG_DIR',                   // Directory for log file storage
-    'THROTTLE_TTL',              // Rate limiting time window in seconds
-    'THROTTLE_LIMIT',            // Maximum requests per time window
-    'SUPABASE_STORAGE_BUCKET',   // Supabase Storage bucket name (default: 'images')
-    'SUPABASE_PUBLIC_ACCESS',    // Enable public access to storage files (default: true)
+    'PORT', // Server port (default: 3000)
+    'FRONTEND_URL', // Frontend application URL for CORS
+    'LOG_LEVEL', // Logging level: error, warn, info, debug, verbose
+    'JWT_EXPIRES_IN', // JWT token expiration time
+    'NODE_ENV', // Environment: development, production, test
+    'LOG_DIR', // Directory for log file storage
+    'THROTTLE_TTL', // Rate limiting time window in seconds
+    'THROTTLE_LIMIT', // Maximum requests per time window
+    'SUPABASE_STORAGE_BUCKET', // Supabase Storage bucket name (default: 'images')
+    'SUPABASE_PUBLIC_ACCESS', // Enable public access to storage files (default: true)
   ];
 
   // Joi validation schema for environment variables
   private readonly schema = Joi.object({
     // Database Configuration
-    DATABASE_URL: Joi.string().uri().required(),  // PostgreSQL connection string
+    DATABASE_URL: Joi.string().uri().required(), // PostgreSQL connection string
 
     // JWT Authentication
-    JWT_SECRET: Joi.string().min(1).required(),        // Main JWT signing secret
-    JWT_ADMIN_SECRET: Joi.string().min(1).required(),  // Admin JWT signing secret
+    JWT_SECRET: Joi.string().min(1).required(), // Main JWT signing secret
+    JWT_ADMIN_SECRET: Joi.string().min(1).required(), // Admin JWT signing secret
 
     // Supabase Storage Configuration
-    SUPABASE_URL: Joi.string().uri().required(),       // Supabase project URL (https://xxx.supabase.co)
+    SUPABASE_URL: Joi.string().uri().required(), // Supabase project URL (https://xxx.supabase.co)
     SUPABASE_ANON_KEY: Joi.string().min(1).required(), // Public anonymous key for client-side access
 
     // Server Configuration
     PORT: Joi.number().integer().min(1).max(65535).optional(), // Server listening port
 
     // CORS and Frontend
-    FRONTEND_URL: Joi.string().uri().optional(),       // Frontend URL for CORS configuration
+    FRONTEND_URL: Joi.string().uri().optional(), // Frontend URL for CORS configuration
 
     // Logging Configuration
     LOG_LEVEL: Joi.string()
       .valid('error', 'warn', 'info', 'debug', 'verbose')
-      .optional(),                                      // Winston logging level
+      .optional(), // Winston logging level
 
     // JWT Token Configuration
-    JWT_EXPIRES_IN: Joi.string().optional(),           // Token expiration (e.g., '7d', '24h')
+    JWT_EXPIRES_IN: Joi.string().optional(), // Token expiration (e.g., '7d', '24h')
 
     // Environment
     NODE_ENV: Joi.string()
       .valid('development', 'production', 'test')
-      .optional(),                                      // Node.js environment
+      .optional(), // Node.js environment
 
     // File System
-    LOG_DIR: Joi.string().optional(),                   // Directory for log files
+    LOG_DIR: Joi.string().optional(), // Directory for log files
 
     // Rate Limiting
-    THROTTLE_TTL: Joi.number().integer().min(1).optional(),    // Rate limit window (seconds)
-    THROTTLE_LIMIT: Joi.number().integer().min(1).optional(),   // Max requests per window
+    THROTTLE_TTL: Joi.number().integer().min(1).optional(), // Rate limit window (seconds)
+    THROTTLE_LIMIT: Joi.number().integer().min(1).optional(), // Max requests per window
 
     // Supabase Storage Settings
     SUPABASE_STORAGE_BUCKET: Joi.string().optional().default('images'), // Storage bucket name
-    SUPABASE_PUBLIC_ACCESS: Joi.boolean().optional().default(true),     // Public file access
+    SUPABASE_PUBLIC_ACCESS: Joi.boolean().optional().default(true), // Public file access
   }).options({ allowUnknown: true });
 
   validate(): void {

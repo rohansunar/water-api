@@ -14,7 +14,6 @@ import {
   ProductSize,
 } from '../../product/interfaces/product.interface';
 
-
 export class CreateProductDto {
   @ApiProperty({
     description: 'Store ID where the product is available',
@@ -264,7 +263,6 @@ export class ProductResponseDto {
   updated_at: Date;
 }
 
-
 export class ProductMappingResponseDto {
   @ApiProperty({
     description: 'Product mapping unique identifier',
@@ -332,7 +330,6 @@ export class ProductMappingResponseDto {
   })
   updated_at: Date;
 }
-
 
 export class UploadProductImagesDto {
   @ApiProperty({

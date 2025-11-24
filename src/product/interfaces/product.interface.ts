@@ -39,4 +39,3 @@ export enum ProductSize {
   LARGE = '25L',
   EXTRA_LARGE = '30L',
 }
-

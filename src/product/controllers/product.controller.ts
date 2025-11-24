@@ -22,6 +22,8 @@ import {
   ApiResponse,
   ApiBody,
   ApiQuery,
+  ApiParam,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ProductService } from '../services/product.service';
 import { AdminVendorGuard } from '../../auth/guards/admin-vendor.guard';
@@ -44,14 +46,114 @@ import {
 @ApiTags('Products')
 @Controller('products')
 @UseGuards(AdminVendorGuard)
+@ApiBearerAuth()
 export class ProductController {
   private readonly logger = new Logger(ProductController.name);
 
   constructor(private readonly productService: ProductService) {}
 
-
   @Public()
   @Get('search')
+  @ApiOperation({
+    summary: 'Search products',
+    description: 'Search for available products with optional filters for query, category, and location. Supports pagination.',
+  })
+  @ApiQuery({
+    name: 'query',
+    required: false,
+    type: String,
+    description: 'Search query to match product name or description',
+    example: 'water jar',
+  })
+  @ApiQuery({
+    name: 'pincode',
+    required: false,
+    type: String,
+    description: 'Filter by delivery pincode (not yet implemented)',
+    example: '110001',
+  })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    type: String,
+    description: 'Filter by product category',
+    example: 'water_jar',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number for pagination (default: 1)',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of results per page (default: 20)',
+    example: 20,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Products retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        products: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: '123' },
+              name: { type: 'string', example: 'Premium Water Jar' },
+              category: { type: 'string', example: 'water_jar' },
+              subcategory: { type: 'string', example: '20L' },
+              price: { type: 'number', example: 1500.00 },
+              store: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', example: '456' },
+                  name: { type: 'string', example: 'ABC Store' },
+                  rating: { type: 'number', example: 4.5 },
+                  distance_km: { type: 'number', example: 2.3 },
+                },
+              },
+              is_available: { type: 'boolean', example: true },
+              stock_quantity: { type: 'number', example: 50 },
+            },
+          },
+        },
+        meta: {
+          type: 'object',
+          properties: {
+            pagination: {
+              type: 'object',
+              properties: {
+                page: { type: 'number', example: 1 },
+                limit: { type: 'number', example: 20 },
+                total: { type: 'number', example: 150 },
+                total_pages: { type: 'number', example: 8 },
+                has_next: { type: 'boolean', example: true },
+                has_prev: { type: 'boolean', example: false },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid query parameters',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'string', example: 'Invalid query parameters' },
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
+  })
   async searchProducts(@Query() searchDto: any): Promise<any> {
     this.logger.log(
       `Searching products with query: ${JSON.stringify(searchDto)}`,
@@ -218,9 +320,9 @@ export class ProductController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get product by ID',
-    description:
-      'Retrieve a specific product by its ID based on user role',
+    description: 'Retrieve a specific product by its ID based on user role',
   })
+  @ApiParam({ name: 'id', description: 'Product ID', type: String })
   @ApiResponse({
     status: 200,
     description: 'Product retrieved successfully',
@@ -268,6 +370,7 @@ export class ProductController {
     summary: 'Update product',
     description: 'Update a specific product based on user role',
   })
+  @ApiParam({ name: 'id', description: 'Product ID', type: String })
   @ApiBody({ type: UpdateProductDto })
   @ApiResponse({
     status: 200,
@@ -323,11 +426,7 @@ export class ProductController {
     this.logger.log(
       `Product update attempt for user: ${currentUser.id}, product ID: ${productId}`,
     );
-    return this.productService.updateProduct(
-      user,
-      productId,
-      updateProductDto,
-    );
+    return this.productService.updateProduct(user, productId, updateProductDto);
   }
 
   @Delete(':id')
@@ -336,6 +435,7 @@ export class ProductController {
     summary: 'Delete product (soft delete)',
     description: 'Soft delete a specific product based on user role',
   })
+  @ApiParam({ name: 'id', description: 'Product ID', type: String })
   @ApiResponse({
     status: 200,
     description: 'Product deleted successfully',
@@ -389,6 +489,7 @@ export class ProductController {
     summary: 'Update product mapping',
     description: 'Update a specific product mapping',
   })
+  @ApiParam({ name: 'id', description: 'Mapping ID', type: String })
   @ApiBody({ type: UpdateProductMappingDto })
   @ApiResponse({
     status: 200,
@@ -431,6 +532,7 @@ export class ProductController {
     description:
       'Upload multiple images for a product (max 10 images, appends to existing images)',
   })
+  @ApiParam({ name: 'id', description: 'Product ID', type: String })
   @ApiResponse({
     status: 201,
     description: 'Images uploaded successfully',
@@ -439,10 +541,26 @@ export class ProductController {
   @ApiResponse({
     status: 400,
     description: 'Invalid file format, size, or validation error',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'string', example: 'Invalid image file: File size too large' },
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
   })
   @ApiResponse({
     status: 404,
     description: 'Product not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string', example: 'Product not found' },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
   })
   async uploadProductImages(
     @Param('id') productId: string,
@@ -477,11 +595,7 @@ export class ProductController {
       `Product images upload attempt for user: ${currentUser.id}, product ID: ${productId}, files count: ${files.length}`,
     );
 
-    return this.productService.uploadProductImages(
-      user,
-      productId,
-      files,
-    );
+    return this.productService.uploadProductImages(user, productId, files);
   }
 
   @Delete(':id/images')
@@ -490,6 +604,7 @@ export class ProductController {
     summary: 'Delete product image',
     description: 'Delete a specific image from a product',
   })
+  @ApiParam({ name: 'id', description: 'Product ID', type: String })
   @ApiBody({ type: DeleteProductImageDto })
   @ApiResponse({
     status: 200,
@@ -505,6 +620,14 @@ export class ProductController {
   @ApiResponse({
     status: 404,
     description: 'Product or image not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string', example: 'Product not found' },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
   })
   async deleteProductImage(
     @Param('id') productId: string,
@@ -530,6 +653,7 @@ export class ProductController {
     description:
       'Reorder the images for a product by providing the new order of image IDs',
   })
+  @ApiParam({ name: 'id', description: 'Product ID', type: String })
   @ApiBody({ type: ReorderProductImagesDto })
   @ApiResponse({
     status: 200,
@@ -548,10 +672,26 @@ export class ProductController {
   @ApiResponse({
     status: 404,
     description: 'Product not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string', example: 'Product not found' },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
     description: 'Invalid image IDs or order',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'string', example: 'Invalid image ID format: image_abc' },
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
   })
   async reorderProductImages(
     @Param('id') productId: string,

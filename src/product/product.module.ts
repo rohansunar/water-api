@@ -9,7 +9,13 @@ import { S3Service } from '../common/services/s3.service';
 @Module({
   imports: [],
   controllers: [ProductController],
-  providers: [ProductService, ProductModerationService, VendorJwtAuthGuard, ImageProcessingService, S3Service],
+  providers: [
+    ProductService,
+    ProductModerationService,
+    VendorJwtAuthGuard,
+    ImageProcessingService,
+    S3Service,
+  ],
   exports: [ProductService, ProductModerationService, VendorJwtAuthGuard],
 })
 export class ProductModule {}

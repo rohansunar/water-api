@@ -11,11 +11,13 @@ import { S3Service } from '../common/services/s3.service';
 import { ImageProcessingService } from '../common/services/image-processing.service';
 
 @Module({
-  imports: [VendorAuthModule, VendorOrderModule, VendorPaymentModule, ProductModule],
-  controllers: [
-    VendorController,
-    VendorStoreController,
+  imports: [
+    VendorAuthModule,
+    VendorOrderModule,
+    VendorPaymentModule,
+    ProductModule,
   ],
+  controllers: [VendorController, VendorStoreController],
   providers: [
     VendorService,
     VendorStoreService,

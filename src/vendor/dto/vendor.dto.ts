@@ -525,7 +525,6 @@ export class StoreResponseDto {
   updated_at: Date;
 }
 
-
 // Store Hours DTOs
 export class CreateStoreHoursDto {
   @ApiProperty({
@@ -671,7 +670,6 @@ export class UpdateStoreStatusDto {
   @IsString()
   reason?: string;
 }
-
 
 // Analytics DTOs
 export class SalesAnalyticsDto {
@@ -1574,5 +1572,3 @@ export class StoreAddressResponseDto {
   })
   updatedAt: Date;
 }
-
-

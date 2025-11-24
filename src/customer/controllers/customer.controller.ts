@@ -16,6 +16,9 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiBody,
+  ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { CustomerService } from '../services/customer.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -114,6 +117,7 @@ export class CustomerController {
     summary: 'Update monthly payment mode',
     description: 'Enable or disable monthly payment mode for the customer',
   })
+  @ApiBody({ schema: { type: 'object', properties: { monthlyPaymentMode: { type: 'boolean' } } } })
   @ApiResponse({
     status: 200,
     description: 'Monthly payment mode updated successfully',
@@ -306,6 +310,7 @@ export class CustomerController {
     summary: 'Update address',
     description: 'Update an existing address for the authenticated customer',
   })
+  @ApiParam({ name: 'id', description: 'Address ID', type: String })
   @ApiResponse({
     status: 200,
     description: 'Address updated successfully',
@@ -368,6 +373,7 @@ export class CustomerController {
     summary: 'Delete address',
     description: 'Delete an existing address for the authenticated customer',
   })
+  @ApiParam({ name: 'id', description: 'Address ID', type: String })
   @ApiResponse({
     status: 200,
     description: 'Address deleted successfully',
@@ -433,6 +439,7 @@ export class CustomerController {
     description:
       'Set a specific address as the default for the authenticated customer',
   })
+  @ApiParam({ name: 'id', description: 'Address ID', type: String })
   @ApiResponse({
     status: 200,
     description: 'Default address set successfully',
@@ -503,6 +510,7 @@ export class CustomerController {
     description:
       'Retrieve paginated order history for the authenticated customer',
   })
+  @ApiQuery({ type: PaginationQueryDto })
   @ApiResponse({
     status: 200,
     description: 'Order history retrieved successfully',
@@ -555,6 +563,7 @@ export class CustomerController {
     summary: 'Get specific order details',
     description: 'Retrieve detailed information for a specific order',
   })
+  @ApiParam({ name: 'id', description: 'Order ID', type: String })
   @ApiResponse({
     status: 200,
     description: 'Order details retrieved successfully',
@@ -610,6 +619,8 @@ export class CustomerController {
     summary: 'Cancel order',
     description: 'Cancel a specific order for the authenticated customer',
   })
+  @ApiParam({ name: 'id', description: 'Order ID', type: String })
+  @ApiBody({ schema: { type: 'object', properties: { reason: { type: 'string' } } } })
   @ApiResponse({
     status: 200,
     description: 'Order cancelled successfully',
@@ -671,6 +682,8 @@ export class CustomerController {
     summary: 'Request refund',
     description: 'Request a refund for a specific order',
   })
+  @ApiParam({ name: 'id', description: 'Order ID', type: String })
+  @ApiBody({ schema: { type: 'object', properties: { reason: { type: 'string' }, description: { type: 'string' } } } })
   @ApiResponse({
     status: 200,
     description: 'Refund request submitted successfully',
@@ -783,6 +796,7 @@ export class CustomerController {
     summary: 'Subscribe to product',
     description: 'Create a new subscription for a product',
   })
+  @ApiBody({ schema: { type: 'object' } })
   @ApiResponse({
     status: 201,
     description: 'Subscription created successfully',
@@ -838,6 +852,8 @@ export class CustomerController {
     summary: 'Update subscription',
     description: 'Update an existing subscription',
   })
+  @ApiParam({ name: 'id', description: 'Subscription ID', type: String })
+  @ApiBody({ schema: { type: 'object' } })
   @ApiResponse({
     status: 200,
     description: 'Subscription updated successfully',
@@ -899,6 +915,8 @@ export class CustomerController {
     summary: 'Cancel subscription',
     description: 'Cancel an existing subscription',
   })
+  @ApiParam({ name: 'id', description: 'Subscription ID', type: String })
+  @ApiBody({ schema: { type: 'object', properties: { reason: { type: 'string' } } } })
   @ApiResponse({
     status: 200,
     description: 'Subscription cancelled successfully',
@@ -961,6 +979,7 @@ export class CustomerController {
     summary: 'Update customer profile',
     description: 'Update the profile information of the authenticated customer',
   })
+  @ApiBody({ schema: { type: 'object' } })
   @ApiResponse({
     status: 200,
     description: 'Profile updated successfully',
@@ -1021,6 +1040,7 @@ export class CustomerController {
     summary: 'Update customer preferences',
     description: 'Update the preferences of the authenticated customer',
   })
+  @ApiBody({ schema: { type: 'object' } })
   @ApiResponse({
     status: 200,
     description: 'Preferences updated successfully',

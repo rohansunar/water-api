@@ -52,12 +52,20 @@ export class S3Service {
     const supabaseKey = this.configService.get<string>('SUPABASE_ANON_KEY');
 
     if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase URL and ANON KEY must be configured for storage operations');
+      throw new Error(
+        'Supabase URL and ANON KEY must be configured for storage operations',
+      );
     }
 
     this.supabase = createClient(supabaseUrl, supabaseKey);
-    this.bucket = this.configService.get<string>('SUPABASE_STORAGE_BUCKET', 'images');
-    this.publicAccess = this.configService.get<boolean>('SUPABASE_PUBLIC_ACCESS', true);
+    this.bucket = this.configService.get<string>(
+      'SUPABASE_STORAGE_BUCKET',
+      'images',
+    );
+    this.publicAccess = this.configService.get<boolean>(
+      'SUPABASE_PUBLIC_ACCESS',
+      true,
+    );
 
     this.logger.log(
       `Supabase Storage Service initialized with bucket: ${this.bucket}, public access: ${this.publicAccess}`,
@@ -140,7 +148,8 @@ export class S3Service {
       }
 
       const url = this.publicAccess
-        ? this.supabase.storage.from(this.bucket).getPublicUrl(key).data.publicUrl
+        ? this.supabase.storage.from(this.bucket).getPublicUrl(key).data
+            .publicUrl
         : await this.getSignedUrl(key);
 
       this.logger.log(`File uploaded successfully: ${key}`);
@@ -224,10 +233,18 @@ export class S3Service {
         throw error;
       }
 
-      return data && data.length > 0 && data.some(file => file.name === key.substring(key.lastIndexOf('/') + 1));
+      return (
+        data &&
+        data.length > 0 &&
+        data.some(
+          (file) => file.name === key.substring(key.lastIndexOf('/') + 1),
+        )
+      );
     } catch (error) {
       this.logger.error(`Failed to check file existence ${key}:`, error);
-      throw new Error(`Supabase file existence check failed: ${(error as Error).message}`);
+      throw new Error(
+        `Supabase file existence check failed: ${(error as Error).message}`,
+      );
     }
   }
 
@@ -250,7 +267,8 @@ export class S3Service {
    */
   private async getSignedUrl(key: string): Promise<string> {
     if (this.publicAccess) {
-      return this.supabase.storage.from(this.bucket).getPublicUrl(key).data.publicUrl;
+      return this.supabase.storage.from(this.bucket).getPublicUrl(key).data
+        .publicUrl;
     } else {
       const { data, error } = await this.supabase.storage
         .from(this.bucket)

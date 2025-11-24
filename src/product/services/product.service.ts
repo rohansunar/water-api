@@ -111,7 +111,9 @@ export class ProductService {
       where: { id: BigInt(storeId), vendorId: BigInt(vendorId) },
     });
     if (!store || store.vendorId !== BigInt(vendorId)) {
-      throw new NotFoundException('Store not found or does not belong to vendor');
+      throw new NotFoundException(
+        'Store not found or does not belong to vendor',
+      );
     }
 
     return { vendor, store };
@@ -142,11 +144,6 @@ export class ProductService {
       return null;
     }
   }
-
-
-
-
-
 
   async updateStock(id: string, quantityChange: number): Promise<Product> {
     try {
@@ -180,7 +177,6 @@ export class ProductService {
       throw error;
     }
   }
-
 
   async searchProducts(searchDto: ProductSearchQuery): Promise<any> {
     try {
@@ -250,8 +246,6 @@ export class ProductService {
     }
   }
 
-
-
   /**
    * Validates input for product creation
    */
@@ -286,15 +280,8 @@ export class ProductService {
     storeId: string,
     createProductDto: CreateProductDto,
   ): Promise<Product> {
-    const {
-      title,
-      sku,
-      description,
-      category,
-      attributes,
-      base_price,
-      unit,
-    } = createProductDto;
+    const { title, sku, description, category, attributes, base_price, unit } =
+      createProductDto;
 
     // Check if product name already exists for this vendor
     const existingProduct = await this.prisma.product.findFirst({
@@ -395,7 +382,12 @@ export class ProductService {
       // Log success
       this.logBusinessEvent(
         'product_created',
-        { userId, vendorId, productId: product.id.toString(), productTitle: title },
+        {
+          userId,
+          vendorId,
+          productId: product.id.toString(),
+          productTitle: title,
+        },
         vendorId,
       );
 
@@ -419,7 +411,12 @@ export class ProductService {
         } else if (error instanceof ConflictException) {
           this.logBusinessEvent(
             'product_creation_failure',
-            { userId, vendorId, productTitle: createProductDto.title, reason: 'product_name_exists' },
+            {
+              userId,
+              vendorId,
+              productTitle: createProductDto.title,
+              reason: 'product_name_exists',
+            },
             userId,
           );
         }
@@ -552,7 +549,10 @@ export class ProductService {
       } = updateProductDto;
 
       // Validate product ownership
-      const existingProduct = await this.validateProductOwnership(productId, user);
+      const existingProduct = await this.validateProductOwnership(
+        productId,
+        user,
+      );
 
       // Check if new name conflicts with existing products
       if (title && title !== existingProduct.name) {
@@ -614,12 +614,18 @@ export class ProductService {
     }
   }
 
-  async deleteProduct(user: { id: string; role: string; vendorId?: string }, productId: string): Promise<{ message: string }> {
+  async deleteProduct(
+    user: { id: string; role: string; vendorId?: string },
+    productId: string,
+  ): Promise<{ message: string }> {
     const { id: userId } = user;
 
     try {
       // Validate product ownership
-      const existingProduct = await this.validateProductOwnership(productId, user);
+      const existingProduct = await this.validateProductOwnership(
+        productId,
+        user,
+      );
 
       // Soft delete by setting isActive to false
       await this.prisma.product.update({
@@ -660,7 +666,8 @@ export class ProductService {
     const { id: userId } = user;
 
     try {
-      const { price, stock, area_pincodes, is_active } = updateProductMappingDto;
+      const { price, stock, area_pincodes, is_active } =
+        updateProductMappingDto;
 
       // Check if mapping exists and belongs to user (through product relationship)
       const query: Record<string, any> = {
@@ -779,17 +786,25 @@ export class ProductService {
         }
 
         if (!file.buffer || !(file.buffer instanceof Buffer)) {
-          throw new BadRequestException(`Invalid buffer for file ${file.filename}`);
+          throw new BadRequestException(
+            `Invalid buffer for file ${file.filename}`,
+          );
         }
 
         if (file.buffer.length === 0) {
-          throw new BadRequestException(`Empty file provided: ${file.filename}`);
+          throw new BadRequestException(
+            `Empty file provided: ${file.filename}`,
+          );
         }
 
         // Validate image using ImageProcessingService
-        const validation = await this.imageProcessingService.validateImage(file.buffer);
+        const validation = await this.imageProcessingService.validateImage(
+          file.buffer,
+        );
         if (!validation.isValid) {
-          throw new BadRequestException(`Invalid image file ${file.filename}: ${validation.error}`);
+          throw new BadRequestException(
+            `Invalid image file ${file.filename}: ${validation.error}`,
+          );
         }
 
         fileData.push({
@@ -808,7 +823,10 @@ export class ProductService {
           },
           userId,
         );
-        this.logger.error(`Image validation failed for file ${file?.filename || 'unknown'}:`, error);
+        this.logger.error(
+          `Image validation failed for file ${file?.filename || 'unknown'}:`,
+          error,
+        );
         throw error;
       }
     }
@@ -868,7 +886,10 @@ export class ProductService {
       );
 
       // Upload images
-      const uploadResults = await this.uploadImagesToStorage(fileData, productId);
+      const uploadResults = await this.uploadImagesToStorage(
+        fileData,
+        productId,
+      );
 
       // Update product
       const newImageUrls = uploadResults.map((result) => result.url);
@@ -976,12 +997,16 @@ export class ProductService {
             userId,
             productId,
             imageId,
-            warning: 'Failed to extract S3 key from URL, skipping storage deletion',
+            warning:
+              'Failed to extract S3 key from URL, skipping storage deletion',
             error: error.message,
           },
           userId,
         );
-        this.logger.warn(`Failed to extract S3 key from URL ${imageUrl}, proceeding with database deletion only:`, error);
+        this.logger.warn(
+          `Failed to extract S3 key from URL ${imageUrl}, proceeding with database deletion only:`,
+          error,
+        );
       }
 
       // Update the product record first to maintain data integrity
@@ -1017,7 +1042,10 @@ export class ProductService {
             },
             userId,
           );
-          this.logger.warn(`Failed to delete image from storage ${s3Key}, but database updated successfully:`, storageError);
+          this.logger.warn(
+            `Failed to delete image from storage ${s3Key}, but database updated successfully:`,
+            storageError,
+          );
         }
       }
 
@@ -1060,10 +1088,7 @@ export class ProductService {
   /**
    * Validates input for image reordering
    */
-  private validateReorderInput(
-    product: Product,
-    imageIds: string[],
-  ): void {
+  private validateReorderInput(product: Product, imageIds: string[]): void {
     const currentImages = product.images || [];
 
     if (imageIds.length !== currentImages.length) {
@@ -1076,10 +1101,7 @@ export class ProductService {
   /**
    * Reorders images based on provided IDs
    */
-  private reorderImages(
-    currentImages: string[],
-    imageIds: string[],
-  ): string[] {
+  private reorderImages(currentImages: string[], imageIds: string[]): string[] {
     const indices = new Set<number>();
     const reorderedImages: string[] = [];
 
@@ -1102,7 +1124,9 @@ export class ProductService {
     }
 
     if (indices.size !== currentImages.length) {
-      throw new BadRequestException('Not all images are included in the reorder list');
+      throw new BadRequestException(
+        'Not all images are included in the reorder list',
+      );
     }
 
     return reorderedImages;
@@ -1123,7 +1147,10 @@ export class ProductService {
       this.validateReorderInput(product, imageIds);
 
       // Reorder images
-      const reorderedImages = this.reorderImages(product.images || [], imageIds);
+      const reorderedImages = this.reorderImages(
+        product.images || [],
+        imageIds,
+      );
 
       // Update product
       await this.prisma.product.update({
@@ -1196,7 +1223,9 @@ export class ProductService {
       const bucketAndKey = urlParts[1];
       const bucketEndIndex = bucketAndKey.indexOf('/');
       if (bucketEndIndex === -1) {
-        throw new Error('Invalid Supabase Storage URL format - missing bucket separator');
+        throw new Error(
+          'Invalid Supabase Storage URL format - missing bucket separator',
+        );
       }
 
       // Extract everything after the bucket name
@@ -1213,7 +1242,9 @@ export class ProductService {
   ): ProductMappingResponseDto {
     // Note: This method assumes storeMappings are included in the product query
     // In practice, you'd need to fetch the mapping separately or include it in the query
-    const mapping = (product as any).storeMappings?.find((m) => m.storeId === storeId);
+    const mapping = (product as any).storeMappings?.find(
+      (m) => m.storeId === storeId,
+    );
     return {
       id: `${product.id.toString()}-${storeId}`,
       product_id: product.id.toString(),
@@ -1235,9 +1266,7 @@ export class ProductService {
       id: product.id.toString(),
       vendor_id: product.vendorId.toString(),
       title: product.name,
-      sku:
-        specs?.sku ||
-        product.name.toLowerCase().replace(/\s+/g, '-'),
+      sku: specs?.sku || product.name.toLowerCase().replace(/\s+/g, '-'),
       description: product.description,
       category: product.category,
       attributes: {

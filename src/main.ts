@@ -7,6 +7,7 @@ import {
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { CustomLoggerService } from './common/logger/logger.service';
+import * as fs from 'fs'; 
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -65,7 +66,7 @@ async function bootstrap() {
   });
 
   // Multipart support for file uploads
-  await app.register(import('@fastify/multipart'),{
+  await app.register(import('@fastify/multipart'), {
     limits: {
       fileSize: 5 * 1024 * 1024, // 5MB limit
       files: 10, // max 10 files
@@ -96,17 +97,7 @@ async function bootstrap() {
       'https://waterjardelivery.com',
       'support@waterjardelivery.com',
     )
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'JWT',
-        description: 'Enter JWT token',
-        in: 'header',
-      },
-      'JWT-auth',
-    )
+    .addBearerAuth()  
     .addTag('Authentication', 'User authentication and OTP verification')
     .addTag('Users', 'User profile and address management')
     .addTag('Riders', 'Delivery rider operations and order management')
@@ -134,6 +125,9 @@ async function bootstrap() {
       .swagger-ui .info .title { color: #2c5aa0 }
     `,
   });
+
+  fs.writeFileSync('./swagger.json', JSON.stringify(document, null, 2));
+
 
   // Seed test data for development
   // const userService = app.get(UserService);

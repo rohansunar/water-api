@@ -16,6 +16,7 @@ import {
   ApiResponse,
   ApiBody,
   ApiParam,
+  ApiQuery,
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { RiderService, DeliveryRider } from '../services/rider.service';
@@ -212,6 +213,7 @@ export class RiderController {
     description:
       'Retrieve paginated delivery history for the authenticated rider',
   })
+  @ApiQuery({ type: PaginationQueryDto })
   @ApiResponse({
     status: 200,
     description: 'Delivery history retrieved successfully',
@@ -358,6 +360,7 @@ export class RiderController {
     summary: 'Get route history',
     description: 'Retrieve route history with pagination',
   })
+  @ApiQuery({ type: PaginationQueryDto })
   @ApiResponse({
     status: 200,
     description: 'Route history retrieved successfully',
@@ -647,6 +650,7 @@ export class RiderController {
     summary: 'Get notification history',
     description: 'Retrieve notification history for the rider',
   })
+  @ApiQuery({ type: PaginationQueryDto })
   @ApiResponse({
     status: 200,
     description: 'Notifications retrieved successfully',
