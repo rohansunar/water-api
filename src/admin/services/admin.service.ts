@@ -33,7 +33,6 @@ import {
 } from '../../complaint/dto/complaint.dto';
 import {
   ProductResponseDto,
-  ProductSearchDto,
 } from '../../product/dto/product.dto';
 import {
   CreateCustomerDto,
@@ -1147,7 +1146,7 @@ export class AdminService {
 
   // Content Management Methods
   async getProducts(
-    query: ProductSearchDto,
+    query: any,
   ): Promise<AdminPaginatedResponseDto<ProductResponseDto>> {
     try {
       const { page, limit, skip } = PaginationUtil.normalizePagination(
@@ -1290,7 +1289,7 @@ export class AdminService {
 
   private filterProducts(
     products: ProductResponseDto[],
-    query: ProductSearchDto,
+    query: any,
   ): ProductResponseDto[] {
     let filteredProducts = products;
 

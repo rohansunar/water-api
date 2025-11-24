@@ -40,11 +40,3 @@ export enum ProductSize {
   EXTRA_LARGE = '30L',
 }
 
-export interface ProductAvailability {
-  productId: string;
-  vendorId: string;
-  availableQuantity: number;
-  nextRestockDate?: Date;
-  isAvailable: boolean;
-  updatedAt: Date;
-}

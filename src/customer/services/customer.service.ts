@@ -339,43 +339,6 @@ export class CustomerService {
     }
   }
 
-  // For development - seed some test data
-  async seedTestData(): Promise<void> {
-    try {
-      const testCustomers = [
-        {
-          phone: '9999999999',
-          name: 'Test Customer',
-          role: CustomerRole.CUSTOMER,
-          walletBalance: 500,
-        },
-        {
-          phone: '8888888888',
-          name: 'Test Vendor',
-          role: CustomerRole.VENDOR,
-          walletBalance: 1000,
-        },
-        {
-          phone: '7777777777',
-          name: 'Test Rider',
-          role: CustomerRole.DELIVERY_RIDER,
-          walletBalance: 200,
-        },
-      ];
-
-      for (const customerData of testCustomers) {
-        const existingCustomer = await this.findByPhone(customerData.phone);
-        if (!existingCustomer) {
-          await this.create(customerData);
-        }
-      }
-
-      this.logger.log('Customer test data seeded successfully');
-    } catch (error) {
-      this.logger.error('Error seeding customer test data:', error);
-      throw error;
-    }
-  }
 
   // Development/Testing
   async clearTestData(): Promise<void> {

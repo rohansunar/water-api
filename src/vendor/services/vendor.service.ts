@@ -41,7 +41,6 @@ import {
   PaginationQueryDto,
   PaginatedResponseDto,
 } from '../dto/vendor.dto';
-import { VendorProductVariantResponseDto } from '../../product/dto/product.dto';
 import { PrismaService } from '../../common/database/prisma.service';
 
 @Injectable()
@@ -914,7 +913,7 @@ export class VendorService {
     productId: string,
     userId: string,
     paginationQuery: PaginationQueryDto,
-  ): Promise<PaginatedResponseDto<VendorProductVariantResponseDto>> {
+  ): Promise<PaginatedResponseDto<any>> {
     const vendor = await this.findByUserId(userId);
     if (!vendor) {
       throw new NotFoundException('Vendor profile not found');
@@ -1006,7 +1005,7 @@ export class VendorService {
     productId: string,
     userId: string,
     createVariantDto: any,
-  ): Promise<VendorProductVariantResponseDto> {
+  ): Promise<any> {
     const vendor = await this.findByUserId(userId);
     if (!vendor) {
       throw new NotFoundException('Vendor profile not found');
@@ -1052,7 +1051,7 @@ export class VendorService {
         },
       });
 
-      const variantDto: VendorProductVariantResponseDto = {
+      const variantDto: any = {
         id: variant.id.toString(),
         product_id: productId,
         variant_sku: createVariantDto.variantSku || `VAR-${variant.id}`,
@@ -1084,7 +1083,7 @@ export class VendorService {
     variantId: string,
     userId: string,
     updateVariantDto: any,
-  ): Promise<VendorProductVariantResponseDto> {
+  ): Promise<any> {
     const vendor = await this.findByUserId(userId);
     if (!vendor) {
       throw new NotFoundException('Vendor profile not found');
@@ -1124,7 +1123,7 @@ export class VendorService {
         },
       });
 
-      const variantDto: VendorProductVariantResponseDto = {
+      const variantDto: any = {
         id: updatedVariant.id.toString(),
         product_id: productId,
         variant_sku: `VAR-${updatedVariant.id}`,

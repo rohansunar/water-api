@@ -13,7 +13,6 @@ import { ImageProcessingService } from '../../common/services/image-processing.s
 import { S3Service } from '../../common/services/s3.service';
 import {
   CreateProductDto,
-  CreateCustomerProductDto,
   UpdateProductDto,
   UpdateProductMappingDto,
   ProductResponseDto,
@@ -22,12 +21,30 @@ import {
   ProductImageResponseDto,
 } from '../dto/product.dto';
 
+// Additional interfaces for better type safety
+interface ProductSearchQuery {
+  query?: string;
+  pincode?: string;
+  category?: string;
+  page?: number;
+  limit?: number;
+}
+
+interface UploadedFile {
+  buffer: Buffer;
+  filename: string;
+  mimetype?: string;
+  size?: number;
+}
+
 @Injectable()
 export class ProductService {
   private readonly logger = new Logger(ProductService.name);
   private readonly DEFAULT_PAGE_LIMIT = 10;
   private readonly DEFAULT_PAGE = 1;
   private readonly MAX_PRODUCT_IMAGES = 10;
+  private readonly MIN_ORDER_QUANTITY = 1;
+  private readonly MAX_ORDER_QUANTITY = 1000;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -36,6 +53,84 @@ export class ProductService {
     private readonly imageProcessingService: ImageProcessingService,
     private readonly s3Service: S3Service,
   ) {}
+
+  /**
+   * Builds a query object with role-based filtering
+   */
+  private buildRoleBasedQuery(
+    baseQuery: any,
+    user: { id: string; role: string; vendorId?: string },
+  ): any {
+    const { role, vendorId } = user;
+    if (role === 'vendor') {
+      if (!vendorId) {
+        throw new BadRequestException('Vendor ID not found for user');
+      }
+      baseQuery.vendorId = BigInt(vendorId);
+    }
+    return baseQuery;
+  }
+
+  /**
+   * Validates that a product exists and belongs to the user based on their role
+   */
+  private async validateProductOwnership(
+    productId: string,
+    user: { id: string; role: string; vendorId?: string },
+  ): Promise<Product> {
+    const query = this.buildRoleBasedQuery({ id: BigInt(productId) }, user);
+    const product = await this.prisma.product.findFirst({ where: query });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    return product;
+  }
+
+  /**
+   * Validates vendor and store ownership
+   */
+  private async validateVendorAndStore(
+    vendorId: string,
+    storeId: string,
+  ): Promise<{ vendor: any; store: any }> {
+    // Check if vendor exists and is active
+    const vendor = await this.prisma.vendor.findFirst({
+      where: { id: BigInt(vendorId) },
+    });
+    if (!vendor) {
+      throw new NotFoundException('Vendor not found');
+    }
+    if (!vendor.isActive) {
+      throw new BadRequestException('Vendor is not active');
+    }
+
+    // Check if store exists and belongs to vendor
+    const store = await this.prisma.store.findFirst({
+      where: { id: BigInt(storeId), vendorId: BigInt(vendorId) },
+    });
+    if (!store || store.vendorId !== BigInt(vendorId)) {
+      throw new NotFoundException('Store not found or does not belong to vendor');
+    }
+
+    return { vendor, store };
+  }
+
+  /**
+   * Standardized business event logging with error handling
+   */
+  private logBusinessEvent(
+    event: string,
+    data: Record<string, any>,
+    userId: string,
+  ): void {
+    try {
+      this.customLogger.logBusinessEvent(event, data, userId);
+    } catch (error) {
+      this.logger.warn(`Failed to log business event ${event}:`, error);
+    }
+  }
 
   async findById(id: string): Promise<Product | null> {
     try {
@@ -48,99 +143,10 @@ export class ProductService {
     }
   }
 
-  async findAll(): Promise<Product[]> {
-    try {
-      return await this.prisma.product.findMany({
-        where: { isAvailable: true },
-        orderBy: { createdAt: 'desc' },
-      });
-    } catch (error) {
-      this.logger.error('Error finding all products:', error);
-      throw error;
-    }
-  }
-
-  async findByCategory(category: string): Promise<Product[]> {
-    try {
-      return await this.prisma.product.findMany({
-        where: {
-          category,
-          isAvailable: true,
-        },
-        orderBy: { price: 'asc' },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Error finding products by category ${category}:`,
-        error,
-      );
-      throw error;
-    }
-  }
 
 
-  async create(
-    createProductDto: CreateCustomerProductDto,
-    vendorId?: string,
-  ): Promise<Product> {
-    try {
-      const product = await this.prisma.product.create({
-        data: {
-          vendorId: BigInt(vendorId || '1'), // TODO: Get from context
-          name: createProductDto.name,
-          description: createProductDto.description,
-          price: createProductDto.price,
-          category: createProductDto.category,
-          capacity: createProductDto.size,
-          unit: 'jar', // Default unit
-          stock: createProductDto.stockQuantity || 0,
-          isAvailable: true,
-          minOrderQuantity: 1,
-          maxOrderQuantity: 1000,
-          areaPincodes: [],
-          images: createProductDto.images || [],
-          specifications: {
-            material: 'Plastic',
-            brand: 'Generic',
-            weight: 1.5,
-          },
-          moderationStatus: 'PENDING',
-        },
-      });
 
-      this.logger.log(`Created product: ${product.id}`);
 
-      // Trigger auto-moderation for the new product
-      try {
-        await this.productModerationService.autoFlagProduct(
-          product.id.toString(),
-        );
-      } catch (error) {
-        this.logger.error(`Failed to auto-flag product ${product.id}:`, error);
-        // Don't fail the product creation if moderation fails
-      }
-
-      return product;
-    } catch (error) {
-      this.logger.error('Error creating product:', error);
-      throw error;
-    }
-  }
-
-  async update(id: string, updateData: Partial<Product>): Promise<Product> {
-    try {
-      const product = await this.prisma.product.update({
-        where: { id: BigInt(id) },
-        data: updateData,
-      });
-
-      this.logger.log(`Updated product: ${id}`);
-      return product;
-    } catch (error) {
-      this.logger.error(`Error updating product ${id}:`, error);
-      throw error;
-    }
-  }
 
   async updateStock(id: string, quantityChange: number): Promise<Product> {
     try {
@@ -176,7 +182,7 @@ export class ProductService {
   }
 
 
-  async searchProducts(searchDto: any): Promise<any> {
+  async searchProducts(searchDto: ProductSearchQuery): Promise<any> {
     try {
       const { query, pincode, category, page = 1, limit = 20 } = searchDto;
       const skip = (page - 1) * limit;
@@ -244,227 +250,183 @@ export class ProductService {
     }
   }
 
-  async delete(id: string): Promise<void> {
-    try {
-      await this.prisma.product.delete({
-        where: { id: BigInt(id) },
-      });
-      this.logger.log(`Deleted product: ${id}`);
-    } catch (error) {
-      this.logger.error(`Error deleting product ${id}:`, error);
-      throw error;
+
+
+  /**
+   * Validates input for product creation
+   */
+  private validateCreateProductInput(
+    user: { id: string; role: string; vendorId?: string },
+    createProductDto: CreateProductDto,
+  ): { vendorId: string; validatedDto: CreateProductDto } {
+    const { id: userId, role, vendorId: userVendorId } = user;
+
+    // Determine vendorId based on role
+    let vendorId: string;
+    if (role === 'vendor') {
+      if (!userVendorId) {
+        throw new BadRequestException('Vendor ID not found for user');
+      }
+      vendorId = userVendorId;
+    } else if (role === 'admin') {
+      // For admin, vendorId could be passed in dto or default
+      vendorId = userId; // or from dto
+    } else {
+      throw new BadRequestException('Invalid user role');
     }
+
+    return { vendorId, validatedDto: createProductDto };
   }
 
-  // Seed test data
-  async seedTestData(): Promise<void> {
-    try {
-      const testProducts = [
-        {
-          name: '20L Water Jar',
-          description: 'Premium quality 20L water jar with secure cap',
-          price: 30,
-          category: 'water_jar',
-          size: '20L',
-          stockQuantity: 100,
-          images: ['/images/jar-20l.jpg'],
-        },
-        {
-          name: '15L Water Jar',
-          description: 'Compact 15L water jar perfect for small families',
-          price: 25,
-          category: 'water_jar',
-          size: '15L',
-          stockQuantity: 150,
-          images: ['/images/jar-15l.jpg'],
-        },
-        {
-          name: '25L Water Jar',
-          description: 'Large capacity 25L water jar for big families',
-          price: 35,
-          category: 'water_jar',
-          size: '25L',
-          stockQuantity: 80,
-          images: ['/images/jar-25l.jpg'],
-        },
-        {
-          name: '10L Water Bottle',
-          description: 'Portable 10L water bottle for office use',
-          price: 20,
-          category: 'water_jar',
-          size: '10L',
-          stockQuantity: 200,
-          images: ['/images/bottle-10l.jpg'],
-        },
-      ];
+  /**
+   * Creates the product record in database
+   */
+  private async createProductRecord(
+    vendorId: string,
+    storeId: string,
+    createProductDto: CreateProductDto,
+  ): Promise<Product> {
+    const {
+      title,
+      sku,
+      description,
+      category,
+      attributes,
+      base_price,
+      unit,
+    } = createProductDto;
 
-      for (const productData of testProducts) {
-        const existingProduct = await this.prisma.product.findFirst({
-          where: { name: productData.name },
-        });
+    // Check if product name already exists for this vendor
+    const existingProduct = await this.prisma.product.findFirst({
+      where: {
+        vendorId: BigInt(vendorId),
+        name: title,
+      },
+    });
 
-        if (!existingProduct) {
-          await this.create(productData as any);
-        }
-      }
-
-      this.logger.log('Product test data seeded successfully');
-    } catch (error) {
-      this.logger.error('Error seeding product test data:', error);
-      throw error;
+    if (existingProduct) {
+      throw new ConflictException(
+        `Product with name '${title}' already exists for vendor ${vendorId}`,
+      );
     }
+
+    // Create product
+    const product = await this.prisma.product.create({
+      data: {
+        vendorId: BigInt(vendorId),
+        name: title,
+        category,
+        price: base_price,
+        description,
+        capacity: attributes?.capacity || unit,
+        unit,
+        stock: 0,
+        stockQuantity: 0,
+        isAvailable: true,
+        minOrderQuantity: this.MIN_ORDER_QUANTITY,
+        maxOrderQuantity: this.MAX_ORDER_QUANTITY,
+        areaPincodes: attributes?.areaPincodes || [],
+        images: attributes?.images || [],
+        specifications: {
+          ...attributes?.specifications,
+          sku,
+        },
+        hasDeposit: attributes?.hasDeposit || false,
+        depositAmount: attributes?.depositAmount || 0,
+      },
+    });
+
+    return product;
+  }
+
+  /**
+   * Creates product-store mapping
+   */
+  private async createProductStoreMapping(
+    productId: bigint,
+    storeId: string,
+    basePrice: number,
+  ): Promise<void> {
+    await this.prisma.productStoreMapping.create({
+      data: {
+        productId,
+        storeId: BigInt(storeId),
+        price: basePrice,
+        stockQuantity: 0,
+        isAvailable: true,
+      },
+    });
   }
 
   async createProduct(
     user: { id: string; role: string; vendorId?: string },
     createProductDto: CreateProductDto,
   ): Promise<ProductResponseDto> {
-    const { id: userId, role, vendorId: userVendorId } = user;
-    const startTime = Date.now();
+    const { id: userId } = user;
+    let vendorId: string;
+
     try {
-      const {
-        storeId,
-        title,
-        sku,
-        description,
-        category,
-        attributes,
-        base_price,
-        unit,
-      } = createProductDto;
+      // Validate input and determine vendor
+      const result = this.validateCreateProductInput(user, createProductDto);
+      vendorId = result.vendorId;
+      const { validatedDto } = result;
+      const { storeId, title, sku, base_price } = validatedDto;
 
-      // Determine vendorId based on role
-      let vendorId: string;
-      if (role === 'vendor') {
-        if (!userVendorId) {
-          throw new BadRequestException('Vendor ID not found for user');
-        }
-        vendorId = userVendorId;
-      } else if (role === 'admin') {
-        // For admin, vendorId could be passed in dto or default
-        // For now, assume admin creates for themselves or specified
-        // TODO: Add vendorId to dto for admin
-        vendorId = userId; // or from dto
-      } else {
-        throw new BadRequestException('Invalid user role');
-      }
-
-      // Log product creation attempt
-      this.customLogger.logBusinessEvent(
+      // Log attempt
+      this.logBusinessEvent(
         'product_creation_attempt',
         { userId, vendorId, productTitle: title, sku },
         vendorId,
       );
 
-      // Check if vendor exists and is active
-      const vendorRecord = await this.prisma.vendor.findFirst({
-        where: { id: BigInt(vendorId) },
-      });
-      if (!vendorRecord) {
-        this.customLogger.logBusinessEvent(
-          'product_creation_failure',
-          { userId, vendorId, reason: 'vendor_not_found' },
-          vendorId,
-        );
-        throw new NotFoundException('Vendor not found');
-      }
+      // Validate vendor and store
+      await this.validateVendorAndStore(vendorId, storeId);
 
-      if (!vendorRecord.isActive) {
-        this.customLogger.logBusinessEvent(
-          'product_creation_failure',
-          { userId, vendorId, reason: 'vendor_not_active' },
-          vendorId,
-        );
-        throw new BadRequestException('Vendor is not active');
-      }
-
-      // Check if store exists and belongs to vendor
-      const storeRecord = await this.prisma.store.findFirst({
-        where: { id: BigInt(storeId), vendorId: BigInt(vendorId) },
-      });
-      if (!storeRecord || storeRecord.vendorId !== BigInt(vendorId)) {
-        this.customLogger.logBusinessEvent(
-          'product_creation_failure',
-          { userId, vendorId, storeId, reason: 'store_not_found_or_not_owned' },
-          vendorId,
-        );
-        throw new NotFoundException(
-          'Store not found or does not belong to vendor',
-        );
-      }
-
-      // Check if product name already exists for this vendor
-      const existingProduct = await this.prisma.product.findFirst({
-        where: {
-          vendorId: BigInt(vendorId),
-          name: title,
-        },
-      });
-
-      if (existingProduct) {
-        this.customLogger.logBusinessEvent(
-          'product_creation_failure',
-          { userId, vendorId, productTitle: title, reason: 'product_name_exists' },
-          vendorId,
-        );
-        throw new ConflictException(
-          `Product with name '${title}' already exists for vendor ${vendorId}`,
-        );
-      }
-
-      // Create product
-      const product = await this.prisma.product.create({
-        data: {
-          vendorId: BigInt(vendorId),
-          name: title,
-          category,
-          price: base_price,
-          description,
-          capacity: attributes?.capacity || unit,
-          unit,
-          stock: 0,
-          stockQuantity: 0,
-          isAvailable: true,
-          minOrderQuantity: 1,
-          maxOrderQuantity: 1000,
-          areaPincodes: attributes?.areaPincodes || [],
-          images: attributes?.images || [],
-          specifications: {
-            ...attributes?.specifications,
-            sku,
-          },
-          hasDeposit: attributes?.hasDeposit || false,
-          depositAmount: attributes?.depositAmount || 0,
-        },
-      });
+      // Create product record
+      const product = await this.createProductRecord(
+        vendorId,
+        storeId,
+        validatedDto,
+      );
 
       // Create product-store mapping
-      await this.prisma.productStoreMapping.create({
-        data: {
-          productId: product.id,
-          storeId: BigInt(storeId),
-          price: base_price,
-          stockQuantity: 0,
-          isAvailable: true,
-        },
-      });
+      await this.createProductStoreMapping(product.id, storeId, base_price);
 
-      this.customLogger.logBusinessEvent(
+      // Log success
+      this.logBusinessEvent(
         'product_created',
         { userId, vendorId, productId: product.id.toString(), productTitle: title },
         vendorId,
       );
 
-      return this.mapProductToVendorResponseDto(product);
+      return this.mapProductResponseDto(product);
     } catch (error) {
       if (
         error instanceof NotFoundException ||
         error instanceof ConflictException ||
         error instanceof BadRequestException
       ) {
+        // Log failure for business exceptions
+        if (error instanceof NotFoundException) {
+          const reason = error.message.includes('Vendor')
+            ? 'vendor_not_found'
+            : 'store_not_found_or_not_owned';
+          this.logBusinessEvent(
+            'product_creation_failure',
+            { userId, vendorId, reason },
+            userId,
+          );
+        } else if (error instanceof ConflictException) {
+          this.logBusinessEvent(
+            'product_creation_failure',
+            { userId, vendorId, productTitle: createProductDto.title, reason: 'product_name_exists' },
+            userId,
+          );
+        }
         throw error;
       }
-      this.customLogger.logBusinessEvent(
+      // Log unexpected errors
+      this.logBusinessEvent(
         'product_creation_error',
         { userId, error: error.message },
         userId,
@@ -486,24 +448,18 @@ export class ProductService {
     page: number;
     limit: number;
   }> {
-    const { id: userId, role, vendorId: userVendorId } = user;
-    const startTime = Date.now();
+    const { id: userId } = user;
+
     try {
       const skip = (page - 1) * limit;
 
-      const query: any = {
-        ...(isActive !== undefined && { isActive }),
-        ...(category && { category }),
-      };
-
-      // Add role-based filter
-      if (role === 'vendor') {
-        if (!userVendorId) {
-          throw new BadRequestException('Vendor ID not found for user');
-        }
-        query.vendorId = BigInt(userVendorId);
-      }
-      // For admin, no additional filter
+      const query = this.buildRoleBasedQuery(
+        {
+          ...(isActive !== undefined && { isActive }),
+          ...(category && { category }),
+        },
+        user,
+      );
 
       // Get products with pagination
       const [products, total] = await Promise.all([
@@ -526,7 +482,7 @@ export class ProductService {
 
       return {
         products: products.map((product) =>
-          this.mapProductToVendorResponseDto(product),
+          this.mapProductResponseDto(product),
         ),
         total,
         page,
@@ -547,31 +503,10 @@ export class ProductService {
     user: { id: string; role: string; vendorId?: string },
     productId: string,
   ): Promise<ProductResponseDto> {
-    const { id: userId, role, vendorId: userVendorId } = user;
-    const startTime = Date.now();
+    const { id: userId } = user;
+
     try {
-      const query: any = { id: BigInt(productId) };
-
-      // Add role-based filter
-      if (role === 'vendor') {
-        if (!userVendorId) {
-          throw new BadRequestException('Vendor ID not found for user');
-        }
-        query.vendorId = BigInt(userVendorId);
-      }
-
-      const product = await this.prisma.product.findFirst({
-        where: query,
-      });
-
-      if (!product) {
-        this.customLogger.logBusinessEvent(
-          'product_retrieval_failure',
-          { userId, productId, reason: 'product_not_found' },
-          userId,
-        );
-        throw new NotFoundException('Product not found');
-      }
+      const product = await this.validateProductOwnership(productId, user);
 
       this.customLogger.logBusinessEvent(
         'product_retrieved',
@@ -579,7 +514,7 @@ export class ProductService {
         userId,
       );
 
-      return this.mapProductToVendorResponseDto(product);
+      return this.mapProductResponseDto(product);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -602,8 +537,8 @@ export class ProductService {
     productId: string,
     updateProductDto: UpdateProductDto,
   ): Promise<ProductResponseDto> {
-    const { id: userId, role, vendorId: userVendorId } = user;
-    const startTime = Date.now();
+    const { id: userId } = user;
+
     try {
       const {
         title,
@@ -616,49 +551,20 @@ export class ProductService {
         is_active,
       } = updateProductDto;
 
-      // Check if product exists and belongs to user (based on role)
-      const query: any = { id: BigInt(productId) };
-      if (role === 'vendor') {
-        if (!userVendorId) {
-          throw new BadRequestException('Vendor ID not found for user');
-        }
-        query.vendorId = BigInt(userVendorId);
-      }
-
-      const existingProduct = await this.prisma.product.findFirst({
-        where: query,
-      });
-
-      if (!existingProduct) {
-        this.customLogger.logBusinessEvent(
-          'product_update_failure',
-          { userId, productId, reason: 'product_not_found' },
-          userId,
-        );
-        throw new NotFoundException('Product not found');
-      }
+      // Validate product ownership
+      const existingProduct = await this.validateProductOwnership(productId, user);
 
       // Check if new name conflicts with existing products
       if (title && title !== existingProduct.name) {
-        const nameConflictQuery: any = {
-          vendorId: existingProduct.vendorId,
-          name: title,
-          id: { not: BigInt(productId) },
-        };
-        if (role === 'vendor') {
-          nameConflictQuery.vendorId = BigInt(userVendorId);
-        }
-
         const nameConflict = await this.prisma.product.findFirst({
-          where: nameConflictQuery,
+          where: {
+            vendorId: existingProduct.vendorId,
+            name: title,
+            id: { not: BigInt(productId) },
+          },
         });
 
         if (nameConflict) {
-          this.customLogger.logBusinessEvent(
-            'product_update_failure',
-            { userId, productId, reason: 'name_conflict' },
-            userId,
-          );
           throw new ConflictException(
             `Product with name '${title}' already exists for vendor ${existingProduct.vendorId}`,
           );
@@ -687,7 +593,7 @@ export class ProductService {
         userId,
       );
 
-      return this.mapProductToVendorResponseDto(updatedProduct);
+      return this.mapProductResponseDto(updatedProduct);
     } catch (error) {
       if (
         error instanceof NotFoundException ||
@@ -708,31 +614,12 @@ export class ProductService {
     }
   }
 
-  async deleteProduct(user: { id: string; role: string; vendorId?: string }, productId: string): Promise<any> {
-    const { id: userId, role, vendorId: userVendorId } = user;
-    const startTime = Date.now();
+  async deleteProduct(user: { id: string; role: string; vendorId?: string }, productId: string): Promise<{ message: string }> {
+    const { id: userId } = user;
+
     try {
-      // Check if product exists and belongs to user (based on role)
-      const query: any = { id: BigInt(productId) };
-      if (role === 'vendor') {
-        if (!userVendorId) {
-          throw new BadRequestException('Vendor ID not found for user');
-        }
-        query.vendorId = BigInt(userVendorId);
-      }
-
-      const existingProduct = await this.prisma.product.findFirst({
-        where: query,
-      });
-
-      if (!existingProduct) {
-        this.customLogger.logBusinessEvent(
-          'product_deletion_failure',
-          { userId, productId, reason: 'product_not_found' },
-          userId,
-        );
-        throw new NotFoundException('Product not found');
-      }
+      // Validate product ownership
+      const existingProduct = await this.validateProductOwnership(productId, user);
 
       // Soft delete by setting isActive to false
       await this.prisma.product.update({
@@ -770,22 +657,21 @@ export class ProductService {
     mappingId: string,
     updateProductMappingDto: UpdateProductMappingDto,
   ): Promise<ProductMappingResponseDto> {
-    const { id: userId, role, vendorId: userVendorId } = user;
-    const startTime = Date.now();
+    const { id: userId } = user;
+
     try {
-      const { price, stock, area_pincodes, is_active } =
-        updateProductMappingDto;
+      const { price, stock, area_pincodes, is_active } = updateProductMappingDto;
 
       // Check if mapping exists and belongs to user (through product relationship)
-      const query: any = {
+      const query: Record<string, any> = {
         id: BigInt(mappingId),
       };
-      if (role === 'vendor') {
-        if (!userVendorId) {
+      if (user.role === 'vendor') {
+        if (!user.vendorId) {
           throw new BadRequestException('Vendor ID not found for user');
         }
         query.product = {
-          vendorId: BigInt(userVendorId),
+          vendorId: BigInt(user.vendorId),
         };
       }
 
@@ -831,125 +717,166 @@ export class ProductService {
     }
   }
 
-  async uploadProductImages(
+  /**
+   * Validates input for image upload
+   */
+  private async validateUploadImagesInput(
     user: { id: string; role: string; vendorId?: string },
     productId: string,
-    files: any[],
-  ): Promise<UploadProductImagesResponseDto> {
-    const { id: userId, role, vendorId: userVendorId } = user;
-    const startTime = Date.now();
+    files: UploadedFile[],
+  ): Promise<{ product: Product; normalizedFiles: UploadedFile[] }> {
+    const { id: userId } = user;
+
+    // Validate product ownership
+    const product = await this.validateProductOwnership(productId, user);
 
     // Normalize files parameter to always be an array
     const normalizedFiles = Array.isArray(files) ? files : files ? [files] : [];
 
-    try {
-      // Check if product exists and belongs to user
-      const query: any = { id: BigInt(productId) };
-      if (role === 'vendor') {
-        if (!userVendorId) {
-          throw new BadRequestException('Vendor ID not found for user');
+    if (normalizedFiles.length === 0) {
+      throw new BadRequestException('No files provided');
+    }
+
+    // Check current image count
+    const currentImageCount = product.images?.length || 0;
+    const maxImages = this.MAX_PRODUCT_IMAGES;
+
+    if (currentImageCount >= maxImages) {
+      throw new BadRequestException(
+        `Product already has maximum ${maxImages} images`,
+      );
+    }
+
+    const availableSlots = maxImages - currentImageCount;
+    if (normalizedFiles.length > availableSlots) {
+      throw new BadRequestException(
+        `Cannot upload ${normalizedFiles.length} images. Only ${availableSlots} slots available (current: ${currentImageCount}, max: ${maxImages})`,
+      );
+    }
+
+    return { product, normalizedFiles };
+  }
+
+  /**
+   * Processes and validates uploaded files
+   */
+  private async processAndValidateFiles(
+    files: UploadedFile[],
+    userId: string,
+    productId: string,
+  ): Promise<Array<{ buffer: Buffer; filename: string }>> {
+    const fileData: Array<{ buffer: Buffer; filename: string }> = [];
+
+    for (const file of files) {
+      try {
+        // Validate file structure
+        if (!file || typeof file !== 'object') {
+          throw new BadRequestException('Invalid file format provided');
         }
-        query.vendorId = BigInt(userVendorId);
-      }
 
-      const product = await this.prisma.product.findFirst({
-        where: query,
-      });
+        if (!file.filename || typeof file.filename !== 'string') {
+          throw new BadRequestException('Invalid filename provided');
+        }
 
-      if (!product) {
-        this.customLogger.logBusinessEvent(
-          'product_images_upload_failure',
-          { userId, productId, reason: 'product_not_found' },
+        if (!file.buffer || !(file.buffer instanceof Buffer)) {
+          throw new BadRequestException(`Invalid buffer for file ${file.filename}`);
+        }
+
+        if (file.buffer.length === 0) {
+          throw new BadRequestException(`Empty file provided: ${file.filename}`);
+        }
+
+        // Validate image using ImageProcessingService
+        const validation = await this.imageProcessingService.validateImage(file.buffer);
+        if (!validation.isValid) {
+          throw new BadRequestException(`Invalid image file ${file.filename}: ${validation.error}`);
+        }
+
+        fileData.push({
+          buffer: file.buffer,
+          filename: file.filename,
+        });
+      } catch (error) {
+        // Log validation errors
+        this.logBusinessEvent(
+          'product_image_validation_failure',
+          {
+            userId,
+            productId,
+            filename: file?.filename || 'unknown',
+            error: error.message,
+          },
           userId,
         );
-        throw new NotFoundException('Product not found');
+        this.logger.error(`Image validation failed for file ${file?.filename || 'unknown'}:`, error);
+        throw error;
       }
+    }
 
-      // Check current image count
-      const currentImageCount = product.images?.length || 0;
-      const maxImages = this.MAX_PRODUCT_IMAGES;
+    return fileData;
+  }
 
-      if (currentImageCount >= maxImages) {
-        throw new BadRequestException(
-          `Product already has maximum ${maxImages} images`,
-        );
-      }
+  /**
+   * Uploads images to storage
+   */
+  private async uploadImagesToStorage(
+    fileData: Array<{ buffer: Buffer; filename: string }>,
+    productId: string,
+  ): Promise<any[]> {
+    return await this.imageProcessingService.processAndUploadMultipleImages(
+      fileData,
+      productId,
+    );
+  }
 
-      if (normalizedFiles.length === 0) {
-        throw new BadRequestException('No files provided');
-      }
+  /**
+   * Updates product with new image URLs
+   */
+  private async updateProductImages(
+    productId: string,
+    existingImages: string[],
+    newImageUrls: string[],
+  ): Promise<string[]> {
+    const updatedImages = [...existingImages, ...newImageUrls];
+    await this.prisma.product.update({
+      where: { id: BigInt(productId) },
+      data: { images: updatedImages },
+    });
+    return updatedImages;
+  }
 
-      const availableSlots = maxImages - currentImageCount;
-      if (normalizedFiles.length > availableSlots) {
-        throw new BadRequestException(
-          `Cannot upload ${normalizedFiles.length} images. Only ${availableSlots} slots available (current: ${currentImageCount}, max: ${maxImages})`,
-        );
-      }
+  async uploadProductImages(
+    user: { id: string; role: string; vendorId?: string },
+    productId: string,
+    files: UploadedFile[],
+  ): Promise<UploadProductImagesResponseDto> {
+    const { id: userId } = user;
 
-      // Validate and prepare image files
-      const fileData: Array<{ buffer: Buffer; filename: string }> = [];
+    try {
+      // Validate input
+      const { product, normalizedFiles } = await this.validateUploadImagesInput(
+        user,
+        productId,
+        files,
+      );
 
-      for (const file of normalizedFiles) {
-        try {
-          // Validate file structure
-          if (!file || typeof file !== 'object') {
-            throw new BadRequestException('Invalid file format provided');
-          }
+      // Process and validate files
+      const fileData = await this.processAndValidateFiles(
+        normalizedFiles,
+        userId,
+        productId,
+      );
 
-          if (!file.filename || typeof file.filename !== 'string') {
-            throw new BadRequestException('Invalid filename provided');
-          }
+      // Upload images
+      const uploadResults = await this.uploadImagesToStorage(fileData, productId);
 
-          if (!file.buffer || !(file.buffer instanceof Buffer)) {
-            throw new BadRequestException(`Invalid buffer for file ${file.filename}`);
-          }
-
-          if (file.buffer.length === 0) {
-            throw new BadRequestException(`Empty file provided: ${file.filename}`);
-          }
-
-          // Validate image using ImageProcessingService
-          const validation = await this.imageProcessingService.validateImage(file.buffer);
-          if (!validation.isValid) {
-            throw new BadRequestException(`Invalid image file ${file.filename}: ${validation.error}`);
-          }
-
-          fileData.push({
-            buffer: file.buffer,
-            filename: file.filename,
-          });
-        } catch (error) {
-          // Log validation errors for debugging
-          this.customLogger.logBusinessEvent(
-            'product_image_validation_failure',
-            {
-              userId,
-              productId,
-              filename: file?.filename || 'unknown',
-              error: error.message,
-            },
-            userId,
-          );
-          this.logger.error(`Image validation failed for file ${file?.filename || 'unknown'}:`, error);
-          throw error; // Re-throw to stop processing
-        }
-      }
-
-      // Process and upload images
-      const uploadResults =
-        await this.imageProcessingService.processAndUploadMultipleImages(
-          fileData,
-          productId,
-        );
-
-      // Update product with new image URLs
+      // Update product
       const newImageUrls = uploadResults.map((result) => result.url);
-      const updatedImages = [...(product.images || []), ...newImageUrls];
-
-      await this.prisma.product.update({
-        where: { id: BigInt(productId) },
-        data: { images: updatedImages },
-      });
+      const updatedImages = await this.updateProductImages(
+        productId,
+        product.images || [],
+        newImageUrls,
+      );
 
       // Prepare response
       const uploadedImages: ProductImageResponseDto[] = uploadResults.map(
@@ -972,7 +899,8 @@ export class ProductService {
         uploadedAt: new Date(),
       };
 
-      this.customLogger.logBusinessEvent(
+      // Log success
+      this.logBusinessEvent(
         'product_images_uploaded',
         {
           userId,
@@ -991,7 +919,8 @@ export class ProductService {
       ) {
         throw error;
       }
-      this.customLogger.logBusinessEvent(
+      // Log error
+      this.logBusinessEvent(
         'product_images_upload_error',
         {
           userId,
@@ -1014,25 +943,11 @@ export class ProductService {
     productId: string,
     imageId: string,
   ): Promise<{ message: string; remainingImages: number }> {
-    const { id: userId, role, vendorId: userVendorId } = user;
+    const { id: userId } = user;
 
     try {
-      // Check if product exists and belongs to user
-      const query: any = { id: BigInt(productId) };
-      if (role === 'vendor') {
-        if (!userVendorId) {
-          throw new BadRequestException('Vendor ID not found for user');
-        }
-        query.vendorId = BigInt(userVendorId);
-      }
-
-      const product = await this.prisma.product.findFirst({
-        where: query,
-      });
-
-      if (!product) {
-        throw new NotFoundException('Product not found');
-      }
+      // Validate product ownership
+      const product = await this.validateProductOwnership(productId, user);
 
       const currentImages = product.images || [];
       const imageIndex = currentImages.findIndex((url) =>
@@ -1142,70 +1057,81 @@ export class ProductService {
     }
   }
 
+  /**
+   * Validates input for image reordering
+   */
+  private validateReorderInput(
+    product: Product,
+    imageIds: string[],
+  ): void {
+    const currentImages = product.images || [];
+
+    if (imageIds.length !== currentImages.length) {
+      throw new BadRequestException(
+        `Image count mismatch. Provided ${imageIds.length} IDs but product has ${currentImages.length} images`,
+      );
+    }
+  }
+
+  /**
+   * Reorders images based on provided IDs
+   */
+  private reorderImages(
+    currentImages: string[],
+    imageIds: string[],
+  ): string[] {
+    const indices = new Set<number>();
+    const reorderedImages: string[] = [];
+
+    for (const id of imageIds) {
+      if (!id.startsWith('image_')) {
+        throw new BadRequestException(`Invalid image ID format: ${id}`);
+      }
+
+      const index = parseInt(id.split('_')[1], 10);
+      if (isNaN(index) || index < 0 || index >= currentImages.length) {
+        throw new BadRequestException(`Invalid image index in ID: ${id}`);
+      }
+
+      if (indices.has(index)) {
+        throw new BadRequestException(`Duplicate image ID: ${id}`);
+      }
+
+      indices.add(index);
+      reorderedImages.push(currentImages[index]);
+    }
+
+    if (indices.size !== currentImages.length) {
+      throw new BadRequestException('Not all images are included in the reorder list');
+    }
+
+    return reorderedImages;
+  }
+
   async reorderProductImages(
     user: { id: string; role: string; vendorId?: string },
     productId: string,
     imageIds: string[],
   ): Promise<{ message: string; images: ProductImageResponseDto[] }> {
-    const { id: userId, role, vendorId: userVendorId } = user;
+    const { id: userId } = user;
 
     try {
-      // Check if product exists and belongs to user
-      const query: any = { id: BigInt(productId) };
-      if (role === 'vendor') {
-        if (!userVendorId) {
-          throw new BadRequestException('Vendor ID not found for user');
-        }
-        query.vendorId = BigInt(userVendorId);
-      }
+      // Validate product ownership
+      const product = await this.validateProductOwnership(productId, user);
 
-      const product = await this.prisma.product.findFirst({
-        where: query,
-      });
+      // Validate reorder input
+      this.validateReorderInput(product, imageIds);
 
-      if (!product) {
-        throw new NotFoundException('Product not found');
-      }
+      // Reorder images
+      const reorderedImages = this.reorderImages(product.images || [], imageIds);
 
-      const currentImages = product.images || [];
-
-      if (imageIds.length !== currentImages.length) {
-        throw new BadRequestException(
-          `Image count mismatch. Provided ${imageIds.length} IDs but product has ${currentImages.length} images`,
-        );
-      }
-
-      // Validate and reorder images based on provided IDs
-      const indices = new Set<number>();
-      const reorderedImages: string[] = [];
-
-      for (const id of imageIds) {
-        if (!id.startsWith('image_')) {
-          throw new BadRequestException(`Invalid image ID format: ${id}`);
-        }
-
-        const index = parseInt(id.split('_')[1], 10);
-        if (isNaN(index) || index < 0 || index >= currentImages.length) {
-          throw new BadRequestException(`Invalid image index in ID: ${id}`);
-        }
-
-        if (indices.has(index)) {
-          throw new BadRequestException(`Duplicate image ID: ${id}`);
-        }
-
-        indices.add(index);
-        reorderedImages.push(currentImages[index]);
-      }
-
-      if (indices.size !== currentImages.length) {
-        throw new BadRequestException('Not all images are included in the reorder list');
-      }
-
+      // Update product
       await this.prisma.product.update({
         where: { id: BigInt(productId) },
         data: { images: reorderedImages },
       });
 
+      // Prepare response
       const images: ProductImageResponseDto[] = reorderedImages.map(
         (url, index) => ({
           id: `image_${index}`,
@@ -1218,7 +1144,8 @@ export class ProductService {
         }),
       );
 
-      this.customLogger.logBusinessEvent(
+      // Log success
+      this.logBusinessEvent(
         'product_images_reordered',
         { userId, productId, imageCount: images.length },
         userId,
@@ -1235,7 +1162,8 @@ export class ProductService {
       ) {
         throw error;
       }
-      this.customLogger.logBusinessEvent(
+      // Log error
+      this.logBusinessEvent(
         'product_images_reorder_error',
         { userId, productId, error: error.message },
         userId,
@@ -1280,54 +1208,35 @@ export class ProductService {
   }
 
   private mapMappingToResponseDto(
-    product: any,
+    product: Product,
     storeId: string,
   ): ProductMappingResponseDto {
-    const mapping = product.storeMappings?.find((m) => m.storeId === storeId);
+    // Note: This method assumes storeMappings are included in the product query
+    // In practice, you'd need to fetch the mapping separately or include it in the query
+    const mapping = (product as any).storeMappings?.find((m) => m.storeId === storeId);
     return {
       id: `${product.id.toString()}-${storeId}`,
       product_id: product.id.toString(),
       store_id: storeId,
       product_variant_id: product.id.toString(),
-      price: mapping?.price || product.price,
-      stock: mapping?.stockQuantity || 0,
+      price: mapping?.price || Number(product.price),
+      stock: mapping?.stockQuantity || product.stockQuantity,
       reserved_stock: mapping?.reservedStock || 0,
-      area_pincodes: mapping?.areaPincodes || [],
-      is_active: mapping?.isAvailable || false,
+      area_pincodes: mapping?.areaPincodes || product.areaPincodes,
+      is_active: mapping?.isAvailable || product.isAvailable,
       created_at: product.createdAt,
       updated_at: product.updatedAt,
     };
   }
 
-  private mapToProductResponseDto(product: Product): ProductResponseDto {
-    return {
-      id: product.id.toString(),
-      vendor_id: product.vendorId.toString(),
-      title: product.name,
-      sku: product.name.toLowerCase().replace(/\s+/g, '-'),
-      description: product.description,
-      category: product.category,
-      attributes: {
-        size: product.capacity,
-        depositAmount: product.depositAmount,
-        hasDeposit: product.hasDeposit,
-        stockQuantity: product.stock,
-      },
-      base_price: Number(product.price),
-      unit: 'piece',
-      is_active: product.isAvailable,
-      created_at: product.createdAt,
-      updated_at: product.updatedAt,
-    };
-  }
-
-  private mapProductToVendorResponseDto(product: any): ProductResponseDto {
+  private mapProductResponseDto(product: Product): ProductResponseDto {
+    const specs = product.specifications as any; // Cast to access properties
     return {
       id: product.id.toString(),
       vendor_id: product.vendorId.toString(),
       title: product.name,
       sku:
-        product.specifications?.sku ||
+        specs?.sku ||
         product.name.toLowerCase().replace(/\s+/g, '-'),
       description: product.description,
       category: product.category,
@@ -1337,7 +1246,7 @@ export class ProductService {
         hasDeposit: product.hasDeposit,
         depositAmount: product.depositAmount,
       },
-      base_price: product.price,
+      base_price: Number(product.price),
       unit: product.capacity,
       is_active: product.isActive,
       created_at: product.createdAt,

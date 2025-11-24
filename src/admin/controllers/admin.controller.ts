@@ -64,7 +64,6 @@ import {
 } from '../../complaint/dto/complaint.dto';
 import {
   ProductResponseDto,
-  ProductSearchDto,
 } from '../../product/dto/product.dto';
 import {
   AdminUpdateOrderStatusDto,
@@ -776,7 +775,7 @@ export class AdminController {
   @Get('products')
   async getProducts(
     @AdminCurrentUser() user: any,
-    @Query() query: ProductSearchDto,
+    @Query() query: any,
   ): Promise<AdminPaginatedResponseDto<ProductResponseDto>> {
     this.logger.log(
       `Admin ${user.id} retrieving products with filters: ${JSON.stringify(query)}`,

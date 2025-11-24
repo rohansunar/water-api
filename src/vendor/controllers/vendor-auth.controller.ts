@@ -25,7 +25,7 @@ export class VendorAuthController {
 
   constructor(private readonly vendorAuthService: VendorAuthService) {}
 
-  @Post('send-otp')
+  @Post('request-otp')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Send OTP for vendor login',

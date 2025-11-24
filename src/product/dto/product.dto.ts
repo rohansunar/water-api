@@ -4,156 +4,16 @@ import {
   IsOptional,
   IsArray,
   IsBoolean,
-  IsEnum,
   IsNotEmpty,
   IsObject,
-  ValidateNested,
-  IsEmail,
-  IsPhoneNumber,
-  MinLength,
   MaxLength,
-  Matches,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   ProductCategory,
   ProductSize,
 } from '../../product/interfaces/product.interface';
 
-export class CustomerProductResponseDto {
-  id: string;
-  vendorId: string;
-  name: string;
-  description?: string;
-  category: string;
-  size: string;
-  price: number;
-  depositAmount: number;
-  hasDeposit: boolean;
-  stockQuantity: number;
-  isActive: boolean;
-  images: string[];
-  specifications: ProductSpecificationDto;
-  vendor: VendorInfoDto;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export class ProductSpecificationDto {
-  capacity: number;
-  material: string;
-  brand?: string;
-  weight?: number;
-  dimensions?: {
-    height: number;
-    diameter: number;
-  };
-}
-
-export class VendorInfoDto {
-  id: string;
-  businessName: string;
-  rating: number;
-  totalOrders: number;
-  deliveryZones: DeliveryZoneDto[];
-}
-
-export class DeliveryZoneDto {
-  id: string;
-  name: string;
-  deliveryFee: number;
-  minOrderAmount: number;
-  maxDeliveryTime: number;
-  isActive: boolean;
-}
-
-export class CreateCustomerProductDto {
-  @IsString()
-  name: string;
-
-  @IsOptional()
-  @IsString()
-  description?: string;
-
-  @IsEnum(ProductCategory)
-  category: ProductCategory;
-
-  @IsEnum(ProductSize)
-  size: ProductSize;
-
-  @IsNumber()
-  price: number;
-
-  @IsNumber()
-  depositAmount: number;
-
-  @IsBoolean()
-  hasDeposit: boolean;
-
-  @IsNumber()
-  stockQuantity: number;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  images?: string[];
-}
-
-export class ProductSearchDto {
-  @IsOptional()
-  @IsString()
-  query?: string;
-
-  @IsOptional()
-  @IsString()
-  pincode?: string;
-
-  @IsOptional()
-  @IsEnum(ProductCategory)
-  category?: ProductCategory;
-
-  @IsOptional()
-  @IsNumber()
-  page?: number = 1;
-
-  @IsOptional()
-  @IsNumber()
-  limit?: number = 20;
-}
-
-export class ProductSearchResponseDto {
-  products: ProductSearchResultDto[];
-  meta: {
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      total_pages: number;
-      has_next: boolean;
-      has_prev: boolean;
-      cursor?: string;
-    };
-  };
-}
-
-export class ProductSearchResultDto {
-  id: string;
-  name: string;
-  category: string;
-  subcategory: string;
-  price: number;
-  store: StoreInfoDto;
-  is_available: boolean;
-  stock_quantity: number;
-}
-
-export class StoreInfoDto {
-  id: string;
-  name: string;
-  rating: number;
-  distance_km: number;
-}
 
 export class CreateProductDto {
   @ApiProperty({
@@ -404,55 +264,6 @@ export class ProductResponseDto {
   updated_at: Date;
 }
 
-export class VendorProductVariantResponseDto {
-  @ApiProperty({
-    description: 'Product variant unique identifier',
-    example: '123',
-  })
-  id: string;
-
-  @ApiProperty({
-    description: 'Product unique identifier',
-    example: '456',
-  })
-  product_id: string;
-
-  @ApiProperty({
-    description: 'Variant SKU',
-    example: 'PW-20L-MINERAL-001',
-  })
-  variant_sku: string;
-
-  @ApiProperty({
-    description: 'Variant attributes',
-    example: { type: 'mineral', brand: 'AquaPure' },
-  })
-  attributes?: Record<string, any>;
-
-  @ApiProperty({
-    description: 'Price override for this variant',
-    example: 55.0,
-  })
-  price_override?: number;
-
-  @ApiProperty({
-    description: 'Variant active status',
-    example: true,
-  })
-  is_active: boolean;
-
-  @ApiProperty({
-    description: 'Variant creation timestamp',
-    example: '2024-01-15T10:30:00Z',
-  })
-  created_at: Date;
-
-  @ApiProperty({
-    description: 'Variant last update timestamp',
-    example: '2024-01-15T10:30:00Z',
-  })
-  updated_at: Date;
-}
 
 export class ProductMappingResponseDto {
   @ApiProperty({
@@ -522,83 +333,6 @@ export class ProductMappingResponseDto {
   updated_at: Date;
 }
 
-export class UpdateProductVariantDto {
-  @ApiProperty({
-    description: 'Variant attributes that differ from base product',
-    example: { type: 'mineral', brand: 'AquaPure' },
-    required: false,
-  })
-  @IsOptional()
-  @IsObject()
-  attributes?: Record<string, any>;
-
-  @ApiProperty({
-    description: 'Price override for this variant',
-    example: 55.0,
-    required: false,
-  })
-  @IsOptional()
-  priceOverride?: number;
-
-  @ApiProperty({
-    description: 'Variant active status',
-    example: true,
-    required: false,
-  })
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
-}
-
-export class ProductVariantResponseDto {
-  @ApiProperty({
-    description: 'Product variant unique identifier',
-    example: '123',
-  })
-  id: string;
-
-  @ApiProperty({
-    description: 'Product unique identifier',
-    example: '456',
-  })
-  productId: string;
-
-  @ApiProperty({
-    description: 'Variant SKU',
-    example: 'PW-20L-MINERAL-001',
-  })
-  variantSku: string;
-
-  @ApiProperty({
-    description: 'Variant attributes',
-    example: { type: 'mineral', brand: 'AquaPure' },
-  })
-  attributes?: Record<string, any>;
-
-  @ApiProperty({
-    description: 'Price override for this variant',
-    example: 55.0,
-  })
-  priceOverride?: number;
-
-  @ApiProperty({
-    description: 'Variant active status',
-    example: true,
-  })
-  isActive: boolean;
-
-  @ApiProperty({
-    description: 'Variant creation timestamp',
-    example: '2024-01-15T10:30:00Z',
-  })
-  createdAt: Date;
-
-  @ApiProperty({
-    description: 'Variant last update timestamp',
-    example: '2024-01-15T10:30:00Z',
-  })
-  updatedAt: Date;
-}
 
 export class UploadProductImagesDto {
   @ApiProperty({
