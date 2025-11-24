@@ -4,8 +4,10 @@ import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CustomerController } from './controllers/customer.controller';
 import { CustomerAuthController } from './controllers/customer-auth.controller';
+import { CustomerSubscriptionController } from './controllers/customer.subscription.controller';
 import { CustomerService } from './services/customer.service';
 import { CustomerAuthService } from './services/customer-auth.service';
+import { CustomerSubscriptionService } from './services/customer.subscription.service';
 import { CustomerJwtStrategy } from './strategies/customer-jwt.strategy';
 import { CustomLoggerService } from '../common/logger/logger.service';
 import { OtpService } from '../common/services/otp.service';
@@ -25,14 +27,24 @@ import { OtpService } from '../common/services/otp.service';
       inject: [ConfigService],
     }),
   ],
-  controllers: [CustomerController, CustomerAuthController],
+  controllers: [
+    CustomerController,
+    CustomerAuthController,
+    CustomerSubscriptionController,
+  ],
   providers: [
     CustomerService,
     CustomerAuthService,
+    CustomerSubscriptionService,
     CustomerJwtStrategy,
     CustomLoggerService,
     OtpService,
   ],
-  exports: [CustomerService, CustomerAuthService, CustomerJwtStrategy],
+  exports: [
+    CustomerService,
+    CustomerAuthService,
+    CustomerSubscriptionService,
+    CustomerJwtStrategy,
+  ],
 })
 export class CustomerModule {}

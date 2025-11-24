@@ -8,7 +8,7 @@ A comprehensive backend API for water jar delivery platform built with NestJS, T
 - **JWT Authentication** with OTP-based login
 - **Role-based Access Control** (Customer, Vendor, Delivery Agent)
 - **Order Management** with real-time tracking
-- **Subscription System** for recurring deliveries
+- **Subscription System** for recurring deliveries (modularized within customer module)
 - **Digital Wallet** with transaction history
 - **Complaint Management** with priority assignment
 - **Location-based Services** with geospatial queries
@@ -150,6 +150,14 @@ POST   /api/orders        # Create new order
 GET    /api/orders        # Get user orders
 GET    /api/orders/:id    # Get order details
 DELETE /api/orders/:id    # Cancel order
+```
+
+### Subscription Management
+```
+GET    /api/customers/subscriptions        # Get customer subscriptions
+POST   /api/customers/subscriptions        # Create new subscription
+PUT    /api/customers/subscriptions/:id    # Update subscription
+DELETE /api/customers/subscriptions/:id    # Cancel subscription
 ```
 
 ### Wallet Management

@@ -163,29 +163,4 @@ export class CustomerAuthController {
     );
     return this.customerAuthService.verifyOtp(verifyOtpDto);
   }
-
-  @Get('me')
-  @UseGuards(CustomerJwtAuthGuard)
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({
-    summary: 'Get current customer profile',
-    description:
-      'Retrieve the profile information of the authenticated customer',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Customer profile retrieved successfully',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing JWT token',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Customer profile not found',
-  })
-  async getProfile(@CurrentUser() user: any) {
-    this.logger.log(`Getting profile for customer user: ${user.id}`);
-    return this.customerAuthService.getCustomerProfile(user.id);
-  }
 }
