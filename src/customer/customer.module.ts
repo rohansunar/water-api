@@ -7,7 +7,7 @@ import { CustomerAuthController } from './controllers/customer-auth.controller';
 import { CustomerSubscriptionController } from './controllers/customer.subscription.controller';
 import { CustomerService } from './services/customer.service';
 import { CustomerAuthService } from './services/customer-auth.service';
-import { CustomerSubscriptionService } from './services/customer.subscription.service';
+import { SubscriptionService } from './services/subscription.service';
 import { CustomerJwtStrategy } from './strategies/customer-jwt.strategy';
 import { CustomLoggerService } from '../common/logger/logger.service';
 import { OtpService } from '../common/services/otp.service';
@@ -35,7 +35,7 @@ import { OtpService } from '../common/services/otp.service';
   providers: [
     CustomerService,
     CustomerAuthService,
-    CustomerSubscriptionService,
+    SubscriptionService,
     CustomerJwtStrategy,
     CustomLoggerService,
     OtpService,
@@ -43,7 +43,7 @@ import { OtpService } from '../common/services/otp.service';
   exports: [
     CustomerService,
     CustomerAuthService,
-    CustomerSubscriptionService,
+    SubscriptionService,
     CustomerJwtStrategy,
   ],
 })

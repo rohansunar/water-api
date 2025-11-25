@@ -18,7 +18,7 @@ import {
   ApiBody,
   ApiParam,
 } from '@nestjs/swagger';
-import { CustomerSubscriptionService } from '../services/customer.subscription.service';
+import { SubscriptionService } from '../services/subscription.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { User } from '../../common/interfaces/user.interface';
@@ -30,7 +30,7 @@ import { CustomLoggerService } from '../../common/logger/logger.service';
 @ApiBearerAuth('JWT-auth')
 export class CustomerSubscriptionController {
   constructor(
-    private readonly customerSubscriptionService: CustomerSubscriptionService,
+    private readonly subscriptionService: SubscriptionService,
     private readonly logger: CustomLoggerService,
   ) {}
 
@@ -58,9 +58,10 @@ export class CustomerSubscriptionController {
       this.logger.log(
         `Getting subscriptions for customer: ${customer.id.toString()}`,
       );
-      const subscriptions = await this.customerSubscriptionService.getCustomerSubscriptions(
-        customer.id.toString(),
-      );
+      const subscriptions =
+        await this.subscriptionService.getCustomerSubscriptions(
+          customer.id.toString(),
+        );
 
       const duration = Date.now() - startTime;
       this.logger.logApiRequest(
@@ -113,7 +114,7 @@ export class CustomerSubscriptionController {
       this.logger.log(
         `Creating subscription for customer: ${customer.id.toString()}`,
       );
-      const subscription = await this.customerSubscriptionService.createSubscription(
+      const subscription = await this.subscriptionService.createSubscription(
         customer.id.toString(),
         createSubscriptionDto,
       );
@@ -175,7 +176,7 @@ export class CustomerSubscriptionController {
       this.logger.log(
         `Updating subscription ${subscriptionId} for customer: ${customer.id.toString()}`,
       );
-      const subscription = await this.customerSubscriptionService.updateSubscription(
+      const subscription = await this.subscriptionService.updateSubscription(
         customer.id.toString(),
         subscriptionId,
         updateSubscriptionDto,
@@ -240,7 +241,7 @@ export class CustomerSubscriptionController {
       this.logger.log(
         `Cancelling subscription ${subscriptionId} for customer: ${customer.id.toString()}`,
       );
-      await this.customerSubscriptionService.cancelSubscription(
+      await this.subscriptionService.cancelSubscription(
         customer.id.toString(),
         subscriptionId,
         cancelSubscriptionDto.reason,

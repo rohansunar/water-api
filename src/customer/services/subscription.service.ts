@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CustomLoggerService } from '../../common/logger/logger.service';
 
 @Injectable()
-export class CustomerSubscriptionService {
+export class SubscriptionService {
   constructor(private readonly logger: CustomLoggerService) {}
 
   // Subscription Management Methods

@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpStatus } from '@nestjs/common';
 import { CustomerSubscriptionController } from '../../../src/customer/controllers/customer.subscription.controller';
-import { CustomerSubscriptionService } from '../../../src/customer/services/customer.subscription.service';
+import { SubscriptionService } from '../../../src/customer/services/subscription.service';
 import { CustomLoggerService } from '../../../src/common/logger/logger.service';
 import { User, UserRole } from '../../../src/common/interfaces/user.interface';
 
@@ -17,7 +17,7 @@ jest.mock('../../../src/common/logger/logger.service', () => ({
 
 describe('CustomerSubscriptionController', () => {
   let controller: CustomerSubscriptionController;
-  let subscriptionService: jest.Mocked<CustomerSubscriptionService>;
+  let subscriptionService: jest.Mocked<SubscriptionService>;
   let logger: jest.Mocked<CustomLoggerService>;
 
   const mockUser: User = {
@@ -38,13 +38,13 @@ describe('CustomerSubscriptionController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CustomerSubscriptionController],
-      providers: [CustomerSubscriptionService, CustomLoggerService],
+      providers: [SubscriptionService, CustomLoggerService],
     }).compile();
 
     controller = module.get<CustomerSubscriptionController>(
       CustomerSubscriptionController,
     );
-    subscriptionService = module.get(CustomerSubscriptionService);
+    subscriptionService = module.get(SubscriptionService);
     logger = module.get(CustomLoggerService);
   });
 

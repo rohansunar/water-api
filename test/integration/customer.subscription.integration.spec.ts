@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/common/database/prisma.service';
-import { CustomerSubscriptionService } from '../../src/customer/services/customer.subscription.service';
+import { SubscriptionService } from '../../src/customer/services/subscription.service';
 import { CustomerService } from '../../src/customer/services/customer.service';
 import { UserRole } from '../../src/common/interfaces/user.interface';
 
@@ -12,7 +12,7 @@ describe('Customer Subscription API Integration Tests', () => {
   let app: INestApplication;
   let prismaService: PrismaService;
   let jwtService: JwtService;
-  let customerSubscriptionService: CustomerSubscriptionService;
+  let subscriptionService: SubscriptionService;
   let customerService: CustomerService;
   let authToken: string;
   let testCustomerId: string;
@@ -27,7 +27,7 @@ describe('Customer Subscription API Integration Tests', () => {
 
     prismaService = app.get(PrismaService);
     jwtService = app.get(JwtService);
-    customerSubscriptionService = app.get(CustomerSubscriptionService);
+    subscriptionService = app.get(SubscriptionService);
     customerService = app.get(CustomerService);
 
     // Clean up test data
@@ -90,9 +90,8 @@ describe('Customer Subscription API Integration Tests', () => {
 
     it('should handle service errors gracefully', async () => {
       // Mock service to throw error
-      const originalMethod =
-        customerSubscriptionService.getCustomerSubscriptions;
-      customerSubscriptionService.getCustomerSubscriptions = jest
+      const originalMethod = subscriptionService.getCustomerSubscriptions;
+      subscriptionService.getCustomerSubscriptions = jest
         .fn()
         .mockRejectedValue(new Error('Database connection failed'));
 
@@ -102,7 +101,7 @@ describe('Customer Subscription API Integration Tests', () => {
         .expect(500);
 
       // Restore original method
-      customerSubscriptionService.getCustomerSubscriptions = originalMethod;
+      subscriptionService.getCustomerSubscriptions = originalMethod;
     });
   });
 
@@ -165,8 +164,8 @@ describe('Customer Subscription API Integration Tests', () => {
       };
 
       // Mock service to throw error
-      const originalMethod = customerSubscriptionService.createSubscription;
-      customerSubscriptionService.createSubscription = jest
+      const originalMethod = subscriptionService.createSubscription;
+      subscriptionService.createSubscription = jest
         .fn()
         .mockRejectedValue(new Error('Validation failed'));
 
@@ -177,7 +176,7 @@ describe('Customer Subscription API Integration Tests', () => {
         .expect(500);
 
       // Restore original method
-      customerSubscriptionService.createSubscription = originalMethod;
+      subscriptionService.createSubscription = originalMethod;
     });
   });
 
@@ -234,8 +233,8 @@ describe('Customer Subscription API Integration Tests', () => {
       };
 
       // Mock service to throw error
-      const originalMethod = customerSubscriptionService.updateSubscription;
-      customerSubscriptionService.updateSubscription = jest
+      const originalMethod = subscriptionService.updateSubscription;
+      subscriptionService.updateSubscription = jest
         .fn()
         .mockRejectedValue(new Error('Subscription not found'));
 
@@ -246,7 +245,7 @@ describe('Customer Subscription API Integration Tests', () => {
         .expect(500);
 
       // Restore original method
-      customerSubscriptionService.updateSubscription = originalMethod;
+      subscriptionService.updateSubscription = originalMethod;
     });
   });
 
@@ -310,8 +309,8 @@ describe('Customer Subscription API Integration Tests', () => {
       };
 
       // Mock service to throw error
-      const originalMethod = customerSubscriptionService.cancelSubscription;
-      customerSubscriptionService.cancelSubscription = jest
+      const originalMethod = subscriptionService.cancelSubscription;
+      subscriptionService.cancelSubscription = jest
         .fn()
         .mockRejectedValue(new Error('Cancellation failed'));
 
@@ -322,7 +321,7 @@ describe('Customer Subscription API Integration Tests', () => {
         .expect(500);
 
       // Restore original method
-      customerSubscriptionService.cancelSubscription = originalMethod;
+      subscriptionService.cancelSubscription = originalMethod;
     });
   });
 
@@ -371,9 +370,8 @@ describe('Customer Subscription API Integration Tests', () => {
   describe('Error Response Format', () => {
     it('should return consistent error response format', async () => {
       // Mock service to throw error
-      const originalMethod =
-        customerSubscriptionService.getCustomerSubscriptions;
-      customerSubscriptionService.getCustomerSubscriptions = jest
+      const originalMethod = subscriptionService.getCustomerSubscriptions;
+      subscriptionService.getCustomerSubscriptions = jest
         .fn()
         .mockRejectedValue(new Error('Test error'));
 
@@ -387,7 +385,7 @@ describe('Customer Subscription API Integration Tests', () => {
       expect(response.body).toHaveProperty('error');
 
       // Restore original method
-      customerSubscriptionService.getCustomerSubscriptions = originalMethod;
+      subscriptionService.getCustomerSubscriptions = originalMethod;
     });
   });
 

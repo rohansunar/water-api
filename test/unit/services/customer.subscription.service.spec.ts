@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { CustomerSubscriptionService } from '../../../src/customer/services/customer.subscription.service';
+import { SubscriptionService } from '../../../src/customer/services/subscription.service';
 import { CustomLoggerService } from '../../../src/common/logger/logger.service';
 
 // Mock CustomLoggerService
@@ -14,18 +14,16 @@ jest.mock('../../../src/common/logger/logger.service', () => ({
   })),
 }));
 
-describe('CustomerSubscriptionService', () => {
-  let service: CustomerSubscriptionService;
+describe('SubscriptionService', () => {
+  let service: SubscriptionService;
   let logger: jest.Mocked<CustomLoggerService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [CustomerSubscriptionService, CustomLoggerService],
+      providers: [SubscriptionService, CustomLoggerService],
     }).compile();
 
-    service = module.get<CustomerSubscriptionService>(
-      CustomerSubscriptionService,
-    );
+    service = module.get<SubscriptionService>(SubscriptionService);
     logger = module.get(CustomLoggerService);
   });
 
@@ -243,7 +241,7 @@ describe('CustomerSubscriptionService', () => {
   describe('Service instantiation', () => {
     it('should be properly instantiated with logger', () => {
       expect(service).toBeDefined();
-      expect(service).toBeInstanceOf(CustomerSubscriptionService);
+      expect(service).toBeInstanceOf(SubscriptionService);
     });
   });
 });
