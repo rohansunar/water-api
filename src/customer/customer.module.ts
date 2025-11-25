@@ -5,12 +5,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CustomerController } from './controllers/customer.controller';
 import { CustomerAuthController } from './controllers/customer-auth.controller';
 import { CustomerSubscriptionController } from './controllers/customer.subscription.controller';
+import { CustomerSearchController } from './controllers/customer-search.controller';
 import { CustomerService } from './services/customer.service';
 import { CustomerAuthService } from './services/customer-auth.service';
 import { SubscriptionService } from './services/subscription.service';
 import { CustomerJwtStrategy } from './strategies/customer-jwt.strategy';
 import { CustomLoggerService } from '../common/logger/logger.service';
 import { OtpService } from '../common/services/otp.service';
+import { ProductModule } from '../product/product.module';
 
 @Module({
   imports: [
@@ -26,11 +28,13 @@ import { OtpService } from '../common/services/otp.service';
       }),
       inject: [ConfigService],
     }),
+    ProductModule,
   ],
   controllers: [
     CustomerController,
     CustomerAuthController,
     CustomerSubscriptionController,
+    CustomerSearchController,
   ],
   providers: [
     CustomerService,

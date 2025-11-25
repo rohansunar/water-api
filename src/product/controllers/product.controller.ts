@@ -26,6 +26,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ProductService } from '../services/product.service';
+import { SearchService } from '../services/search.service';
 import { AdminVendorGuard } from '../../auth/guards/admin-vendor.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { Public } from '../../auth/decorators/public.decorator';
@@ -50,7 +51,10 @@ import {
 export class ProductController {
   private readonly logger = new Logger(ProductController.name);
 
-  constructor(private readonly productService: ProductService) {}
+  constructor(
+    private readonly productService: ProductService,
+    private readonly searchService: SearchService,
+  ) {}
 
   @Public()
   @Get('search')
@@ -159,7 +163,7 @@ export class ProductController {
     this.logger.log(
       `Searching products with query: ${JSON.stringify(searchDto)}`,
     );
-    return this.productService.searchProducts(searchDto);
+    return this.searchService.searchProducts(searchDto);
   }
 
   @Post()
